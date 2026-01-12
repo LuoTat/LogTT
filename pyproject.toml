@@ -1,0 +1,10 @@
+[project]
+name = "LogTT"
+version = "0.1.0"
+description = "结构化日志分析与可视化系统"
+readme = "README.md"
+requires-python = "==3.12.*"
+dependencies = [
+    "logparser3>=1.0.4",
+    "pyqt6-fluent-widgets[full]>=1.10.5",
+]
