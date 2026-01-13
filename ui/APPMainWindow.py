@@ -22,13 +22,13 @@ class APPMainWindow(FluentWindow):
         super().__init__()
 
         # 日志管理界面
-        self.logManagePage = LogManagePage()
+        self.log_manage_page = LogManagePage()
 
         self.initNavigation()
         self.initWindow()
 
     def initNavigation(self):
-        self.addSubInterface(self.logManagePage, FluentIcon.LIBRARY, "日志管理")
+        self.addSubInterface(self.log_manage_page, FluentIcon.LIBRARY, "日志管理")
         # self.navigationInterface.addSeparator()
 
         # 底部头像按钮

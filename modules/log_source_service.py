@@ -12,19 +12,19 @@ class LogSourceService:
         self.repo = LogSourceRepository()
 
     def add_local_log(self, file_path: str):
-        record = LogSourceRecord(
+        log_source = LogSourceRecord(
             id=-1,
             source_type="本地文件",
-            source_uri=Path(file_path).resolve().as_uri(),
+            source_uri=Path(file_path).resolve().as_posix(),
             create_time=datetime.now(),
             is_extracted=False,
             extract_method=None,
             line_count=None
         )
-        self.repo.add(record)
+        self.repo.add(log_source)
 
     def add_network_log(self, url: str):
-        record = LogSourceRecord(
+        log_source = LogSourceRecord(
             id=-1,
             source_type="网络地址",
             source_uri=url,
@@ -33,13 +33,13 @@ class LogSourceService:
             extract_method="Drain3",
             line_count=None
         )
-        self.repo.add(record)
+        self.repo.add(log_source)
 
-    def delete_log(self, id: int):
-        self.repo.delete(id)
+    def delete_log(self, log_source_id: int):
+        self.repo.delete(log_source_id)
 
-    def get_log(self, id: int):
-        return self.repo.get(id)
+    def get_log(self, log_source_id: int) -> LogSourceRecord | None:
+        return self.repo.get(log_source_id)
 
-    def get_all_logs(self):
+    def get_all_logs(self) -> list[LogSourceRecord]:
         return self.repo.get_all()

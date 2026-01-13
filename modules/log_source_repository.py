@@ -11,7 +11,8 @@ class LogSourceRepository:
     def __init__(self):
         self._init_table()
 
-    def _init_table(self):
+    @staticmethod
+    def _init_table():
         with get_connection() as conn:
             conn.execute(
                 """
@@ -29,7 +30,8 @@ class LogSourceRepository:
             )
             conn.commit()
 
-    def add(self, record: LogSourceRecord):
+    @staticmethod
+    def add(log_source: LogSourceRecord):
         with get_connection() as conn:
             conn.execute(
                 """
@@ -37,17 +39,18 @@ class LogSourceRepository:
                 values (?, ?, ?, ?, ?, ?)
                 """,
                 [
-                    record.source_type,
-                    record.source_uri,
-                    record.create_time.isoformat(timespec="seconds"),
-                    record.is_extracted,
-                    record.extract_method,
-                    record.line_count
+                    log_source.source_type,
+                    log_source.source_uri,
+                    log_source.create_time.isoformat(timespec="seconds"),
+                    log_source.is_extracted,
+                    log_source.extract_method,
+                    log_source.line_count
                 ]
             )
             conn.commit()
 
-    def delete(self, id: int):
+    @staticmethod
+    def delete(log_source_id: int):
         with get_connection() as conn:
             conn.execute(
                 """
@@ -55,11 +58,12 @@ class LogSourceRepository:
                 from log_sources
                 where id = ?
                 """,
-                [id]
+                [log_source_id]
             )
             conn.commit()
 
-    def get(self, id: int) -> LogSourceRecord | None:
+    @staticmethod
+    def get(log_source_id: int) -> LogSourceRecord | None:
         with get_connection() as conn:
             row = conn.execute(
                 """
@@ -67,7 +71,7 @@ class LogSourceRepository:
                 from log_sources
                 where id = ?
                 """,
-                [id]
+                [log_source_id]
             ).fetchone()
 
         if row:
@@ -82,7 +86,8 @@ class LogSourceRepository:
             )
         return None
 
-    def get_all(self) -> List[LogSourceRecord]:
+    @staticmethod
+    def get_all() -> List[LogSourceRecord]:
         with get_connection() as conn:
             rows = conn.execute(
                 """
