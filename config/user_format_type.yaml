@@ -1,0 +1,3 @@
+Test:
+  log_format: '<Month> <Date> <Time> <Level> <Component>(\[<PID>\])?: <Content>'
+  regex: []

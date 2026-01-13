@@ -1,0 +1,125 @@
+import os
+
+from PyQt6.QtWidgets import (
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QFileDialog
+)
+from qfluentwidgets import (
+    CardWidget,
+    SubtitleLabel,
+    BodyLabel,
+    LineEdit,
+    PushButton,
+    FluentIcon,
+    MessageBoxBase,
+    ToolTipFilter,
+    ToolTipPosition
+)
+
+
+class AddLogMessageBox(MessageBoxBase):
+    """新增日志对话框"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.selected_file_path: str | None = None
+
+        self.viewLayout.addWidget(self._createNetworkCard())
+        self.viewLayout.addWidget(self._createLocalFileCard())
+        self.widget.setMinimumWidth(700)
+
+    def _createNetworkCard(self) -> CardWidget:
+        card = CardWidget(self)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(18, 16, 18, 16)
+        card_layout.setSpacing(10)
+
+        title_layout = QHBoxLayout()
+        icon_label = QLabel(self)
+        icon_label.setPixmap(FluentIcon.GLOBE.icon().pixmap(20, 20))
+        title_label = SubtitleLabel("网络日志源", card)
+        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
+
+        title_layout.addWidget(icon_label)
+        title_layout.addSpacing(6)
+        title_layout.addWidget(title_label)
+        title_layout.addStretch(1)
+
+        card_layout.addLayout(title_layout)
+
+        url_label = BodyLabel("Syslog 服务器地址：", card)
+        url_label.setStyleSheet("font-weight: 500;")
+        card_layout.addWidget(url_label)
+
+        self.url_input = LineEdit(card)
+        self.url_input.setPlaceholderText("例如：syslog://192.168.1.100:514")
+        self.url_input.setClearButtonEnabled(True)
+        self.url_input.setFixedHeight(36)
+        card_layout.addWidget(self.url_input)
+
+        hint_label = BodyLabel("支持 UDP/TCP，默认端口 514", card)
+        hint_label.setStyleSheet("color: #888; font-size: 12px;")
+        card_layout.addWidget(hint_label)
+
+        return card
+
+    def _createLocalFileCard(self) -> CardWidget:
+        card = CardWidget(self)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(18, 16, 18, 16)
+        card_layout.setSpacing(10)
+
+        title_layout = QHBoxLayout()
+        icon_label = QLabel(self)
+        icon_label.setPixmap(FluentIcon.FOLDER.icon().pixmap(20, 20))
+        title_label = SubtitleLabel("本地文件源", card)
+        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
+
+        title_layout.addWidget(icon_label)
+        title_layout.addSpacing(6)
+        title_layout.addWidget(title_label)
+        title_layout.addStretch(1)
+
+        card_layout.addLayout(title_layout)
+
+        file_label = BodyLabel("选择日志文件：", card)
+        file_label.setStyleSheet("font-weight: 500;")
+        card_layout.addWidget(file_label)
+
+        select_file_layout = QHBoxLayout()
+        self.select_file_button = PushButton(FluentIcon.FOLDER_ADD, "选择文件", card)
+        self.select_file_button.setFixedHeight(36)
+        self.select_file_button.clicked.connect(self._onSelectFile)
+
+        self.file_path_label = BodyLabel("未选择文件", card)
+        self.file_path_label.setStyleSheet("color: #888; padding-left: 8px;")
+
+        select_file_layout.addWidget(self.select_file_button)
+        select_file_layout.addWidget(self.file_path_label)
+        select_file_layout.addStretch(1)
+
+        card_layout.addLayout(select_file_layout)
+
+        hint_label = BodyLabel("支持 .log, .txt 等文本格式", card)
+        hint_label.setStyleSheet("color: #888; font-size: 12px;")
+        card_layout.addWidget(hint_label)
+
+        return card
+
+    def _onSelectFile(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择日志文件",
+            "",
+            "日志文件 (*.log *.txt);;所有文件 (*.*)",
+        )
+
+        if file_path:
+            self.selected_file_path = file_path
+            self.file_path_label.setText(os.path.basename(file_path))
+            self.file_path_label.setStyleSheet("color: #0078d4; padding-left: 8px; font-weight: 500;")
+            self.file_path_label.setToolTip(file_path)
+            self.file_path_label.installEventFilter(
+                ToolTipFilter(self.file_path_label, showDelay=300, position=ToolTipPosition.RIGHT))

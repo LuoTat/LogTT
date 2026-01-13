@@ -1,15 +1,12 @@
 from PyQt6.QtCore import QUrl
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import (
-    QIcon,
-    QDesktopServices
-)
+from PyQt6.QtGui import QIcon, QDesktopServices
 from qfluentwidgets import (
     NavigationItemPosition,
     MessageBox,
     FluentWindow,
     NavigationAvatarWidget,
-    FluentIcon
+    FluentIcon,
 )
 
 from .LogManagePage import LogManagePage
@@ -48,7 +45,10 @@ class APPMainWindow(FluentWindow):
         screen = QApplication.primaryScreen()
         if screen:
             geo = screen.availableGeometry()
-            self.move(geo.width() // 2 - self.width() // 2, geo.height() // 2 - self.height() // 2)
+            self.move(
+                geo.width() // 2 - self.width() // 2,
+                geo.height() // 2 - self.height() // 2,
+            )
 
     def _onAvatar(self):
         w = MessageBox(

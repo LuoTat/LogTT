@@ -1,20 +1,13 @@
 from pathlib import Path
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
-
-@dataclass
-class ParseResult:
-    """日志模板提取结果"""
-    log_file: Path  # 原始日志文件路径
-    log_structured_file: Path  # 结构化CSV文件路径
-    log_templates_file: Path  # 模板CSV文件路径
+from .parse_result import ParseResult
 
 
 class BaseLogParser(ABC):
     """日志模板解析器基类"""
     input_file: Path
-    output_dir: Path = Path(__file__).resolve().parent.parent / "tmp"
+    output_dir: Path = Path(__file__).resolve().parent.parent.parent / "tmp"
     log_format: str
     regex: list[str]
 

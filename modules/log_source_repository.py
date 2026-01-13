@@ -20,6 +20,7 @@ class LogSourceRepository:
                 (
                     id             INTEGER primary key autoincrement,
                     source_type    TEXT not null,
+                    format_type    TEXT,
                     source_uri     TEXT not null unique,
                     create_time    TEXT not null,
                     is_extracted   INT  not null,
@@ -35,11 +36,12 @@ class LogSourceRepository:
         with get_connection() as conn:
             conn.execute(
                 """
-                insert into log_sources (source_type, source_uri, create_time, is_extracted, extract_method, line_count)
-                values (?, ?, ?, ?, ?, ?)
+                insert into log_sources (source_type, format_type, source_uri, create_time, is_extracted, extract_method, line_count)
+                values (?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     log_source.source_type,
+                    log_source.format_type,
                     log_source.source_uri,
                     log_source.create_time.isoformat(timespec="seconds"),
                     log_source.is_extracted,
@@ -67,7 +69,14 @@ class LogSourceRepository:
         with get_connection() as conn:
             row = conn.execute(
                 """
-                select id, source_type, source_uri, create_time, is_extracted, extract_method, line_count
+                select id,
+                       source_type,
+                       format_type,
+                       source_uri,
+                       create_time,
+                       is_extracted,
+                       extract_method,
+                       line_count
                 from log_sources
                 where id = ?
                 """,
@@ -78,11 +87,12 @@ class LogSourceRepository:
             return LogSourceRecord(
                 id=row[0],
                 source_type=row[1],
-                source_uri=row[2],
-                create_time=datetime.fromisoformat(row[3]),
-                is_extracted=bool(row[4]),
-                extract_method=row[5],
-                line_count=row[6],
+                format_type=row[2],
+                source_uri=row[3],
+                create_time=datetime.fromisoformat(row[4]),
+                is_extracted=bool(row[5]),
+                extract_method=row[6],
+                line_count=row[7],
             )
         return None
 
@@ -91,7 +101,14 @@ class LogSourceRepository:
         with get_connection() as conn:
             rows = conn.execute(
                 """
-                select id, source_type, source_uri, create_time, is_extracted, extract_method, line_count
+                select id,
+                       source_type,
+                       format_type,
+                       source_uri,
+                       create_time,
+                       is_extracted,
+                       extract_method,
+                       line_count
                 from log_sources
                 """
             ).fetchall()
@@ -100,11 +117,12 @@ class LogSourceRepository:
             LogSourceRecord(
                 id=row[0],
                 source_type=row[1],
-                source_uri=row[2],
-                create_time=datetime.fromisoformat(row[3]),
-                is_extracted=bool(row[4]),
-                extract_method=row[5],
-                line_count=row[6],
+                format_type=row[2],
+                source_uri=row[3],
+                create_time=datetime.fromisoformat(row[4]),
+                is_extracted=bool(row[5]),
+                extract_method=row[6],
+                line_count=row[7],
             )
             for row in rows
         ]

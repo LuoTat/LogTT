@@ -6,6 +6,7 @@ from dataclasses import dataclass
 class LogSourceRecord:
     id: int  # 日志源ID
     source_type: str  # 日志源类型
+    format_type: str | None  # 日志格式类型
     source_uri: str  # 日志源URI
     create_time: datetime  # 创建时间
     is_extracted: bool  # 是否已提取

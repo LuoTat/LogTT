@@ -1,15 +1,21 @@
 import sys
+import qasync
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication
 from qfluentwidgets import setTheme, Theme
 
-from ui.APPMainWindow import APPMainWindow
+from ui import APPMainWindow
 
 if __name__ == "__main__":
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     setTheme(Theme.DARK)
     app = QApplication(sys.argv)
-    # app.setAttribute(Qt.ApplicationAttribute.AA_DontCreateNativeWidgetSiblings)
+
+    # 创建 QEventLoop
+    loop = qasync.QEventLoop(app)
+
     APPMainWindow().show()
-    app.exec()
+
+    with loop:
+        loop.run_forever()

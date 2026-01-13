@@ -19,7 +19,8 @@ class LogSourceService:
             create_time=datetime.now(),
             is_extracted=False,
             extract_method=None,
-            line_count=None
+            line_count=None,
+            format_type=None
         )
         self.repo.add(log_source)
 
@@ -31,7 +32,8 @@ class LogSourceService:
             create_time=datetime.now(),
             is_extracted=False,
             extract_method="Drain3",
-            line_count=None
+            line_count=None,
+            format_type=None
         )
         self.repo.add(log_source)
 
@@ -43,3 +45,13 @@ class LogSourceService:
 
     def get_all_logs(self) -> list[LogSourceRecord]:
         return self.repo.get_all()
+
+    def update_format_type(self, log_source_id: int, format_type: str):
+        """更新日志源的格式类型"""
+        # TODO: 实现更新逻辑
+        pass
+
+    def update_extract_status(self, log_source_id: int, extract_method: str, line_count: int, format_type: str):
+        """更新日志源的提取状态"""
+        # TODO: 实现更新逻辑
+        pass
