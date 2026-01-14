@@ -92,8 +92,7 @@ class LogSourceRepository:
                 create_time=datetime.fromisoformat(row[4]),
                 is_extracted=bool(row[5]),
                 extract_method=row[6],
-                line_count=row[7],
-            )
+                line_count=row[7])
         return None
 
     @staticmethod
@@ -122,7 +121,6 @@ class LogSourceRepository:
                 create_time=datetime.fromisoformat(row[4]),
                 is_extracted=bool(row[5]),
                 extract_method=row[6],
-                line_count=row[7],
-            )
+                line_count=row[7])
             for row in rows
         ]

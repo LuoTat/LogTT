@@ -15,25 +15,6 @@ from modules.log_source_record import LogSourceRecord
 from modules.log_source_service import LogSourceService
 
 
-class ExtractWorker:
-    def __init__(self, log_source: LogSourceRecord, algorithm: str, log_format: str, regex: list[str]):
-        self.log_source = log_source
-        self.algorithm = algorithm
-        self.log_format = log_format
-        self.regex = regex
-
-    def run(self):
-        # TODO: 保存日志格式到数据库
-        # LogSourceService().update_format_type(self.log_source_id, self.format_data["name"])
-
-        time.sleep(10)
-        parser_type = ParserFactory.get_parser_type(self.algorithm)
-        result = parser_type(Path(self.log_source.source_uri), self.log_format, self.regex).parse()
-
-        # TODO: 将结果保存到数据库
-        return result
-
-
 class LogManagePage(QWidget):
     """日志管理页面"""
 
@@ -42,16 +23,18 @@ class LogManagePage(QWidget):
         self.setObjectName("LogManagePage")
 
         self.log_source_service = LogSourceService()
+        # 存储正在提取的任务相关的UI组件
+        self.extracting_log: set[int] = set()
+        # 缓存列表数据与行索引，避免仅刷新按钮时重复查询
+        self.log_sources: list[LogSourceRecord] = []
+
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(24, 24, 24, 24)
         self.main_layout.setSpacing(16)
 
-        # 存储正在提取的任务相关的UI组件
-        self.extracting_log: set[int] = set()
-
         self._initToolbar()
         self._initLogTable()
-        self._loadLogSources()
+        self._syncLogTable()
 
     def _initToolbar(self):
         tool_bar_layout = QHBoxLayout()
@@ -64,7 +47,7 @@ class LogManagePage(QWidget):
 
         self.refresh_button = PushButton(FluentIcon.SYNC, "刷新", self)
         self.refresh_button.setFixedHeight(36)
-        self.refresh_button.clicked.connect(self._onRefresh)
+        self.refresh_button.clicked.connect(self._syncLogTable)
 
         self.add_button = PrimaryPushButton(FluentIcon.ADD, "新增日志", self)
         self.add_button.setFixedHeight(36)
@@ -91,10 +74,13 @@ class LogManagePage(QWidget):
 
         self.main_layout.addWidget(self.log_source_table)
 
-    def _loadLogSources(self):
-        log_sources = self.log_source_service.get_all_logs()
-        self.log_source_table.setRowCount(len(log_sources))
-        for index, log_source in enumerate(log_sources):
+    def _syncLogTable(self):
+        self.log_sources = self.log_source_service.get_all_logs()
+        self._renderLogTable()
+
+    def _renderLogTable(self):
+        self.log_source_table.setRowCount(len(self.log_sources))
+        for row_index, log_source in enumerate(self.log_sources):
             source_type_item = QTableWidgetItem(log_source.source_type)
             source_type_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -113,18 +99,24 @@ class LogManagePage(QWidget):
             line_count_item = QTableWidgetItem(f"{log_source.line_count:,}" if log_source.line_count is not None else "—")
             line_count_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
-            self.log_source_table.setItem(index, 0, source_type_item)
-            self.log_source_table.setItem(index, 1, format_type_item)
-            self.log_source_table.setItem(index, 2, source_uri_item)
-            self.log_source_table.setItem(index, 3, create_time_item)
-            self.log_source_table.setItem(index, 4, extract_method_item)
-            self.log_source_table.setItem(index, 5, line_count_item)
-            self.log_source_table.setCellWidget(index, 6, self._buildActionButtons(log_source))
+            self.log_source_table.setItem(row_index, 0, source_type_item)
+            self.log_source_table.setItem(row_index, 1, format_type_item)
+            self.log_source_table.setItem(row_index, 2, source_uri_item)
+            self.log_source_table.setItem(row_index, 3, create_time_item)
+            self.log_source_table.setItem(row_index, 4, extract_method_item)
+            self.log_source_table.setItem(row_index, 5, line_count_item)
+            self.log_source_table.setCellWidget(row_index, 6, self._buildRowActions(row_index, log_source))
 
         self.log_source_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.log_source_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
 
-    def _buildActionButtons(self, log_source: LogSourceRecord) -> QWidget:
+    def _refreshRowActions(self, row_index: int):
+        if row_index is None or row_index < 0 or row_index >= len(self.log_sources):
+            return
+        log_source = self.log_sources[row_index]
+        self.log_source_table.setCellWidget(row_index, 6, self._buildRowActions(row_index, log_source))
+
+    def _buildRowActions(self, row_index: int, log_source: LogSourceRecord) -> QWidget:
         container = QWidget(self.log_source_table)
         layout = QVBoxLayout(container)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -144,7 +136,7 @@ class LogManagePage(QWidget):
         else:
             # 只对本地文件启用提取功能
             if log_source.source_type == "本地文件":
-                extract_button.clicked.connect(lambda _, log_source_t=log_source: self._onExtractLog(log_source_t))
+                extract_button.clicked.connect(lambda: self._onExtractLog(row_index, log_source))
             else:
                 extract_button.clicked.connect(lambda: self._showToast("提取网络日志"))
 
@@ -160,7 +152,7 @@ class LogManagePage(QWidget):
 
         delete_button = PrimaryPushButton(FluentIcon.DELETE, "删除", container)
         delete_button.setFixedHeight(28)
-        delete_button.clicked.connect(lambda _, log_source_id=log_source.id, log_source_uri=log_source.source_uri: self._onDeleteLog(log_source_id, log_source_uri))
+        delete_button.clicked.connect(lambda: self._onDeleteLog(row_index, log_source))
 
         button_layout.addWidget(extract_button)
         button_layout.addWidget(view_log_button)
@@ -180,16 +172,12 @@ class LogManagePage(QWidget):
 
         return container
 
-    def _onRefresh(self):
-        self._loadLogSources()
-
     def _onAddLog(self):
         dialog = AddLogMessageBox(self)
         if dialog.exec():
             if dialog.selected_file_path:
                 try:
                     self.log_source_service.add_local_log(dialog.selected_file_path)
-                    self._loadLogSources()
                     InfoBar.success(
                         title="导入成功",
                         content="本地日志已导入",
@@ -219,11 +207,11 @@ class LogManagePage(QWidget):
                         duration=5000,
                         parent=self,
                     )
+                self._syncLogTable()
                 return
             if dialog.url_input.text():
                 try:
                     self.log_source_service.add_network_log(dialog.url_input.text().strip())
-                    self._loadLogSources()
                     InfoBar.success(
                         title="导入成功",
                         content="网络日志源已添加",
@@ -253,6 +241,7 @@ class LogManagePage(QWidget):
                         duration=5000,
                         parent=self,
                     )
+                self._syncLogTable()
                 return
             InfoBar.warning(
                 title="未选择文件",
@@ -265,35 +254,30 @@ class LogManagePage(QWidget):
             )
 
     @asyncSlot()
-    async def _onExtractLog(self, log_source: LogSourceRecord):
+    async def _onExtractLog(self, row_index: int, log_source: LogSourceRecord):
         dialog = ExtractLogMessageBox(self)
         if dialog.exec():
             if dialog.is_custom_mode:
                 dialog.format_config_manager.save_custom_format(dialog.selected_format_name, dialog.selected_log_format, dialog.selected_regex)
 
-            # 创建 worker
-            worker = ExtractWorker(log_source, dialog.selected_algorithm, dialog.selected_log_format, dialog.selected_regex)
-
             # 把任务标记为正在提取
             self.extracting_log.add(log_source.id)
+            # 更新UI
+            self._refreshRowActions(row_index)
 
-            # 刷新表格以显示进度条
-            self._loadLogSources()
-
-            # 使用 asyncio.to_thread 异步执行耗时任务
+            # 使用 asyncio.to_thread 异步执行模板提取任务
             try:
-                await asyncio.to_thread(worker.run)
+                await asyncio.to_thread(lambda: self._extractLog(log_source, dialog.selected_algorithm, dialog.selected_log_format, dialog.selected_regex))
                 success = True
                 message = "提取成功"
             except Exception as e:
                 success = False
                 message = str(e)
 
-            # 移除正在提取标记
+            # 取消提取标记
             self.extracting_log.remove(log_source.id)
-
-            # 刷新表格
-            self._loadLogSources()
+            # 更新UI
+            self._refreshRowActions(row_index)
 
             if success:
                 InfoBar.success(
@@ -316,12 +300,13 @@ class LogManagePage(QWidget):
                     parent=self,
                 )
 
-    def _onDeleteLog(self, log_source_id: int, log_source_uri: str):
-        confirm = MessageBox("确认删除", f"确定删除该日志源吗？\n{log_source_uri}", self)
+    def _onDeleteLog(self, row_index: int, log_source: LogSourceRecord):
+        confirm = MessageBox("确认删除", f"确定删除该日志源吗？\n{log_source.source_uri}", self)
         if confirm.exec():
             try:
-                self.log_source_service.delete_log(log_source_id)
-                self._loadLogSources()
+                self.log_source_service.delete_log(log_source.id)
+                del self.log_sources[row_index]
+                self.log_source_table.removeRow(row_index)
                 InfoBar.success(
                     title="删除成功",
                     content="日志源已删除",
@@ -352,3 +337,14 @@ class LogManagePage(QWidget):
             duration=3000,
             parent=self,
         )
+
+    def _extractLog(self, log_source: LogSourceRecord, algorithm: str, log_format: str, regex: list[str]):
+        # TODO: 保存日志格式到数据库
+        # LogSourceService().update_format_type(self.log_source_id, self.format_data["name"])
+
+        time.sleep(10)
+        parser_type = ParserFactory.get_parser_type(algorithm)
+        result = parser_type(Path(log_source.source_uri), log_format, regex).parse()
+
+        # TODO: 将结果保存到数据库
+        # print(f"提取结果: {result}")

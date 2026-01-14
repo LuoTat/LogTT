@@ -13,7 +13,6 @@ class LogSourceService:
 
     def add_local_log(self, file_path: str):
         log_source = LogSourceRecord(
-            id=-1,
             source_type="本地文件",
             source_uri=Path(file_path).resolve().as_posix(),
             create_time=datetime.now(),
@@ -26,7 +25,6 @@ class LogSourceService:
 
     def add_network_log(self, url: str):
         log_source = LogSourceRecord(
-            id=-1,
             source_type="网络地址",
             source_uri=url,
             create_time=datetime.now(),

@@ -6,6 +6,7 @@ from .parse_result import ParseResult
 
 class BaseLogParser(ABC):
     """日志模板解析器基类"""
+
     input_file: Path
     output_dir: Path = Path(__file__).resolve().parent.parent.parent / "tmp"
     log_format: str
