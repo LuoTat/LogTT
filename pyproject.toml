@@ -5,8 +5,10 @@ description = "结构化日志分析与可视化系统"
 readme = "README.md"
 requires-python = "==3.12.*"
 dependencies = [
-    "logparser3>=1.0.4",
+    "loguru>=0.7.3",
+    "pandas>=2.3.3",
     "pyqt6-fluent-widgets[full]>=1.10.5",
     "pyyaml>=6.0.3",
     "qasync>=0.28.0",
+    "regex>=2025.11.3",
 ]

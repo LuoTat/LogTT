@@ -1,6 +1,5 @@
 import sqlite3
 import asyncio
-import time
 from pathlib import Path
 from qasync import asyncSlot
 
@@ -152,7 +151,7 @@ class LogManagePage(QWidget):
 
         delete_button = PrimaryPushButton(FluentIcon.DELETE, "删除", container)
         delete_button.setFixedHeight(28)
-        delete_button.clicked.connect(lambda: self._onDeleteLog(row_index, log_source))
+        delete_button.clicked.connect(lambda: self._onDeleteLog(log_source))
 
         button_layout.addWidget(extract_button)
         button_layout.addWidget(view_log_button)
@@ -258,7 +257,7 @@ class LogManagePage(QWidget):
         dialog = ExtractLogMessageBox(self)
         if dialog.exec():
             if dialog.is_custom_mode:
-                dialog.format_config_manager.save_custom_format(dialog.selected_format_name, dialog.selected_log_format, dialog.selected_regex)
+                dialog.format_config_manager.save_custom_format(dialog.selected_format_type, dialog.selected_log_format, dialog.selected_regex)
 
             # 把任务标记为正在提取
             self.extracting_log.add(log_source.id)
@@ -267,7 +266,7 @@ class LogManagePage(QWidget):
 
             # 使用 asyncio.to_thread 异步执行模板提取任务
             try:
-                await asyncio.to_thread(lambda: self._extractLog(log_source, dialog.selected_algorithm, dialog.selected_log_format, dialog.selected_regex))
+                await asyncio.to_thread(lambda: self._extractLog(log_source, dialog.selected_algorithm, dialog.selected_format_type, dialog.selected_log_format, dialog.selected_regex))
                 success = True
                 message = "提取成功"
             except Exception as e:
@@ -276,8 +275,6 @@ class LogManagePage(QWidget):
 
             # 取消提取标记
             self.extracting_log.remove(log_source.id)
-            # 更新UI
-            self._refreshRowActions(row_index)
 
             if success:
                 InfoBar.success(
@@ -300,13 +297,14 @@ class LogManagePage(QWidget):
                     parent=self,
                 )
 
-    def _onDeleteLog(self, row_index: int, log_source: LogSourceRecord):
+            # 刷新表格
+            self._syncLogTable()
+
+    def _onDeleteLog(self, log_source: LogSourceRecord):
         confirm = MessageBox("确认删除", f"确定删除该日志源吗？\n{log_source.source_uri}", self)
         if confirm.exec():
             try:
                 self.log_source_service.delete_log(log_source.id)
-                del self.log_sources[row_index]
-                self.log_source_table.removeRow(row_index)
                 InfoBar.success(
                     title="删除成功",
                     content="日志源已删除",
@@ -326,6 +324,7 @@ class LogManagePage(QWidget):
                     duration=5000,
                     parent=self,
                 )
+            self._syncLogTable()
 
     def _showToast(self, text: str):
         InfoBar.info(
@@ -338,13 +337,19 @@ class LogManagePage(QWidget):
             parent=self,
         )
 
-    def _extractLog(self, log_source: LogSourceRecord, algorithm: str, log_format: str, regex: list[str]):
-        # TODO: 保存日志格式到数据库
-        # LogSourceService().update_format_type(self.log_source_id, self.format_data["name"])
+    def _extractLog(self, log_source: LogSourceRecord, algorithm: str, format_type: str, log_format: str, regex: list[str]):
+        # 保存日志格式到数据库
+        self.log_source_service.update_format_type(log_source.id, format_type)
+        # 保存提取算法到数据库
+        self.log_source_service.update_extract_method(log_source.id, algorithm)
 
-        time.sleep(10)
         parser_type = ParserFactory.get_parser_type(algorithm)
         result = parser_type(Path(log_source.source_uri), log_format, regex).parse()
+
+        # 将日志设置为已提取
+        self.log_source_service.update_is_extracted(log_source.id, True)
+        # 保存日志行数
+        self.log_source_service.update_line_count(log_source.id, result.line_count)
 
         # TODO: 将结果保存到数据库
         # print(f"提取结果: {result}")

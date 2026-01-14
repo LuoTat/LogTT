@@ -7,15 +7,20 @@ from .parse_result import ParseResult
 class BaseLogParser(ABC):
     """日志模板解析器基类"""
 
-    input_file: Path
-    output_dir: Path = Path(__file__).resolve().parent.parent.parent / "tmp"
-    log_format: str
-    regex: list[str]
-
-    def __init__(self, input_file: Path, log_format: str, regex: list[str]):
-        self.input_file = input_file
+    def __init__(self, log_file: Path, log_format: str, regex: list[str]):
+        """
+        Attributes
+        ----------
+            log_file : path of the input log file
+            log_format : log format string
+            regex : regular expressions used in preprocessing (step1)
+        """
+        self.log_file = log_file
         self.log_format = log_format
         self.regex = regex
+        self.output_dir = Path(__file__).resolve().parent.parent.parent / "tmp"
+        self.log_structured_file = self.output_dir / f"{self.log_file.name}_structured.csv"
+        self.log_templates_file = self.output_dir / f"{self.log_file.name}_templates.csv"
 
     @abstractmethod
     def parse(self) -> ParseResult:

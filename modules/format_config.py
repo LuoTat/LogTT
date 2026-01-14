@@ -24,26 +24,26 @@ class FormatConfigManager:
             with open(FORMAT_CONFIG_FILE, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
 
-            for name, config in data.items():
-                self.format_configs[name] = FormatConfig(config.get("log_format", ""), config.get("regex", []))
+            for format_type, format_config in data.items():
+                self.format_configs[format_type] = FormatConfig(format_config.get("log_format", ""), format_config.get("regex", []))
 
         if USER_FORMAT_CONFIG_FILE.exists():
             with open(USER_FORMAT_CONFIG_FILE, "r", encoding="utf-8") as f:
                 user_data = yaml.safe_load(f) or {}
 
-            for name, config in user_data.items():
-                self.user_format_configs[name] = FormatConfig(config.get("log_format", ""), config.get("regex", []))
+            for format_type, format_config in user_data.items():
+                self.user_format_configs[format_type] = FormatConfig(format_config.get("log_format", ""), format_config.get("regex", []))
 
-    def get_all_format_names(self) -> list[str]:
+    def get_all_format_types(self) -> list[str]:
         return list(self.format_configs.keys()) + list(self.user_format_configs.keys())
 
-    def get_format_config(self, name: str) -> FormatConfig | None:
-        return self.format_configs.get(name) or self.user_format_configs.get(name)
+    def get_format_config(self, format_type: str) -> FormatConfig | None:
+        return self.format_configs.get(format_type) or self.user_format_configs.get(format_type)
 
-    def save_custom_format(self, name: str, log_format: str, regex: list[str]) -> bool:
+    def save_custom_format(self, format_type: str, log_format: str, regex: list[str]) -> bool:
         try:
             # 保存为 FormatConfig 对象
-            self.user_format_configs[name] = FormatConfig(log_format, regex)
+            self.user_format_configs[format_type] = FormatConfig(log_format, regex)
 
             with open(USER_FORMAT_CONFIG_FILE, "w", encoding="utf-8") as f:
                 yaml.safe_dump(
@@ -58,5 +58,5 @@ class FormatConfigManager:
         except Exception:
             return False
 
-    def is_format_name_exists(self, name: str) -> bool:
-        return name in self.format_configs or name in self.user_format_configs
+    def is_format_type_exists(self, format_type: str) -> bool:
+        return format_type in self.format_configs or format_type in self.user_format_configs

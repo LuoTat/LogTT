@@ -124,3 +124,55 @@ class LogSourceRepository:
                 line_count=row[7])
             for row in rows
         ]
+
+    @staticmethod
+    def update_format_type(log_source_id: int, format_type: str):
+        with get_connection() as conn:
+            conn.execute(
+                """
+                update log_sources
+                set format_type = ?
+                where id = ?
+                """,
+                [format_type, log_source_id]
+            )
+            conn.commit()
+
+    @staticmethod
+    def update_extract_method(log_source_id: int, extract_method: str):
+        with get_connection() as conn:
+            conn.execute(
+                """
+                update log_sources
+                set extract_method = ?
+                where id = ?
+                """,
+                [extract_method, log_source_id]
+            )
+            conn.commit()
+
+    @staticmethod
+    def update_is_extracted(log_source_id: int, is_extracted: bool):
+        with get_connection() as conn:
+            conn.execute(
+                """
+                update log_sources
+                set is_extracted = ?
+                where id = ?
+                """,
+                [is_extracted, log_source_id]
+            )
+            conn.commit()
+
+    @staticmethod
+    def update_line_count(log_source_id: int, line_count: int):
+        with get_connection() as conn:
+            conn.execute(
+                """
+                update log_sources
+                set line_count = ?
+                where id = ?
+                """,
+                [line_count, log_source_id]
+            )
+            conn.commit()

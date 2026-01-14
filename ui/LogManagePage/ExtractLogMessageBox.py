@@ -30,7 +30,7 @@ class ExtractLogMessageBox(MessageBoxBase):
         super().__init__(parent)
         self.format_config_manager = FormatConfigManager()
         self.selected_algorithm: str | None = None
-        self.selected_format_name: str | None = None
+        self.selected_format_type: str | None = None
         self.selected_log_format: str | None = None
         self.selected_regex: list[str] | None = None
         self.is_custom_mode = False
@@ -107,12 +107,12 @@ class ExtractLogMessageBox(MessageBoxBase):
 
         self.format_combo_box = ComboBox(card)
         self.format_combo_box.setFixedHeight(36)
-        format_names = ["自定义"] + self.format_config_manager.get_all_format_names()
+        format_names = ["自定义"] + self.format_config_manager.get_all_format_types()
         self.format_combo_box.addItems(format_names)
         # 默认选择第二个（第一个是"自定义"）
         default_index = 1 if len(format_names) > 1 else 0
         self.format_combo_box.setCurrentIndex(default_index)
-        self.selected_format_name = format_names[default_index]
+        self.selected_format_type = format_names[default_index]
         self.is_custom_mode = (default_index == 0)
         self.format_combo_box.currentTextChanged.connect(self._onFormatChanged)
         card_layout.addWidget(self.format_combo_box)
@@ -164,7 +164,7 @@ class ExtractLogMessageBox(MessageBoxBase):
         self.selected_algorithm = text
 
     def _onFormatChanged(self, text: str):
-        self.selected_format_name = text
+        self.selected_format_type = text
         self.is_custom_mode = (text == "自定义")
         self._loadFormatConfig()
 
@@ -179,9 +179,9 @@ class ExtractLogMessageBox(MessageBoxBase):
             self.regex_input.setReadOnly(False)
         else:
             # 预设模式：填充内容并禁用编辑
-            config = self.format_config_manager.get_format_config(self.selected_format_name)
+            config = self.format_config_manager.get_format_config(self.selected_format_type)
             if config:
-                self.format_name_input.setText(self.selected_format_name)
+                self.format_name_input.setText(self.selected_format_type)
                 self.log_format_input.setText(config.log_format)
                 self.regex_input.setPlainText("\n".join(config.regex))
             self.format_name_input.setReadOnly(True)
@@ -190,7 +190,7 @@ class ExtractLogMessageBox(MessageBoxBase):
 
     def validate(self) -> bool:
         if not self.is_custom_mode:
-            format_config = self.format_config_manager.get_format_config(self.selected_format_name)
+            format_config = self.format_config_manager.get_format_config(self.selected_format_type)
             self.selected_log_format = format_config.log_format
             self.selected_regex = format_config.regex
             return True
@@ -220,7 +220,7 @@ class ExtractLogMessageBox(MessageBoxBase):
             )
             return False
 
-        if self.format_config_manager.is_format_name_exists(format_name):
+        if self.format_config_manager.is_format_type_exists(format_name):
             InfoBar.warning(
                 title="创建失败",
                 content=f"格式名称 '{format_name}' 已存在，请使用其他名称",
@@ -273,7 +273,7 @@ class ExtractLogMessageBox(MessageBoxBase):
                         return False
 
         # 保存自定义配置
-        self.selected_format_name = format_name
+        self.selected_format_type = format_name
         self.selected_log_format = log_format
         self.selected_regex = regex_list
 

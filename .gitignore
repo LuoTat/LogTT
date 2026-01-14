@@ -9,6 +9,7 @@ wheels/
 # Virtual environments
 .venv
 
-.idea
+.idea/
+tmp/
+log_full/
 logtt.db
-log_full
