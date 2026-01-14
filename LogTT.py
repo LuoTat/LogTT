@@ -10,12 +10,13 @@ from ui import APPMainWindow
 if __name__ == "__main__":
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     setTheme(Theme.DARK)
+
     app = QApplication(sys.argv)
+    w = APPMainWindow()
+    w.show()
 
     # 创建 QEventLoop
     loop = qasync.QEventLoop(app)
-
-    APPMainWindow().show()
 
     with loop:
         loop.run_forever()
