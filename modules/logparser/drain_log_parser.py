@@ -44,7 +44,7 @@ class Node:
 
 @parser_register
 class DrainLogParser(BaseLogParser):
-    def __init__(self, log_file, log_format, regex, progress_callback=None, depth: int = 4, st: float = 0.5, max_child: int = 100, keep_para=True):
+    def __init__(self, log_file, log_format, regex, should_stop, progress_callback=None, depth=4, st=0.4, max_child=100, keep_para=False):
         """
         Attributes
         ----------
@@ -53,7 +53,7 @@ class DrainLogParser(BaseLogParser):
             max_child : max number of children of an internal node
             keep_para : whether to keep parameter list in structured log file
         """
-        super().__init__(log_file, log_format, regex, progress_callback)
+        super().__init__(log_file, log_format, regex, should_stop, progress_callback)
         self.depth = depth - 2
         self.st = st
         self.max_child = max_child
@@ -238,6 +238,9 @@ class DrainLogParser(BaseLogParser):
 
         count = 0
         for idx, line in self.df_log.iterrows():
+            if self.should_stop():
+                raise InterruptedError
+
             logID = line["LineId"]
             logmessageL = self._preprocess(line["Content"]).strip().split()
             matchCluster = self._tree_search(rootNode, logmessageL)
@@ -284,6 +287,8 @@ class DrainLogParser(BaseLogParser):
         linecount = 0
         with open(self.log_file, "r") as fin:
             for line in fin.readlines():
+                if self.should_stop():
+                    raise InterruptedError
                 try:
                     match = regex.search(line.strip())
                     message = [match.group(header) for header in headers]

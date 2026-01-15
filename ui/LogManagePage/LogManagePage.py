@@ -59,15 +59,23 @@ class ExtractWorker(QObject):
             self.log_source_service.update_extract_method(self.log_source.id, self.algorithm)
 
             parser_type = ParserFactory.get_parser_type(self.algorithm)
-            result = parser_type(Path(self.log_source.source_uri), self.log_format, self.regex, self.progress.emit).parse()
+            result = parser_type(
+                Path(self.log_source.source_uri),
+                self.log_format,
+                self.regex,
+                lambda: QThread.currentThread().isInterruptionRequested(),
+                self.progress.emit
+            ).parse()
 
             # 将日志设置为已提取
             self.log_source_service.update_is_extracted(self.log_source.id, True)
             # 保存日志行数
             self.log_source_service.update_line_count(self.log_source.id, result.line_count)
 
-            self.progress.emit(100)
             self.finished.emit(result.line_count)
+        except InterruptedError:
+            print(f"Log extraction interrupted: {self.log_source.source_uri}")
+            pass
         except Exception as e:
             self.error.emit(str(e))
 
@@ -210,7 +218,7 @@ class LogManagePage(QWidget):
         self.log_sources = self.log_source_service.get_all_logs()
 
     def _syncLogActions(self):
-        self.log_actions = {}
+        self.log_actions.clear()
         for log_source in self.log_sources:
             actions_widget = LogActionsWidget(log_source, self.log_progress.get(log_source.id), self.log_source_table)
             actions_widget.extract_clicked.connect(self._onExtractLog)
@@ -418,6 +426,13 @@ class LogManagePage(QWidget):
     def _onDeleteLog(self, log_source: LogSourceRecord):
         confirm = MessageBox("确认删除", f"确定删除该日志源吗？\n{log_source.source_uri}", self)
         if confirm.exec():
+            # 如果有正在提取的任务，安全中断线程
+            if log_source.id in self.log_extract_threads:
+                thread, worker = self.log_extract_threads.pop(log_source.id)
+                thread.requestInterruption()
+                thread.quit()
+                thread.wait()
+                self.log_progress.pop(log_source.id, None)
             try:
                 self.log_source_service.delete_log(log_source.id)
                 InfoBar.success(
@@ -452,3 +467,14 @@ class LogManagePage(QWidget):
             duration=3000,
             parent=self,
         )
+
+    def hasExtractingTasks(self) -> bool:
+        return len(self.log_extract_threads) > 0
+
+    def interruptAllExtractingTasks(self):
+        for log_source_id, (thread, worker) in self.log_extract_threads.items():
+            thread.requestInterruption()
+            thread.quit()
+            thread.wait()
+        self.log_extract_threads.clear()
+        self.log_progress.clear()

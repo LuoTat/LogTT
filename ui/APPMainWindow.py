@@ -24,10 +24,10 @@ class APPMainWindow(FluentWindow):
         # 日志管理界面
         self.log_manage_page = LogManagePage()
 
-        self.initNavigation()
-        self.initWindow()
+        self._initNavigation()
+        self._initWindow()
 
-    def initNavigation(self):
+    def _initNavigation(self):
         self.addSubInterface(self.log_manage_page, FluentIcon.LIBRARY, "日志管理")
         # self.navigationInterface.addSeparator()
 
@@ -39,7 +39,7 @@ class APPMainWindow(FluentWindow):
             position=NavigationItemPosition.BOTTOM,
         )
 
-    def initWindow(self):
+    def _initWindow(self):
         self.resize(1600, 900)
         self.setWindowIcon(QIcon(":/qfluentwidgets/images/logo.png"))
         self.setWindowTitle("结构化日志分析与可视化系统")
@@ -64,3 +64,18 @@ class APPMainWindow(FluentWindow):
 
         if w.exec():
             QDesktopServices.openUrl(QUrl("https://github.com/LuoTat"))
+
+    def closeEvent(self, event):
+        # 如果有正在提取的任务，弹窗确认
+        if self.log_manage_page.hasExtractingTasks():
+            confirm = MessageBox(
+                "有任务正在提取",
+                "仍有日志模板正在提取，确认要关闭并终止所有任务吗？",
+                self
+            )
+            if confirm.exec():
+                self.log_manage_page.interruptAllExtractingTasks()
+                event.accept()
+                return
+
+            event.ignore()
