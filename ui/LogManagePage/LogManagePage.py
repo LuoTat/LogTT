@@ -3,7 +3,17 @@ from pathlib import Path
 
 from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidgetItem, QHeaderView
-from qfluentwidgets import MessageBox, TableWidget, LineEdit, PushButton, PrimaryPushButton, FluentIcon, InfoBar, InfoBarPosition, IndeterminateProgressBar
+from qfluentwidgets import (
+    MessageBox,
+    TableWidget,
+    LineEdit,
+    PushButton,
+    PrimaryPushButton,
+    FluentIcon,
+    InfoBar,
+    InfoBarPosition,
+    ProgressBar
+)
 
 from .AddLogMessageBox import AddLogMessageBox
 from .ExtractLogMessageBox import ExtractLogMessageBox
@@ -17,6 +27,7 @@ class ExtractWorker(QObject):
 
     finished = pyqtSignal(int)  # 提取完成信号，参数为行数
     error = pyqtSignal(str)  # 提取失败信号，参数为错误信息
+    progress = pyqtSignal(int)  # 进度信号，参数为进度值 (0-100)
 
     def __init__(self, log_source: LogSourceRecord, algorithm: str, format_type: str, log_format: str, regex: list[str]):
         super().__init__()
@@ -36,16 +47,88 @@ class ExtractWorker(QObject):
             self.log_source_service.update_extract_method(self.log_source.id, self.algorithm)
 
             parser_type = ParserFactory.get_parser_type(self.algorithm)
-            result = parser_type(Path(self.log_source.source_uri), self.log_format, self.regex).parse()
+            result = parser_type(Path(self.log_source.source_uri), self.log_format, self.regex, self.progress.emit).parse()
 
             # 将日志设置为已提取
             self.log_source_service.update_is_extracted(self.log_source.id, True)
             # 保存日志行数
             self.log_source_service.update_line_count(self.log_source.id, result.line_count)
 
+            self.progress.emit(100)
             self.finished.emit(result.line_count)
         except Exception as e:
-            self.error.emit(e)
+            self.error.emit(str(e))
+
+
+class LogActionsWidget(QWidget):
+    """日志操作按钮组件"""
+
+    extract_clicked = pyqtSignal(LogSourceRecord)
+    view_log_clicked = pyqtSignal(LogSourceRecord)
+    view_template_clicked = pyqtSignal(LogSourceRecord)
+    delete_clicked = pyqtSignal(LogSourceRecord)
+
+    def __init__(self, log_source: LogSourceRecord, progress: int | None = None, parent=None):
+        super().__init__(parent)
+        self.setMinimumHeight(40)
+
+        self.extract_button = PrimaryPushButton(FluentIcon.PENCIL_INK, "提取模板", self)
+        self.view_log_button = PushButton(FluentIcon.VIEW, "查看日志", self)
+        self.view_template_button = PushButton(FluentIcon.VIEW, "查看模板", self)
+        self.delete_button = PrimaryPushButton(FluentIcon.DELETE, "删除", self)
+        self.progress_bar = ProgressBar(self)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
+
+        # 按钮行
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(4)
+
+        self.extract_button.setFixedHeight(28)
+        # 检查是否已提取
+        if log_source.is_extracted:
+            self.extract_button.setEnabled(False)
+            self.extract_button.setText("已提模板")
+
+        self.view_log_button.setFixedHeight(28)
+        self.view_log_button.setEnabled(log_source.is_extracted)
+
+        self.view_template_button.setFixedHeight(28)
+        self.view_template_button.setEnabled(log_source.is_extracted)
+
+        self.delete_button.setFixedHeight(28)
+
+        button_layout.addWidget(self.extract_button)
+        button_layout.addWidget(self.view_log_button)
+        button_layout.addWidget(self.view_template_button)
+        button_layout.addWidget(self.delete_button)
+
+        layout.addLayout(button_layout)
+
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setFixedHeight(4)
+        self.progress_bar.setVisible(False)
+        layout.addWidget(self.progress_bar)
+
+        self.extract_button.clicked.connect(lambda: self.extract_clicked.emit(log_source))
+        self.view_log_button.clicked.connect(lambda: self.view_log_clicked.emit(log_source))
+        self.view_template_button.clicked.connect(lambda: self.view_template_clicked.emit(log_source))
+        self.delete_button.clicked.connect(lambda: self.delete_clicked.emit(log_source))
+
+        # 如果有进度，表示正在提取
+        if progress is not None:
+            self.extract_button.setEnabled(False)
+            self.extract_button.setText("正在提取")
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setValue(progress)
+
+    def set_progress(self, progress: int):
+        self.extract_button.setEnabled(False)
+        self.extract_button.setText("正在提取")
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(progress)
 
 
 class LogManagePage(QWidget):
@@ -56,12 +139,14 @@ class LogManagePage(QWidget):
         self.setObjectName("LogManagePage")
 
         self.log_source_service = LogSourceService()
-        # 存储正在提取的任务相关的UI组件
-        self.extracting_log: set[int] = set()
-        # 缓存日志源列表
+        # 存储日志源列表
         self.log_sources: list[LogSourceRecord] = []
+        # 存储日志操作组件
+        self.log_actions: dict[int, LogActionsWidget] = {}
+        # 存储正在提取的任务进度
+        self.log_progress: dict[int, int] = {}
         # 存储工作线程和 worker 的引用，防止被 GC 回收
-        self.extract_threads: dict[int, tuple[QThread, ExtractWorker]] = {}
+        self.log_extract_threads: dict[int, tuple[QThread, ExtractWorker]] = {}
 
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(24, 24, 24, 24)
@@ -69,7 +154,9 @@ class LogManagePage(QWidget):
 
         self._initToolbar()
         self._initLogTable()
-        self._syncLogTable()
+
+        # 刷新表格
+        self._refreshLogTable()
 
     def _initToolbar(self):
         tool_bar_layout = QHBoxLayout()
@@ -82,7 +169,7 @@ class LogManagePage(QWidget):
 
         self.refresh_button = PushButton(FluentIcon.SYNC, "刷新", self)
         self.refresh_button.setFixedHeight(36)
-        self.refresh_button.clicked.connect(self._syncLogTable)
+        self.refresh_button.clicked.connect(self._refreshLogTable)
 
         self.add_button = PrimaryPushButton(FluentIcon.ADD, "新增日志", self)
         self.add_button.setFixedHeight(36)
@@ -104,10 +191,21 @@ class LogManagePage(QWidget):
         self.log_source_table.setHorizontalHeaderLabels(["类型", "日志格式", "URI", "创建时间", "提取方法", "行数", "操作"])
         self.log_source_table.verticalHeader().hide()
         self.log_source_table.setEditTriggers(self.log_source_table.EditTrigger.NoEditTriggers)
-        self.log_source_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.log_source_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
 
         self.main_layout.addWidget(self.log_source_table)
+
+    def _syncLogSources(self):
+        self.log_sources = self.log_source_service.get_all_logs()
+
+    def _syncLogActions(self):
+        self.log_actions = {}
+        for log_source in self.log_sources:
+            actions_widget = LogActionsWidget(log_source, self.log_progress.get(log_source.id), self.log_source_table)
+            actions_widget.extract_clicked.connect(self._onExtractLog)
+            actions_widget.view_log_clicked.connect(lambda: self._showToast(f"查看日志：{log_source.source_uri}"))
+            actions_widget.view_template_clicked.connect(lambda: self._showToast(f"查看模板：{log_source.source_uri}"))
+            actions_widget.delete_clicked.connect(self._onDeleteLog)
+            self.log_actions[log_source.id] = actions_widget
 
     def _renderLogTable(self):
         self.log_source_table.setRowCount(len(self.log_sources))
@@ -121,7 +219,7 @@ class LogManagePage(QWidget):
             source_uri_item = QTableWidgetItem(log_source.source_uri)
             source_uri_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
-            create_time_item = QTableWidgetItem(log_source.create_time.isoformat(timespec="seconds"))
+            create_time_item = QTableWidgetItem(log_source.create_time.isoformat(" ", "seconds"))
             create_time_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
             extract_method_item = QTableWidgetItem(log_source.extract_method if log_source.extract_method is not None else "—")
@@ -136,76 +234,16 @@ class LogManagePage(QWidget):
             self.log_source_table.setItem(row_index, 3, create_time_item)
             self.log_source_table.setItem(row_index, 4, extract_method_item)
             self.log_source_table.setItem(row_index, 5, line_count_item)
-            self.log_source_table.setCellWidget(row_index, 6, self._buildRowActions(row_index, log_source))
+            self.log_source_table.setCellWidget(row_index, 6, self.log_actions[log_source.id])
 
+        self.log_source_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.log_source_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.log_source_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
 
-    def _refreshRowActions(self, row_index: int):
-        if row_index is None or row_index < 0 or row_index >= len(self.log_sources):
-            return
-        log_source = self.log_sources[row_index]
-        self.log_source_table.setCellWidget(row_index, 6, self._buildRowActions(row_index, log_source))
-
-    def _buildRowActions(self, row_index: int, log_source: LogSourceRecord) -> QWidget:
-        container = QWidget(self.log_source_table)
-        layout = QVBoxLayout(container)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(4)
-
-        # 按钮行
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(6)
-
-        extract_button = PrimaryPushButton(FluentIcon.PENCIL_INK, "提取模板", container)
-        extract_button.setFixedHeight(28)
-
-        # 检查是否已提取
-        if log_source.is_extracted:
-            extract_button.setEnabled(False)
-            extract_button.setText("已提模板")
-        else:
-            # 只对本地文件启用提取功能
-            if log_source.source_type == "本地文件":
-                extract_button.clicked.connect(lambda: self._onExtractLog(row_index, log_source))
-            else:
-                extract_button.clicked.connect(lambda: self._showToast("提取网络日志"))
-
-        view_log_button = PushButton(FluentIcon.VIEW, "查看日志", container)
-        view_log_button.setFixedHeight(28)
-        view_log_button.clicked.connect(lambda: self._showToast("查看日志"))
-        view_log_button.setEnabled(log_source.is_extracted)
-
-        view_template_button = PushButton(FluentIcon.VIEW, "查看模板", container)
-        view_template_button.setFixedHeight(28)
-        view_template_button.clicked.connect(lambda: self._showToast("查看模板"))
-        view_template_button.setEnabled(log_source.is_extracted)
-
-        delete_button = PrimaryPushButton(FluentIcon.DELETE, "删除", container)
-        delete_button.setFixedHeight(28)
-        delete_button.clicked.connect(lambda: self._onDeleteLog(log_source))
-
-        button_layout.addWidget(extract_button)
-        button_layout.addWidget(view_log_button)
-        button_layout.addWidget(view_template_button)
-        button_layout.addWidget(delete_button)
-        button_layout.addStretch(1)
-
-        layout.addLayout(button_layout)
-
-        # 如果正在提取，添加进度条
-        if log_source.id in self.extracting_log:
-            extract_button.setEnabled(False)
-            extract_button.setText("正在提取")
-            progress_bar = IndeterminateProgressBar(container)
-            progress_bar.setFixedHeight(4)
-            layout.addWidget(progress_bar)
-
-        return container
-
     @pyqtSlot()
-    def _syncLogTable(self):
-        self.log_sources = self.log_source_service.get_all_logs()
+    def _refreshLogTable(self):
+        self._syncLogSources()
+        self._syncLogActions()
         self._renderLogTable()
 
     @pyqtSlot()
@@ -244,7 +282,7 @@ class LogManagePage(QWidget):
                         duration=5000,
                         parent=self,
                     )
-                self._syncLogTable()
+                self._refreshLogTable()
                 return
             if dialog.url_input.text():
                 try:
@@ -278,7 +316,7 @@ class LogManagePage(QWidget):
                         duration=5000,
                         parent=self,
                     )
-                self._syncLogTable()
+                self._refreshLogTable()
                 return
             InfoBar.warning(
                 title="未选择文件",
@@ -290,17 +328,17 @@ class LogManagePage(QWidget):
                 parent=self,
             )
 
-    @pyqtSlot()
-    def _onExtractLog(self, row_index: int, log_source: LogSourceRecord):
+    @pyqtSlot(object)
+    def _onExtractLog(self, log_source: LogSourceRecord):
         dialog = ExtractLogMessageBox(self)
         if dialog.exec():
             if dialog.is_custom_mode:
                 dialog.format_config_manager.save_custom_format(dialog.selected_format_type, dialog.selected_log_format, dialog.selected_regex)
 
-            # 把任务标记为正在提取
-            self.extracting_log.add(log_source.id)
-            # 更新UI
-            self._refreshRowActions(row_index)
+            # 把任务标记为正在提取，初始进度为 0
+            self.log_progress[log_source.id] = 0
+            # 更新操作组件状态
+            self.log_actions[log_source.id].set_progress(0)
 
             # 创建工作线程和 worker
             thread = QThread()
@@ -314,26 +352,31 @@ class LogManagePage(QWidget):
             worker.moveToThread(thread)
 
             # 保存引用，防止被 GC 回收
-            self.extract_threads[log_source.id] = (thread, worker)
+            self.log_extract_threads[log_source.id] = (thread, worker)
 
             # 连接信号
             thread.started.connect(worker.run)
-            worker.finished.connect(lambda line_count: self._onExtractFinished(log_source.id, True, f"共 {line_count:,} 行"))
-            worker.error.connect(lambda msg: self._onExtractFinished(log_source.id, False, msg))
+            worker.progress.connect(lambda p: self._onExtractProgress(log_source, p))
+            worker.finished.connect(lambda line_count: self._onExtractFinished(log_source, True, f"共 {line_count:,} 行"))
+            worker.error.connect(lambda msg: self._onExtractFinished(log_source, False, msg))
 
             # 启动线程
             thread.start()
 
     @pyqtSlot()
-    def _onExtractFinished(self, log_id: int, success: bool, msg: str):
+    def _onExtractProgress(self, log_source: LogSourceRecord, progress: int):
+        self.log_progress[log_source.id] = progress
+        self.log_actions[log_source.id].set_progress(progress)
+
+    @pyqtSlot()
+    def _onExtractFinished(self, log_source: LogSourceRecord, success: bool, msg: str):
         # 取消提取标记
-        self.extracting_log.discard(log_id)
+        self.log_progress.pop(log_source.id)
 
         # 清理线程
-        if log_id in self.extract_threads:
-            thread, worker = self.extract_threads.pop(log_id)
-            thread.quit()
-            thread.wait()
+        thread, worker = self.log_extract_threads.pop(log_source.id)
+        thread.quit()
+        thread.wait()
 
         if success:
             InfoBar.success(
@@ -357,9 +400,9 @@ class LogManagePage(QWidget):
             )
 
         # 刷新表格
-        self._syncLogTable()
+        self._refreshLogTable()
 
-    @pyqtSlot()
+    @pyqtSlot(object)
     def _onDeleteLog(self, log_source: LogSourceRecord):
         confirm = MessageBox("确认删除", f"确定删除该日志源吗？\n{log_source.source_uri}", self)
         if confirm.exec():
@@ -384,9 +427,9 @@ class LogManagePage(QWidget):
                     duration=5000,
                     parent=self,
                 )
-            self._syncLogTable()
+            self._refreshLogTable()
 
-    @pyqtSlot()
+    @pyqtSlot(str)
     def _showToast(self, text: str):
         InfoBar.info(
             title=text,

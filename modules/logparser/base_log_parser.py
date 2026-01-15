@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Callable
 from abc import ABC, abstractmethod
 
 from .parse_result import ParseResult
@@ -7,17 +8,19 @@ from .parse_result import ParseResult
 class BaseLogParser(ABC):
     """日志模板解析器基类"""
 
-    def __init__(self, log_file: Path, log_format: str, regex: list[str]):
+    def __init__(self, log_file: Path, log_format: str, regex: list[str], progress_callback: Callable[[int], None] | None = None):
         """
         Attributes
         ----------
             log_file : path of the input log file
             log_format : log format string
             regex : regular expressions used in preprocessing (step1)
+            progress_callback : callback function to report progress (0-100)
         """
         self.log_file = log_file
         self.log_format = log_format
         self.regex = regex
+        self.progress_callback = progress_callback
         self.output_dir = Path(__file__).resolve().parent.parent.parent / "tmp"
         self.log_structured_file = self.output_dir / f"{self.log_file.name}_structured.csv"
         self.log_templates_file = self.output_dir / f"{self.log_file.name}_templates.csv"

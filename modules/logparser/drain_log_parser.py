@@ -20,7 +20,6 @@ import pandas as pd
 import hashlib
 from datetime import datetime
 
-from pathlib import Path
 from .parse_result import ParseResult
 from .base_log_parser import BaseLogParser
 from .parser_factory import parser_register
@@ -45,7 +44,7 @@ class Node:
 
 @parser_register
 class DrainLogParser(BaseLogParser):
-    def __init__(self, log_file: Path, log_format: str, regex: list[str], depth: int = 4, st: float = 0.5, max_child: int = 100, keep_para=True):
+    def __init__(self, log_file, log_format, regex, progress_callback=None, depth: int = 4, st: float = 0.5, max_child: int = 100, keep_para=True):
         """
         Attributes
         ----------
@@ -54,7 +53,7 @@ class DrainLogParser(BaseLogParser):
             max_child : max number of children of an internal node
             keep_para : whether to keep parameter list in structured log file
         """
-        super().__init__(log_file, log_format, regex)
+        super().__init__(log_file, log_format, regex, progress_callback)
         self.depth = depth - 2
         self.st = st
         self.max_child = max_child
@@ -258,7 +257,10 @@ class DrainLogParser(BaseLogParser):
 
             count += 1
             if count % 1000 == 0 or count == len(self.df_log):
-                print(f"Processed {count * 100.0 / len(self.df_log):.1f}% of log lines.{self.log_file.name}")
+                progress = count * 100.0 / len(self.df_log)
+                print(f"Processed {progress:.1f}% of log lines.")
+                if self.progress_callback:
+                    self.progress_callback(int(progress))
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
