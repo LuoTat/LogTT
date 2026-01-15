@@ -1,9 +1,7 @@
 import sqlite3
-import asyncio
 from pathlib import Path
-from qasync import asyncSlot
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidgetItem, QHeaderView
 from qfluentwidgets import MessageBox, TableWidget, LineEdit, PushButton, PrimaryPushButton, FluentIcon, InfoBar, InfoBarPosition, IndeterminateProgressBar
 
@@ -12,6 +10,42 @@ from .ExtractLogMessageBox import ExtractLogMessageBox
 from modules.logparser import ParserFactory
 from modules.log_source_record import LogSourceRecord
 from modules.log_source_service import LogSourceService
+
+
+class ExtractWorker(QObject):
+    """日志提取工作线程"""
+
+    finished = pyqtSignal(int)  # 提取完成信号，参数为行数
+    error = pyqtSignal(str)  # 提取失败信号，参数为错误信息
+
+    def __init__(self, log_source: LogSourceRecord, algorithm: str, format_type: str, log_format: str, regex: list[str]):
+        super().__init__()
+        self.log_source = log_source
+        self.algorithm = algorithm
+        self.format_type = format_type
+        self.log_format = log_format
+        self.regex = regex
+        self.log_source_service = LogSourceService()
+
+    @pyqtSlot()
+    def run(self):
+        try:
+            # 保存日志格式到数据库
+            self.log_source_service.update_format_type(self.log_source.id, self.format_type)
+            # 保存提取算法到数据库
+            self.log_source_service.update_extract_method(self.log_source.id, self.algorithm)
+
+            parser_type = ParserFactory.get_parser_type(self.algorithm)
+            result = parser_type(Path(self.log_source.source_uri), self.log_format, self.regex).parse()
+
+            # 将日志设置为已提取
+            self.log_source_service.update_is_extracted(self.log_source.id, True)
+            # 保存日志行数
+            self.log_source_service.update_line_count(self.log_source.id, result.line_count)
+
+            self.finished.emit(result.line_count)
+        except Exception as e:
+            self.error.emit(e)
 
 
 class LogManagePage(QWidget):
@@ -24,8 +58,10 @@ class LogManagePage(QWidget):
         self.log_source_service = LogSourceService()
         # 存储正在提取的任务相关的UI组件
         self.extracting_log: set[int] = set()
-        # 缓存列表数据与行索引，避免仅刷新按钮时重复查询
+        # 缓存日志源列表
         self.log_sources: list[LogSourceRecord] = []
+        # 存储工作线程和 worker 的引用，防止被 GC 回收
+        self.extract_threads: dict[int, tuple[QThread, ExtractWorker]] = {}
 
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(24, 24, 24, 24)
@@ -72,10 +108,6 @@ class LogManagePage(QWidget):
         self.log_source_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
 
         self.main_layout.addWidget(self.log_source_table)
-
-    def _syncLogTable(self):
-        self.log_sources = self.log_source_service.get_all_logs()
-        self._renderLogTable()
 
     def _renderLogTable(self):
         self.log_source_table.setRowCount(len(self.log_sources))
@@ -171,6 +203,12 @@ class LogManagePage(QWidget):
 
         return container
 
+    @pyqtSlot()
+    def _syncLogTable(self):
+        self.log_sources = self.log_source_service.get_all_logs()
+        self._renderLogTable()
+
+    @pyqtSlot()
     def _onAddLog(self):
         dialog = AddLogMessageBox(self)
         if dialog.exec():
@@ -252,8 +290,8 @@ class LogManagePage(QWidget):
                 parent=self,
             )
 
-    @asyncSlot()
-    async def _onExtractLog(self, row_index: int, log_source: LogSourceRecord):
+    @pyqtSlot()
+    def _onExtractLog(self, row_index: int, log_source: LogSourceRecord):
         dialog = ExtractLogMessageBox(self)
         if dialog.exec():
             if dialog.is_custom_mode:
@@ -264,42 +302,64 @@ class LogManagePage(QWidget):
             # 更新UI
             self._refreshRowActions(row_index)
 
-            # 使用 asyncio.to_thread 异步执行模板提取任务
-            try:
-                await asyncio.to_thread(lambda: self._extractLog(log_source, dialog.selected_algorithm, dialog.selected_format_type, dialog.selected_log_format, dialog.selected_regex))
-                success = True
-                message = "提取成功"
-            except Exception as e:
-                success = False
-                message = str(e)
+            # 创建工作线程和 worker
+            thread = QThread()
+            worker = ExtractWorker(
+                log_source,
+                dialog.selected_algorithm,
+                dialog.selected_format_type,
+                dialog.selected_log_format,
+                dialog.selected_regex
+            )
+            worker.moveToThread(thread)
 
-            # 取消提取标记
-            self.extracting_log.remove(log_source.id)
+            # 保存引用，防止被 GC 回收
+            self.extract_threads[log_source.id] = (thread, worker)
 
-            if success:
-                InfoBar.success(
-                    title="提取成功",
-                    content="日志模板提取完成",
-                    orient=Qt.Orientation.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.TOP,
-                    duration=3000,
-                    parent=self,
-                )
-            else:
-                InfoBar.error(
-                    title="提取失败",
-                    content=message,
-                    orient=Qt.Orientation.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.TOP,
-                    duration=5000,
-                    parent=self,
-                )
+            # 连接信号
+            thread.started.connect(worker.run)
+            worker.finished.connect(lambda line_count: self._onExtractFinished(log_source.id, True, f"共 {line_count:,} 行"))
+            worker.error.connect(lambda msg: self._onExtractFinished(log_source.id, False, msg))
 
-            # 刷新表格
-            self._syncLogTable()
+            # 启动线程
+            thread.start()
 
+    @pyqtSlot()
+    def _onExtractFinished(self, log_id: int, success: bool, msg: str):
+        # 取消提取标记
+        self.extracting_log.discard(log_id)
+
+        # 清理线程
+        if log_id in self.extract_threads:
+            thread, worker = self.extract_threads.pop(log_id)
+            thread.quit()
+            thread.wait()
+
+        if success:
+            InfoBar.success(
+                title="提取成功",
+                content=f"日志模板提取完成，{msg}",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self,
+            )
+        else:
+            InfoBar.error(
+                title="提取失败",
+                content=msg,
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=5000,
+                parent=self,
+            )
+
+        # 刷新表格
+        self._syncLogTable()
+
+    @pyqtSlot()
     def _onDeleteLog(self, log_source: LogSourceRecord):
         confirm = MessageBox("确认删除", f"确定删除该日志源吗？\n{log_source.source_uri}", self)
         if confirm.exec():
@@ -326,6 +386,7 @@ class LogManagePage(QWidget):
                 )
             self._syncLogTable()
 
+    @pyqtSlot()
     def _showToast(self, text: str):
         InfoBar.info(
             title=text,
@@ -336,20 +397,3 @@ class LogManagePage(QWidget):
             duration=3000,
             parent=self,
         )
-
-    def _extractLog(self, log_source: LogSourceRecord, algorithm: str, format_type: str, log_format: str, regex: list[str]):
-        # 保存日志格式到数据库
-        self.log_source_service.update_format_type(log_source.id, format_type)
-        # 保存提取算法到数据库
-        self.log_source_service.update_extract_method(log_source.id, algorithm)
-
-        parser_type = ParserFactory.get_parser_type(algorithm)
-        result = parser_type(Path(log_source.source_uri), log_format, regex).parse()
-
-        # 将日志设置为已提取
-        self.log_source_service.update_is_extracted(log_source.id, True)
-        # 保存日志行数
-        self.log_source_service.update_line_count(log_source.id, result.line_count)
-
-        # TODO: 将结果保存到数据库
-        # print(f"提取结果: {result}")
