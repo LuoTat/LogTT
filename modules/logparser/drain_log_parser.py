@@ -268,20 +268,19 @@ class DrainLogParser(BaseLogParser):
         return ParseResult(self.log_file, self.log_structured_file, self.log_templates_file, len(self.df_log))
 
     def _load_data(self):
-        headers, regex = self._generate_logformat_regex(self.log_format)
-        self.df_log = self._log_to_dataframe(self.log_file, regex, headers)
+        headers, regex = self._generate_logformat_regex()
+        self.df_log = self._log_to_dataframe(regex, headers)
 
     def _preprocess(self, line):
         for currentRex in self.regex:
             line = re.sub(currentRex, "<*>", line)
         return line
 
-    @staticmethod
-    def _log_to_dataframe(log_file, regex, headers):
+    def _log_to_dataframe(self, regex, headers):
         """Function to transform log file to dataframe"""
         log_messages = []
         linecount = 0
-        with open(log_file, "r") as fin:
+        with open(self.log_file, "r") as fin:
             for line in fin.readlines():
                 try:
                     match = regex.search(line.strip())
@@ -297,11 +296,10 @@ class DrainLogParser(BaseLogParser):
         print(f"Total lines: {len(logdf)}")
         return logdf
 
-    @staticmethod
-    def _generate_logformat_regex(logformat):
+    def _generate_logformat_regex(self):
         """Function to generate regular expression to split log messages"""
         headers = []
-        splitters = re.split("(<[^<>]+>)", logformat)
+        splitters = re.split("(<[^<>]+>)", self.log_format)
         regex = ""
         for k in range(len(splitters)):
             if k % 2 == 0:
