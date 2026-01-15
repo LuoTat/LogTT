@@ -2,7 +2,10 @@ import sys
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication
-from qfluentwidgets import setTheme, Theme
+from qfluentwidgets import (
+    Theme,
+    setTheme
+)
 
 from ui import APPMainWindow
 

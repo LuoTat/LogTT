@@ -2,21 +2,21 @@ import regex
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QVBoxLayout,
+    QLabel,
     QHBoxLayout,
-    QLabel
+    QVBoxLayout
 )
 from qfluentwidgets import (
-    CardWidget,
-    SubtitleLabel,
-    BodyLabel,
-    LineEdit,
-    FluentIcon,
     InfoBar,
-    MessageBoxBase,
-    InfoBarPosition,
     ComboBox,
-    PlainTextEdit
+    LineEdit,
+    BodyLabel,
+    CardWidget,
+    FluentIcon,
+    PlainTextEdit,
+    SubtitleLabel,
+    MessageBoxBase,
+    InfoBarPosition
 )
 
 from modules.format_config import FormatConfigManager

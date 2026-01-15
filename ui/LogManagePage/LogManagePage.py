@@ -1,18 +1,30 @@
 import sqlite3
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, pyqtSlot
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidgetItem, QHeaderView
+from PyQt6.QtCore import (
+    Qt,
+    QObject,
+    QThread,
+    pyqtSlot,
+    pyqtSignal
+)
+from PyQt6.QtWidgets import (
+    QWidget,
+    QHBoxLayout,
+    QHeaderView,
+    QVBoxLayout,
+    QTableWidgetItem
+)
 from qfluentwidgets import (
-    MessageBox,
-    TableWidget,
-    LineEdit,
-    PushButton,
-    PrimaryPushButton,
-    FluentIcon,
     InfoBar,
+    LineEdit,
+    FluentIcon,
+    MessageBox,
+    PushButton,
+    ProgressBar,
+    TableWidget,
     InfoBarPosition,
-    ProgressBar
+    PrimaryPushButton
 )
 
 from .AddLogMessageBox import AddLogMessageBox

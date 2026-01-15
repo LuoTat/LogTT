@@ -1,20 +1,20 @@
 import os
 
 from PyQt6.QtWidgets import (
-    QVBoxLayout,
-    QHBoxLayout,
     QLabel,
-    QFileDialog
+    QFileDialog,
+    QHBoxLayout,
+    QVBoxLayout
 )
 from qfluentwidgets import (
-    CardWidget,
-    SubtitleLabel,
-    BodyLabel,
     LineEdit,
-    PushButton,
+    BodyLabel,
+    CardWidget,
     FluentIcon,
-    MessageBoxBase,
+    PushButton,
+    SubtitleLabel,
     ToolTipFilter,
+    MessageBoxBase,
     ToolTipPosition
 )
 

@@ -1,12 +1,15 @@
 from PyQt6.QtCore import QUrl
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QIcon, QDesktopServices
+from PyQt6.QtGui import (
+    QIcon,
+    QDesktopServices
+)
 from qfluentwidgets import (
-    NavigationItemPosition,
+    FluentIcon,
     MessageBox,
     FluentWindow,
     NavigationAvatarWidget,
-    FluentIcon,
+    NavigationItemPosition
 )
 
 from .LogManagePage import LogManagePage
