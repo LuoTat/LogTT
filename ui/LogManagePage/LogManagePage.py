@@ -163,7 +163,7 @@ class LogManagePage(QWidget):
         # 检查是否已提取
         if log_source.is_extracted:
             extract_button.setEnabled(False)
-            extract_button.setText("已提取")
+            extract_button.setText("已提模板")
         else:
             # 只对本地文件启用提取功能
             if log_source.source_type == "本地文件":
