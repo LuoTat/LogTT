@@ -222,8 +222,8 @@ class LogManagePage(QWidget):
         for log_source in self.log_sources:
             actions_widget = LogActionsWidget(log_source, self.log_progress.get(log_source.id), self.log_source_table)
             actions_widget.extract_clicked.connect(self._onExtractLog)
-            actions_widget.view_log_clicked.connect(lambda: self._showToast(f"查看日志：{log_source.source_uri}"))
-            actions_widget.view_template_clicked.connect(lambda: self._showToast(f"查看模板：{log_source.source_uri}"))
+            actions_widget.view_log_clicked.connect(lambda ls=log_source: self._showToast(f"查看日志：{ls.source_uri}"))
+            actions_widget.view_template_clicked.connect(lambda ls=log_source: self._showToast(f"查看模板：{ls.source_uri}"))
             actions_widget.delete_clicked.connect(self._onDeleteLog)
             self.log_actions[log_source.id] = actions_widget
 
@@ -383,12 +383,12 @@ class LogManagePage(QWidget):
             # 启动线程
             thread.start()
 
-    @pyqtSlot()
+    @pyqtSlot(object, int)
     def _onExtractProgress(self, log_source: LogSourceRecord, progress: int):
         self.log_progress[log_source.id] = progress
         self.log_actions[log_source.id].set_progress(progress)
 
-    @pyqtSlot()
+    @pyqtSlot(object, bool, str)
     def _onExtractFinished(self, log_source: LogSourceRecord, success: bool, msg: str):
         # 取消提取标记
         self.log_progress.pop(log_source.id)
