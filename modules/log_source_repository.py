@@ -176,3 +176,36 @@ class LogSourceRepository:
                 [line_count, log_source_id]
             )
             conn.commit()
+
+    @staticmethod
+    def search_by_uri(keyword: str) -> List[LogSourceRecord]:
+        """根据 source_uri 模糊搜索日志源"""
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                select id,
+                       source_type,
+                       format_type,
+                       source_uri,
+                       create_time,
+                       is_extracted,
+                       extract_method,
+                       line_count
+                from log_sources
+                where source_uri like ?
+                """,
+                [f"%{keyword}%"]
+            ).fetchall()
+
+        return [
+            LogSourceRecord(
+                id=row[0],
+                source_type=row[1],
+                format_type=row[2],
+                source_uri=row[3],
+                create_time=datetime.fromisoformat(row[4]),
+                is_extracted=bool(row[5]),
+                extract_method=row[6],
+                line_count=row[7])
+            for row in rows
+        ]

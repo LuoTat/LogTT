@@ -57,3 +57,6 @@ class LogSourceService:
 
     def update_line_count(self, log_source_id: int, line_count: int):
         self.repo.update_line_count(log_source_id, line_count)
+
+    def search_by_uri(self, keyword: str) -> list[LogSourceRecord]:
+        return self.repo.search_by_uri(keyword)
