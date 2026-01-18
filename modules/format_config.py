@@ -40,23 +40,18 @@ class FormatConfigManager:
     def get_format_config(self, format_type: str) -> FormatConfig | None:
         return self.format_configs.get(format_type) or self.user_format_configs.get(format_type)
 
-    def save_custom_format(self, format_type: str, log_format: str, regex: list[str]) -> bool:
-        try:
-            # 保存为 FormatConfig 对象
-            self.user_format_configs[format_type] = FormatConfig(log_format, regex)
+    def save_custom_format(self, format_type: str, log_format: str, regex: list[str]):
+        # 保存为 FormatConfig 对象
+        self.user_format_configs[format_type] = FormatConfig(log_format, regex)
 
-            with open(USER_FORMAT_CONFIG_FILE, "w", encoding="utf-8") as f:
-                yaml.safe_dump(
-                    {k: asdict(v) for k, v in self.user_format_configs.items()},
-                    f,
-                    allow_unicode=True,
-                    indent=2,
-                    width=float("inf"),
-                )
-
-            return True
-        except Exception:
-            return False
+        with open(USER_FORMAT_CONFIG_FILE, "w", encoding="utf-8") as f:
+            yaml.safe_dump(
+                {k: asdict(v) for k, v in self.user_format_configs.items()},
+                f,
+                allow_unicode=True,
+                indent=2,
+                width=float("inf"),
+            )
 
     def is_format_type_exists(self, format_type: str) -> bool:
         return format_type in self.format_configs or format_type in self.user_format_configs

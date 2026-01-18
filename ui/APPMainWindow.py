@@ -1,6 +1,6 @@
-from PyQt6.QtCore import QUrl
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import (
+from PySide6.QtCore import QUrl
+from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import (
     QIcon,
     QDesktopServices
 )
@@ -74,7 +74,7 @@ class APPMainWindow(FluentWindow):
                 self
             )
             if confirm.exec():
-                self.log_manage_page.interruptAllExtractingTasks()
+                self.log_manage_page.interruptAllExtractTasks()
                 event.accept()
                 return
 

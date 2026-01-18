@@ -1,13 +1,13 @@
-from PyQt6.QtCore import QSize
+from PySide6.QtCore import QSize
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QStyle,
     QApplication,
     QStyledItemDelegate,
     QStyleOptionProgressBar
 )
 
-from .LogSourceTableModel import LogSourceTableModel
+from .LogTableModel import LogTableModel
 
 
 class ProgressBarDelegate(QStyledItemDelegate):
@@ -17,7 +17,7 @@ class ProgressBarDelegate(QStyledItemDelegate):
         super().__init__(parent)
 
     def paint(self, painter, option, index):
-        progress = v if (v := index.data(LogSourceTableModel.ProgressRole)) is not None else 0
+        progress = index.data(LogTableModel.ProgressRole)
 
         # 配置进度条样式选项
         progress_bar = QStyleOptionProgressBar()

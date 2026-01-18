@@ -1,0 +1,23 @@
+{
+    "QFluentWidgets": {
+        "FontFamilies": [
+            "Segoe UI",
+            "Microsoft YaHei",
+            "PingFang SC"
+        ],
+        "ThemeColor": "#ff009faa",
+        "ThemeMode": "Dark"
+    },
+    "LogManagePage": {
+        "LogTableColumnWidths": [
+            100,
+            83,
+            90,
+            86,
+            156,
+            256,
+            77,
+            69
+        ]
+    }
+}

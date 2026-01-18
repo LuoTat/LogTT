@@ -1,96 +1,48 @@
 import sqlite3
 from pathlib import Path
+from dataclasses import dataclass
 
-from PyQt6.QtCore import (
+from PySide6.QtCore import (
     Qt,
-    QObject,
-    QThread,
-    pyqtSlot,
-    pyqtSignal
+    Slot,
+    QPoint,
+    QThread
 )
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
-    QHeaderView,
     QHBoxLayout,
     QVBoxLayout
 )
 from qfluentwidgets import (
+    Action,
     InfoBar,
+    RoundMenu,
     TableView,
     FluentIcon,
     MessageBox,
     PushButton,
     SearchLineEdit,
     InfoBarPosition,
+    MenuAnimationType,
     PrimaryPushButton
 )
 
+from ui.APPConfig import appcfg
+from modules.log import LogService
+from .LogExtractTask import LogExtractTask
 from .AddLogMessageBox import AddLogMessageBox
-from .ExtractLogMessageBox import ExtractLogMessageBox
 from .ProgressBarDelegate import ProgressBarDelegate
-from .ActionBarDelegate import ActionBarDelegate
-from .LogSourceTableModel import LogSourceTableModel, LogSourceColumn
-from modules.logparser import ParserFactory
-from modules.log_source_service import LogSourceService
+from .ExtractLogMessageBox import ExtractLogMessageBox
+from .LogTableModel import LogTableModel, LogTableHeader, LogStatus
 
 
-class ExtractTask(QObject):
-    """日志提取工作线程"""
-
-    finished = pyqtSignal(int)  # 提取完成信号，参数为行数
-    error = pyqtSignal(str)  # 提取失败信号，参数为错误信息
-    progress = pyqtSignal(int)  # 进度信号，参数为进度值 (0-100)
-
-    def __init__(self, log_id: int, log_file: Path, algorithm: str, format_type: str, log_format: str, regex: list[str]):
-        super().__init__()
-        self.log_id = log_id
-        self.log_file = log_file
-        self.algorithm = algorithm
-        self.format_type = format_type
-        self.log_format = log_format
-        self.regex = regex
-        self.log_source_service = LogSourceService()
-
-    @pyqtSlot()
-    def run(self):
-        try:
-            # 保存日志格式到数据库
-            self.log_source_service.update_format_type(self.log_id, self.format_type)
-            # 保存提取算法到数据库
-            self.log_source_service.update_extract_method(self.log_id, self.algorithm)
-
-            parser_type = ParserFactory.get_parser_type(self.algorithm)
-            result = parser_type(
-                self.log_file,
-                self.log_format,
-                self.regex,
-                lambda: QThread.currentThread().isInterruptionRequested(),
-                self.progress.emit
-            ).parse()
-
-            # 将日志设置为已提取
-            self.log_source_service.update_is_extracted(self.log_id, True)
-            # 保存日志行数
-            self.log_source_service.update_line_count(self.log_id, result.line_count)
-
-            # TODO：保存提取的模板内容
-
-            # 提取完成
-            self.finished.emit(result.line_count)
-        except InterruptedError as e:
-            print(f"Log extraction interrupted: {self.log_file}")
-            self.error.emit("日志提取已中断")
-        except Exception as e:
-            self.error.emit(str(e))
-
-
-class ExtractTaskInfo:
+@dataclass
+class LogExtractTaskInfo:
     """日志提取任务信息"""
 
-    def __init__(self, thread: QThread, task: ExtractTask):
-        self.thread = thread
-        self.task = task
-        self.progress: int = 0
+    thread: QThread
+    task: LogExtractTask
+    progress: int = 0
 
 
 class LogManagePage(QWidget):
@@ -100,10 +52,10 @@ class LogManagePage(QWidget):
         super().__init__(parent)
         self.setObjectName("LogManagePage")
 
-        self.log_source_service = LogSourceService()
+        self.log_service = LogService()
 
-        # 存储正在提取的任务信息: log_id -> ExtractingTaskInfo
-        self.log_extracting: dict[int, ExtractTaskInfo] = {}
+        # 存储正在提取的任务信息: log_id -> LogExtractTaskInfo
+        self.log_extract: dict[int, LogExtractTaskInfo] = {}
 
         # 主布局
         self.main_layout = QVBoxLayout(self)
@@ -117,21 +69,30 @@ class LogManagePage(QWidget):
         self._initTableView()
 
         # 刷新表格数据
-        self._refreshModel()
+        self._onRefreshModel()
+
+    def _initModel(self):
+        """初始化数据模型"""
+        self.model = LogTableModel(self)
+        # 连接模型信号
+        self.model.extract.connect(self._onExtractLog)
+        self.model.viewLog.connect(self._onViewLog)
+        self.model.viewTemplate.connect(self._onViewTemplate)
+        self.model.delete.connect(self._onDeleteLog)
 
     def _initToolbar(self):
         """初始化工具栏"""
         tool_bar_layout = QHBoxLayout()
-        tool_bar_layout.setSpacing(10)
+        tool_bar_layout.setSpacing(16)
 
         self.search_input = SearchLineEdit(self)
         self.search_input.setPlaceholderText("按URI搜索")
         self.search_input.setClearButtonEnabled(True)
         self.search_input.searchSignal.connect(self._onSearchLog)
-        self.search_input.clearSignal.connect(self._refreshModel)
+        self.search_input.clearSignal.connect(self._onRefreshModel)
 
         self.refresh_button = PushButton(FluentIcon.SYNC, "刷新", self)
-        self.refresh_button.clicked.connect(self._refreshModel)
+        self.refresh_button.clicked.connect(self._onRefreshModel)
 
         self.add_button = PrimaryPushButton(FluentIcon.ADD, "新增日志", self)
         self.add_button.clicked.connect(self._onAddLog)
@@ -143,15 +104,6 @@ class LogManagePage(QWidget):
 
         self.main_layout.addLayout(tool_bar_layout)
 
-    def _initModel(self):
-        """初始化数据模型"""
-        self.model = LogSourceTableModel(self)
-        # 连接模型信号
-        self.model.extract.connect(self._onExtractLog)
-        self.model.viewLog.connect(self._onViewLog)
-        self.model.viewTemplate.connect(self._onViewTemplate)
-        self.model.delete.connect(self._onDeleteLog)
-
     def _initTableView(self):
         """初始化表格视图"""
         self.table_view = TableView(self)
@@ -162,63 +114,151 @@ class LogManagePage(QWidget):
 
         # 隐藏垂直表头
         self.table_view.verticalHeader().hide()
-
         # 禁用编辑
         self.table_view.setEditTriggers(TableView.EditTrigger.NoEditTriggers)
-
-        # 设置选择行为
-        # self.table_view.setSelectionBehavior(TableView.SelectionBehavior.SelectRows)
-        # self.table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
-
-        # 设置列委托
+        # 设置每次只选择一行
+        self.table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
+        # 设置进度条委托
         self.progress_delegate = ProgressBarDelegate(self.table_view)
-        self.action_delegate = ActionBarDelegate(self.model, self.table_view)
-        self.table_view.setItemDelegateForColumn(LogSourceColumn.PROGRESS, self.progress_delegate)
-        self.table_view.setItemDelegateForColumn(LogSourceColumn.ACTIONS, self.action_delegate)
+        self.table_view.setItemDelegateForColumn(LogTableHeader.PROGRESS, self.progress_delegate)
+        # 设置右键菜单
+        self.table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table_view.customContextMenuRequested.connect(self._onContextMenuRequested)
+        # 连接列宽变化信号，保存列宽
+        self.table_view.horizontalHeader().sectionResized.connect(self._onColumnResized)
+
+        # 恢复列宽
+        self._restoreColumnWidths()
 
         self.main_layout.addWidget(self.table_view)
 
-    def _updateTableLayout(self):
-        """更新表格布局"""
-        # 固定进度列和操作列宽度
-        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.table_view.horizontalHeader().setSectionResizeMode(LogSourceColumn.PROGRESS, QHeaderView.ResizeMode.ResizeToContents)
-        self.table_view.horizontalHeader().setSectionResizeMode(LogSourceColumn.ACTIONS, QHeaderView.ResizeMode.ResizeToContents)
-        # self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+    def _restoreColumnWidths(self):
+        """从配置恢复列宽"""
+        widths = appcfg.get(appcfg.logTableColumnWidths)
+        if widths and len(widths) == self.model.columnCount():
+            header = self.table_view.horizontalHeader()
+            for col, width in enumerate(widths):
+                if width > 0:
+                    header.resizeSection(col, width)
 
     def _getLogProgress(self) -> dict[int, int]:
         """获取正在提取的任务进度映射"""
-        return {task_id: info.progress for task_id, info in self.log_extracting.items()}
+        return {log_id: info.progress for log_id, info in self.log_extract.items()}
 
-    @pyqtSlot()
-    def _refreshModel(self):
+    def _showToast(self, text: str):
+        """显示提示信息"""
+        InfoBar.info(
+            title=text,
+            content="功能待实现",
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=3000,
+            parent=self,
+        )
+
+    def _interruptExtractTask(self, log_id: int):
+        """中断正在提取的任务"""
+        # 清理任务信息
+        if log_id in self.log_extract:
+            task_info = self.log_extract.pop(log_id)
+            task_info.thread.requestInterruption()
+            task_info.thread.quit()
+            task_info.thread.wait()
+
+    def hasExtractingTasks(self) -> bool:
+        """是否有正在提取的任务"""
+        return len(self.log_extract) > 0
+
+    def interruptAllExtractTasks(self):
+        """中断所有正在提取的任务"""
+        for log_id, task_info in self.log_extract.items():
+            task_info.thread.requestInterruption()
+            task_info.thread.quit()
+            task_info.thread.wait()
+        self.log_extract.clear()
+
+    @Slot(int, int, int)
+    def _onColumnResized(self):
+        """保存列宽到配置"""
+        header = self.table_view.horizontalHeader()
+        widths = [header.sectionSize(col) for col in range(self.model.columnCount())]
+        appcfg.set(appcfg.logTableColumnWidths, widths)
+
+    @Slot(QPoint)
+    def _onContextMenuRequested(self, pos: QPoint):
+        """处理右键菜单请求"""
+        index = self.table_view.indexAt(pos)
+        if not index.isValid():
+            return
+
+        # 右键选中该行
+        self.table_view.setCurrentIndex(index)
+
+        # 获取日志项信息
+        log_id = index.data(LogTableModel.LogIdRole)
+        status = index.data(LogTableModel.StatusRole)
+
+        # 创建菜单
+        menu = RoundMenu(parent=self.table_view)
+
+        if status == LogStatus.EXTRACTED:
+            # 已提取的日志
+            view_log_action = Action(FluentIcon.DOCUMENT, "查看日志")
+            view_log_action.triggered.connect(lambda: self._onViewLog(log_id))
+            menu.addAction(view_log_action)
+
+            view_template_action = Action(FluentIcon.BOOK_SHELF, "查看模板")
+            view_template_action.triggered.connect(lambda: self._onViewTemplate(log_id))
+            menu.addAction(view_template_action)
+        elif status == LogStatus.NOT_EXTRACTED:
+            # 未提取的日志
+            extract_action = Action(FluentIcon.PLAY, "开始提取")
+            extract_action.triggered.connect(lambda: self._onExtractLog(log_id))
+            menu.addAction(extract_action)
+        else:
+            # 正在提取的日志
+            stop_action = Action(FluentIcon.CANCEL, "终止提取")
+            stop_action.triggered.connect(lambda: self._onInterruptExtract(log_id))
+            menu.addAction(stop_action)
+
+        menu.addSeparator()
+
+        # 删除操作
+        delete_action = Action(FluentIcon.DELETE, "删除")
+        delete_action.triggered.connect(lambda: self._onDeleteLog(log_id))
+        menu.addAction(delete_action)
+
+        # 显示菜单
+        menu.exec(self.table_view.viewport().mapToGlobal(pos), aniType=MenuAnimationType.DROP_DOWN)
+
+    @Slot()
+    def _onRefreshModel(self):
         """刷新表格数据"""
-        logs = self.log_source_service.get_all_logs()
+        logs = self.log_service.get_all_logs()
         log_progress = self._getLogProgress()
-        self.model.setLogSources(logs, log_progress)
-        self._updateTableLayout()
+        self.model.setLogs(logs, log_progress)
 
-    @pyqtSlot(str)
+    @Slot(str)
     def _onSearchLog(self, keyword: str):
         """搜索日志"""
         keyword = keyword.strip()
         if not keyword:
-            self._refreshModel()
+            self._onRefreshModel()
             return
 
-        filtered_logs = self.log_source_service.search_by_uri(keyword)
+        filtered_logs = self.log_service.search_by_uri(keyword)
         extracting_progress = self._getLogProgress()
-        self.model.setLogSources(filtered_logs, extracting_progress)
-        self._updateTableLayout()
+        self.model.setLogs(filtered_logs, extracting_progress)
 
-    @pyqtSlot()
+    @Slot()
     def _onAddLog(self):
         """新增日志"""
         dialog = AddLogMessageBox(self)
         if dialog.exec():
             if dialog.selected_file_path:
                 try:
-                    self.log_source_service.add_local_log(dialog.selected_file_path)
+                    self.log_service.add_local_log(dialog.selected_file_path)
                     InfoBar.success(
                         title="导入成功",
                         content="本地日志已导入",
@@ -248,12 +288,12 @@ class LogManagePage(QWidget):
                         duration=5000,
                         parent=self,
                     )
-                self._refreshModel()
+                self._onRefreshModel()
                 return
 
             if dialog.url_input.text():
                 try:
-                    self.log_source_service.add_network_log(dialog.url_input.text().strip())
+                    self.log_service.add_network_log(dialog.url_input.text().strip())
                     InfoBar.success(
                         title="导入成功",
                         content="网络日志源已添加",
@@ -283,7 +323,7 @@ class LogManagePage(QWidget):
                         duration=5000,
                         parent=self,
                     )
-                self._refreshModel()
+                self._onRefreshModel()
                 return
 
             InfoBar.warning(
@@ -296,10 +336,10 @@ class LogManagePage(QWidget):
                 parent=self,
             )
 
-    @pyqtSlot(int)
+    @Slot(int)
     def _onExtractLog(self, log_id: int):
         """处理提取日志请求"""
-        item = self.model.getItem(log_id)
+        item = self.model.getLog(log_id)
         if item is None:
             return
 
@@ -314,9 +354,9 @@ class LogManagePage(QWidget):
 
             # 创建工作线程和提取任务
             thread = QThread()
-            task = ExtractTask(
+            task = LogExtractTask(
                 log_id,
-                Path(item.source_uri),
+                Path(item.log_uri),
                 dialog.selected_algorithm,
                 dialog.selected_format_type,
                 dialog.selected_log_format,
@@ -325,100 +365,129 @@ class LogManagePage(QWidget):
             task.moveToThread(thread)
 
             # 保存任务信息
-            task_info = ExtractTaskInfo(thread, task)
-            self.log_extracting[log_id] = task_info
-
-            # 更新模型状态
-            self.model.setProgress(log_id, 0)
+            task_info = LogExtractTaskInfo(thread, task)
+            self.log_extract[log_id] = task_info
 
             # 连接信号
             thread.started.connect(task.run)
-            task.progress.connect(lambda p, lid=log_id: self._onExtractProgress(lid, p))
-            task.finished.connect(lambda line_count, lid=log_id: self._onExtractFinished(lid, True, f"共 {line_count:,} 行"))
-            task.error.connect(lambda msg, lid=log_id: self._onExtractFinished(lid, False, msg))
+            task.finished.connect(self._onExtractFinished)
+            task.interrupted.connect(self._onExtractInterrupted)
+            task.progress.connect(self._onExtractProgress)
+            task.error.connect(self._onExtractErrored)
 
             # 启动线程
             thread.start()
 
-    @pyqtSlot(int, int)
-    def _onExtractProgress(self, log_id: int, progress: int):
-        """处理提取进度更新"""
-        if log_id in self.log_extracting:
-            self.log_extracting[log_id].progress = progress
-        # 更新模型，触发UI刷新
-        self.model.setProgress(log_id, progress)
+    @Slot(int)
+    def _onInterruptExtract(self, log_id: int):
+        """终止提取任务"""
+        # 如果有正在提取的任务，中断线程
+        self._interruptExtractTask(log_id)
+        self._onRefreshModel()
 
-    @pyqtSlot(int, bool, str)
-    def _onExtractFinished(self, log_id: int, success: bool, msg: str):
+    @Slot(int, int)
+    def _onExtractFinished(self, log_id: int, line_count: int):
         """处理提取完成"""
         # 清理任务信息
-        if log_id in self.log_extracting:
-            task_info = self.log_extracting.pop(log_id)
+        if log_id in self.log_extract:
+            task_info = self.log_extract.pop(log_id)
             task_info.thread.quit()
             task_info.thread.wait()
 
-        # 更新模型状态
-        self.model.setProgress(log_id, None)
+        InfoBar.success(
+            title="提取成功",
+            content=f"日志模板提取完成，共 {line_count:,} 行",
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=3000,
+            parent=self,
+        )
 
-        if success:
-            InfoBar.success(
-                title="提取成功",
-                content=f"日志模板提取完成，{msg}",
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=3000,
-                parent=self,
-            )
-        else:
-            InfoBar.error(
-                title="提取失败",
-                content=msg,
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=5000,
-                parent=self,
-            )
+        self._onRefreshModel()
 
-        # 刷新数据以获取最新状态
-        self._refreshModel()
+    @Slot(int)
+    def _onExtractInterrupted(self, log_id: int):
+        """处理提取中断"""
+        # 清理任务信息
+        if log_id in self.log_extract:
+            task_info = self.log_extract.pop(log_id)
+            task_info.thread.quit()
+            task_info.thread.wait()
 
-    @pyqtSlot(int)
+        InfoBar.info(
+            title="提取中断",
+            content=f"日志提取已终止",
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=3000,
+            parent=self,
+        )
+
+        self._onRefreshModel()
+
+    @Slot(int, int)
+    def _onExtractProgress(self, log_id: int, progress: int):
+        """处理提取进度更新"""
+        if log_id in self.log_extract:
+            self.log_extract[log_id].progress = progress
+            # 更新进度
+            self.model.setProgress(log_id, progress)
+
+    @Slot(int, str)
+    def _onExtractErrored(self, log_id: int, msg: str):
+        """处理提取错误"""
+        # 清理任务信息
+        if log_id in self.log_extract:
+            task_info = self.log_extract.pop(log_id)
+            task_info.thread.quit()
+            task_info.thread.wait()
+
+        InfoBar.error(
+            title="提取失败",
+            content=msg,
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=5000,
+            parent=self,
+        )
+
+        self._onRefreshModel()
+
+    @Slot(int)
     def _onViewLog(self, log_id: int):
         """处理查看日志请求"""
-        item = self.model.getItem(log_id)
+        item = self.model.getLog(log_id)
         if item:
-            self._showToast(f"查看日志：{item.source_uri}")
+            self._showToast(f"查看日志：{item.log_uri}")
 
-    @pyqtSlot(int)
+    @Slot(int)
     def _onViewTemplate(self, log_id: int):
         """处理查看模板请求"""
-        item = self.model.getItem(log_id)
+        item = self.model.getLog(log_id)
         if item:
-            self._showToast(f"查看模板：{item.source_uri}")
+            self._showToast(f"查看模板：{item.log_uri}")
 
-    @pyqtSlot(int)
+    @Slot(int)
     def _onDeleteLog(self, log_id: int):
         """处理删除日志请求"""
-        item = self.model.getItem(log_id)
+        item = self.model.getLog(log_id)
         if item is None:
             return
 
-        confirm = MessageBox("确认删除", f"确定删除该日志源吗？\n{item.source_uri}", self)
+        confirm = MessageBox("确认删除", f"确定删除该日志吗？\n{item.log_uri}", self)
         if confirm.exec():
-            # 如果有正在提取的任务，安全中断线程
-            if log_id in self.log_extracting:
-                task_info = self.log_extracting.pop(log_id)
-                task_info.thread.requestInterruption()
-                task_info.thread.quit()
-                task_info.thread.wait()
+            # 如果有正在提取的任务，中断线程
+            self._interruptExtractTask(log_id)
 
             try:
-                self.log_source_service.delete_log(log_id)
+                self.log_service.delete_log(log_id)
+                self.model.remove(log_id)
                 InfoBar.success(
                     title="删除成功",
-                    content="日志源已删除",
+                    content="日志已删除",
                     orient=Qt.Orientation.Horizontal,
                     isClosable=True,
                     position=InfoBarPosition.TOP,
@@ -435,29 +504,3 @@ class LogManagePage(QWidget):
                     duration=5000,
                     parent=self,
                 )
-
-            self._refreshModel()
-
-    def _showToast(self, text: str):
-        """显示提示信息"""
-        InfoBar.info(
-            title=text,
-            content="功能待实现",
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=3000,
-            parent=self,
-        )
-
-    def hasExtractingTasks(self) -> bool:
-        """是否有正在提取的任务"""
-        return len(self.log_extracting) > 0
-
-    def interruptAllExtractingTasks(self):
-        """中断所有正在提取的任务"""
-        for log_id, task_info in self.log_extracting.items():
-            task_info.thread.requestInterruption()
-            task_info.thread.quit()
-            task_info.thread.wait()
-        self.log_extracting.clear()

@@ -1,55 +1,66 @@
 from typing import Any
+from pathlib import Path
 from enum import IntEnum
 from datetime import datetime
 
-from PyQt6.QtCore import Qt, QModelIndex, QAbstractTableModel, pyqtSignal
+from PySide6.QtCore import (
+    Qt,
+    Signal,
+    QModelIndex,
+    QAbstractTableModel
+)
 
-from modules.log_source_record import LogSourceRecord
-
-
-class LogSourceColumn(IntEnum):
-    """日志源表格头枚举"""
-
-    SOURCE_TYPE = 0  # 类型
-    FORMAT_TYPE = 1  # 日志格式
-    SOURCE_URI = 2  # URI
-    CREATE_TIME = 3  # 创建时间
-    EXTRACT_METHOD = 4  # 提取方法
-    LINE_COUNT = 5  # 行数
-    PROGRESS = 6  # 进度条
-    ACTIONS = 7  # 操作
+from modules.log import LogRecord
 
 
-class LogSourceItem:
-    """日志源数据项，包含记录和运行时状态"""
+class LogTableHeader(IntEnum):
+    """日志表格头枚举"""
 
-    def __init__(self, log: LogSourceRecord):
+    NAME = 0  # 名称
+    LINE_COUNT = 1  # 日志行数
+    LOG_TYPE = 2  # 日志类型
+    FORMAT_TYPE = 3  # 日志格式
+    CREATE_TIME = 4  # 创建时间
+    PROGRESS = 5  # 进度条
+    STATUS = 6  # 状态
+    EXTRACT_METHOD = 7  # 提取方法
+
+
+class LogStatus(IntEnum):
+    """日志状态枚举"""
+
+    EXTRACTED = 0  # 已提取
+    NOT_EXTRACTED = 1  # 未提取
+    EXTRACTING = 2  # 提取中
+
+
+class LogItem:
+    """日志数据项，包含记录和运行时状态"""
+
+    def __init__(self, log: LogRecord):
         self.log = log
-        self.progress: int | None = None  # 提取进度 (0-100)，None 表示未在提取中
+        self.status = LogStatus.EXTRACTED if log.is_extracted else LogStatus.NOT_EXTRACTED
+        self.progress: int = 0  # 提取进度 (0-100)
 
     @property
     def id(self) -> int:
         return self.log.id
 
     @property
-    def source_type(self) -> str:
-        return self.log.source_type
+    def log_type(self) -> str:
+        return self.log.log_type
 
     @property
     def format_type(self) -> str | None:
         return self.log.format_type
 
     @property
-    def source_uri(self) -> str:
-        return self.log.source_uri
+    def log_uri(self) -> str:
+        return self.log.log_uri
 
     @property
     def create_time(self) -> datetime:
         return self.log.create_time
-
-    @property
-    def is_extracted(self) -> bool:
-        return self.log.is_extracted
 
     @property
     def extract_method(self) -> str | None:
@@ -60,26 +71,26 @@ class LogSourceItem:
         return self.log.line_count
 
 
-class LogSourceTableModel(QAbstractTableModel):
-    """日志源数据项表格模型"""
+class LogTableModel(QAbstractTableModel):
+    """日志数据项表格模型"""
 
     # 自定义角色
     LogIdRole = Qt.ItemDataRole.UserRole + 1
-    IsExtractedRole = Qt.ItemDataRole.UserRole + 2
+    StatusRole = Qt.ItemDataRole.UserRole + 2
     ProgressRole = Qt.ItemDataRole.UserRole + 3
-    LogSourceItemRole = Qt.ItemDataRole.UserRole + 4
+    LogItemRole = Qt.ItemDataRole.UserRole + 4
 
     # 操作信号
-    extract = pyqtSignal(int)  # 请求提取
-    viewLog = pyqtSignal(int)  # 请求查看日志
-    viewTemplate = pyqtSignal(int)  # 请求查看模板
-    delete = pyqtSignal(int)  # 请求删除
+    extract = Signal(int)  # 请求提取
+    viewLog = Signal(int)  # 请求查看日志
+    viewTemplate = Signal(int)  # 请求查看模板
+    delete = Signal(int)  # 请求删除
 
-    HEADERS = ["类型", "日志格式", "URI", "创建时间", "提取方法", "行数", "进度", "操作"]
+    HEADERS = ["名称", "日志行数", "日志类型", "日志格式", "创建时间", "进度", "状态", "提取方法"]
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.items: list[LogSourceItem] = []
+        self.items: list[LogItem] = []
         self.id_to_row: dict[int, int] = {}
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
@@ -112,33 +123,38 @@ class LogSourceTableModel(QAbstractTableModel):
 
         # 显示角色
         if role == Qt.ItemDataRole.DisplayRole:
-            if col == LogSourceColumn.SOURCE_TYPE:
-                return item.source_type
-            elif col == LogSourceColumn.FORMAT_TYPE:
-                return item.format_type if item.format_type else "—"
-            elif col == LogSourceColumn.SOURCE_URI:
-                return item.source_uri
-            elif col == LogSourceColumn.CREATE_TIME:
-                return item.create_time.isoformat(" ", "seconds")
-            elif col == LogSourceColumn.EXTRACT_METHOD:
-                return item.extract_method if item.extract_method else "—"
-            elif col == LogSourceColumn.LINE_COUNT:
+            if col == LogTableHeader.NAME:
+                return Path(item.log_uri).name
+            elif col == LogTableHeader.LINE_COUNT:
                 return f"{item.line_count:,}" if item.line_count is not None else "—"
-            elif col == LogSourceColumn.PROGRESS:
+            elif col == LogTableHeader.LOG_TYPE:
+                return item.log_type
+            elif col == LogTableHeader.FORMAT_TYPE:
+                return item.format_type if item.format_type else "—"
+            elif col == LogTableHeader.CREATE_TIME:
+                return item.create_time.isoformat(" ", "seconds")
+            elif col == LogTableHeader.PROGRESS:
                 return None  # 进度条由 delegate 绘制
-            elif col == LogSourceColumn.ACTIONS:
-                return None  # 操作按钮由 delegate 绘制
+            elif col == LogTableHeader.STATUS:
+                if item.status == LogStatus.EXTRACTED:
+                    return "已提取"
+                elif item.status == LogStatus.NOT_EXTRACTED:
+                    return "未提取"
+                else:
+                    return "提取中"
+            elif col == LogTableHeader.EXTRACT_METHOD:
+                return item.extract_method if item.extract_method else "—"
         # 对齐角色
         elif role == Qt.ItemDataRole.TextAlignmentRole:
             return Qt.AlignmentFlag.AlignCenter
         # 自定义角色
         elif role == self.LogIdRole:
             return item.id
-        elif role == self.IsExtractedRole:
-            return item.is_extracted
+        elif role == self.StatusRole:
+            return item.status
         elif role == self.ProgressRole:
             return item.progress
-        elif role == self.LogSourceItemRole:
+        elif role == self.LogItemRole:
             return item
         return None
 
@@ -149,16 +165,19 @@ class LogSourceTableModel(QAbstractTableModel):
 
     # ==================== 数据操作方法 ====================
 
-    def setLogSources(self, logs: list[LogSourceRecord], log_progress: dict[int, int] | None = None):
-        """设置日志源列表"""
+    def setLogs(self, logs: list[LogRecord], log_progress: dict[int, int] | None = None):
+        """设置日志列表"""
         self.beginResetModel()
         self.items.clear()
         self.id_to_row.clear()
 
         for idx, log in enumerate(logs):
-            item = LogSourceItem(log)
+            item = LogItem(log)
 
-            if log_progress and log.id in log_progress:
+            if item.status == LogStatus.EXTRACTED:
+                item.progress = 100
+            elif log_progress and log.id in log_progress:
+                item.status = LogStatus.EXTRACTING
                 item.progress = log_progress[log.id]
 
             self.items.append(item)
@@ -166,7 +185,7 @@ class LogSourceTableModel(QAbstractTableModel):
 
         self.endResetModel()
 
-    def getItem(self, log_id: int) -> LogSourceItem | None:
+    def getLog(self, log_id: int) -> LogItem | None:
         """根据ID获取数据项"""
         if log_id not in self.id_to_row:
             return None
@@ -176,8 +195,8 @@ class LogSourceTableModel(QAbstractTableModel):
         """根据ID获取行号"""
         return self.id_to_row.get(log_id)
 
-    def setLog(self, log_id: int, log: LogSourceRecord):
-        """设置日志源记录"""
+    def setLog(self, log_id: int, log: LogRecord):
+        """设置日志记录"""
         if log_id not in self.id_to_row:
             return
         row = self.id_to_row[log_id]
@@ -190,7 +209,7 @@ class LogSourceTableModel(QAbstractTableModel):
         right_index = self.index(row, self.columnCount() - 1)
         self.dataChanged.emit(left_index, right_index)
 
-    def setProgress(self, log_id: int, progress: int | None):
+    def setProgress(self, log_id: int, progress: int):
         """设置提取进度"""
         if log_id not in self.id_to_row:
             return
@@ -200,7 +219,7 @@ class LogSourceTableModel(QAbstractTableModel):
         item.progress = progress
 
         # 更新进度列
-        index = self.index(row, LogSourceColumn.PROGRESS)
+        index = self.index(row, LogTableHeader.PROGRESS)
         self.dataChanged.emit(index, index)
 
     def remove(self, log_id: int):

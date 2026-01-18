@@ -1,12 +1,12 @@
 from typing import List
 from datetime import datetime
 
-from .db import get_connection
-from .log_source_record import LogSourceRecord
+from .log_record import LogRecord
+from modules.db import get_connection
 
 
-class LogSourceRepository:
-    """Log源数据库操作类"""
+class LogRepository:
+    """Log数据库操作类"""
 
     def __init__(self):
         self._init_table()
@@ -16,12 +16,12 @@ class LogSourceRepository:
         with get_connection() as conn:
             conn.execute(
                 """
-                create table if not exists log_sources
+                create table if not exists log
                 (
                     id             INTEGER primary key autoincrement,
-                    source_type    TEXT not null,
+                    log_type       TEXT not null,
                     format_type    TEXT,
-                    source_uri     TEXT not null unique,
+                    log_uri        TEXT not null unique,
                     create_time    TEXT not null,
                     is_extracted   INT  not null,
                     extract_method TEXT,
@@ -32,63 +32,63 @@ class LogSourceRepository:
             conn.commit()
 
     @staticmethod
-    def add(log_source: LogSourceRecord):
+    def add(log: LogRecord):
         with get_connection() as conn:
             conn.execute(
                 """
-                insert into log_sources (source_type, format_type, source_uri, create_time, is_extracted, extract_method, line_count)
+                insert into log (log_type, format_type, log_uri, create_time, is_extracted, extract_method, line_count)
                 values (?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
-                    log_source.source_type,
-                    log_source.format_type,
-                    log_source.source_uri,
-                    log_source.create_time.isoformat(timespec="seconds"),
-                    log_source.is_extracted,
-                    log_source.extract_method,
-                    log_source.line_count
+                    log.log_type,
+                    log.format_type,
+                    log.log_uri,
+                    log.create_time.isoformat(timespec="seconds"),
+                    log.is_extracted,
+                    log.extract_method,
+                    log.line_count
                 ]
             )
             conn.commit()
 
     @staticmethod
-    def delete(log_source_id: int):
+    def delete(log_id: int):
         with get_connection() as conn:
             conn.execute(
                 """
                 delete
-                from log_sources
+                from log
                 where id = ?
                 """,
-                [log_source_id]
+                [log_id]
             )
             conn.commit()
 
     @staticmethod
-    def get(log_source_id: int) -> LogSourceRecord | None:
+    def get(log_id: int) -> LogRecord | None:
         with get_connection() as conn:
             row = conn.execute(
                 """
                 select id,
-                       source_type,
+                       log_type,
                        format_type,
-                       source_uri,
+                       log_uri,
                        create_time,
                        is_extracted,
                        extract_method,
                        line_count
-                from log_sources
+                from log
                 where id = ?
                 """,
-                [log_source_id]
+                [log_id]
             ).fetchone()
 
         if row:
-            return LogSourceRecord(
+            return LogRecord(
                 id=row[0],
-                source_type=row[1],
+                log_type=row[1],
                 format_type=row[2],
-                source_uri=row[3],
+                log_uri=row[3],
                 create_time=datetime.fromisoformat(row[4]),
                 is_extracted=bool(row[5]),
                 extract_method=row[6],
@@ -96,28 +96,28 @@ class LogSourceRepository:
         return None
 
     @staticmethod
-    def get_all() -> List[LogSourceRecord]:
+    def get_all() -> List[LogRecord]:
         with get_connection() as conn:
             rows = conn.execute(
                 """
                 select id,
-                       source_type,
+                       log_type,
                        format_type,
-                       source_uri,
+                       log_uri,
                        create_time,
                        is_extracted,
                        extract_method,
                        line_count
-                from log_sources
+                from log
                 """
             ).fetchall()
 
         return [
-            LogSourceRecord(
+            LogRecord(
                 id=row[0],
-                source_type=row[1],
+                log_type=row[1],
                 format_type=row[2],
-                source_uri=row[3],
+                log_uri=row[3],
                 create_time=datetime.fromisoformat(row[4]),
                 is_extracted=bool(row[5]),
                 extract_method=row[6],
@@ -126,83 +126,83 @@ class LogSourceRepository:
         ]
 
     @staticmethod
-    def update_format_type(log_source_id: int, format_type: str):
+    def update_format_type(log_id: int, format_type: str):
         with get_connection() as conn:
             conn.execute(
                 """
-                update log_sources
+                update log
                 set format_type = ?
                 where id = ?
                 """,
-                [format_type, log_source_id]
+                [format_type, log_id]
             )
             conn.commit()
 
     @staticmethod
-    def update_extract_method(log_source_id: int, extract_method: str):
+    def update_extract_method(log_id: int, extract_method: str):
         with get_connection() as conn:
             conn.execute(
                 """
-                update log_sources
+                update log
                 set extract_method = ?
                 where id = ?
                 """,
-                [extract_method, log_source_id]
+                [extract_method, log_id]
             )
             conn.commit()
 
     @staticmethod
-    def update_is_extracted(log_source_id: int, is_extracted: bool):
+    def update_is_extracted(log_id: int, is_extracted: bool):
         with get_connection() as conn:
             conn.execute(
                 """
-                update log_sources
+                update log
                 set is_extracted = ?
                 where id = ?
                 """,
-                [is_extracted, log_source_id]
+                [is_extracted, log_id]
             )
             conn.commit()
 
     @staticmethod
-    def update_line_count(log_source_id: int, line_count: int):
+    def update_line_count(log_id: int, line_count: int):
         with get_connection() as conn:
             conn.execute(
                 """
-                update log_sources
+                update log
                 set line_count = ?
                 where id = ?
                 """,
-                [line_count, log_source_id]
+                [line_count, log_id]
             )
             conn.commit()
 
     @staticmethod
-    def search_by_uri(keyword: str) -> List[LogSourceRecord]:
-        """根据 source_uri 模糊搜索日志源"""
+    def search_by_uri(keyword: str) -> List[LogRecord]:
+        """根据 log_uri 模糊搜索日志"""
         with get_connection() as conn:
             rows = conn.execute(
                 """
                 select id,
-                       source_type,
+                       log_type,
                        format_type,
-                       source_uri,
+                       log_uri,
                        create_time,
                        is_extracted,
                        extract_method,
                        line_count
-                from log_sources
-                where source_uri like ?
+                from log
+                where log_uri like ?
                 """,
                 [f"%{keyword}%"]
             ).fetchall()
 
         return [
-            LogSourceRecord(
+            LogRecord(
                 id=row[0],
-                source_type=row[1],
+                log_type=row[1],
                 format_type=row[2],
-                source_uri=row[3],
+                log_uri=row[3],
                 create_time=datetime.fromisoformat(row[4]),
                 is_extracted=bool(row[5]),
                 extract_method=row[6],

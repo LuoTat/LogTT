@@ -1,7 +1,7 @@
 import regex
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
     QLabel,
     QHBoxLayout,
     QVBoxLayout
@@ -19,8 +19,8 @@ from qfluentwidgets import (
     InfoBarPosition
 )
 
+from modules.logparser import ParserFactory
 from modules.format_config import FormatConfigManager
-from modules.logparser.parser_factory import ParserFactory
 
 
 class ExtractLogMessageBox(MessageBoxBase):
