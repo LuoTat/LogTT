@@ -23,52 +23,51 @@ class LogSourceColumn(IntEnum):
 class LogSourceItem:
     """日志源数据项，包含记录和运行时状态"""
 
-    def __init__(self, log_source: LogSourceRecord):
-        self.log_source = log_source
+    def __init__(self, log: LogSourceRecord):
+        self.log = log
         self.progress: int | None = None  # 提取进度 (0-100)，None 表示未在提取中
-        self.is_extracting: bool = False  # 是否正在提取
 
     @property
     def id(self) -> int:
-        return self.log_source.id
+        return self.log.id
 
     @property
     def source_type(self) -> str:
-        return self.log_source.source_type
+        return self.log.source_type
 
     @property
     def format_type(self) -> str | None:
-        return self.log_source.format_type
+        return self.log.format_type
 
     @property
     def source_uri(self) -> str:
-        return self.log_source.source_uri
+        return self.log.source_uri
 
     @property
     def create_time(self) -> datetime:
-        return self.log_source.create_time
+        return self.log.create_time
 
     @property
     def is_extracted(self) -> bool:
-        return self.log_source.is_extracted
+        return self.log.is_extracted
 
     @property
     def extract_method(self) -> str | None:
-        return self.log_source.extract_method
+        return self.log.extract_method
 
     @property
     def line_count(self) -> int | None:
-        return self.log_source.line_count
+        return self.log.line_count
 
 
 class LogSourceTableModel(QAbstractTableModel):
     """日志源数据项表格模型"""
+
     # 自定义角色
     LogIdRole = Qt.ItemDataRole.UserRole + 1
     IsExtractedRole = Qt.ItemDataRole.UserRole + 2
-    IsExtractingRole = Qt.ItemDataRole.UserRole + 3
-    ProgressRole = Qt.ItemDataRole.UserRole + 4
-    LogSourceItemRole = Qt.ItemDataRole.UserRole + 5
+    ProgressRole = Qt.ItemDataRole.UserRole + 3
+    LogSourceItemRole = Qt.ItemDataRole.UserRole + 4
 
     # 操作信号
     extract = pyqtSignal(int)  # 请求提取
@@ -137,8 +136,6 @@ class LogSourceTableModel(QAbstractTableModel):
             return item.id
         elif role == self.IsExtractedRole:
             return item.is_extracted
-        elif role == self.IsExtractingRole:
-            return item.is_extracting
         elif role == self.ProgressRole:
             return item.progress
         elif role == self.LogSourceItemRole:
@@ -161,8 +158,7 @@ class LogSourceTableModel(QAbstractTableModel):
         for idx, log in enumerate(logs):
             item = LogSourceItem(log)
 
-            if not log_progress and log.id in log_progress:
-                item.is_extracting = True
+            if log_progress and log.id in log_progress:
                 item.progress = log_progress[log.id]
 
             self.items.append(item)
@@ -170,67 +166,44 @@ class LogSourceTableModel(QAbstractTableModel):
 
         self.endResetModel()
 
-    def getItemById(self, log_id: int) -> LogSourceItem | None:
+    def getItem(self, log_id: int) -> LogSourceItem | None:
         """根据ID获取数据项"""
         if log_id not in self.id_to_row:
             return None
         return self.items[self.id_to_row[log_id]]
 
-    def getRowById(self, log_id: int) -> int | None:
+    def getRow(self, log_id: int) -> int | None:
         """根据ID获取行号"""
         return self.id_to_row.get(log_id)
 
-    def setExtracting(self, log_id: int, is_extracting: bool, progress: int = 0):
-        """设置提取状态"""
+    def setLog(self, log_id: int, log: LogSourceRecord):
+        """设置日志源记录"""
         if log_id not in self.id_to_row:
             return
         row = self.id_to_row[log_id]
 
         item = self.items[row]
-        item.is_extracting = is_extracting
-        item.progress = progress if is_extracting else None
+        item.log = log
 
-        # 更新进度列
-        progress_index = self.index(row, LogSourceColumn.PROGRESS)
-        self.dataChanged.emit(progress_index, progress_index, [self.ProgressRole, self.IsExtractingRole])
+        # 更新整行数据
+        left_index = self.index(row, 0)
+        right_index = self.index(row, self.columnCount() - 1)
+        self.dataChanged.emit(left_index, right_index)
 
-        # 更新操作列
-        actions_index = self.index(row, LogSourceColumn.ACTIONS)
-        self.dataChanged.emit(actions_index, actions_index, [self.IsExtractingRole])
-
-    def updateProgress(self, log_id: int, progress: int):
-        """更新提取进度"""
+    def setProgress(self, log_id: int, progress: int | None):
+        """设置提取进度"""
         if log_id not in self.id_to_row:
             return
         row = self.id_to_row[log_id]
 
         item = self.items[row]
         item.progress = progress
-        item.is_extracting = True
 
         # 更新进度列
-        progress_index = self.index(row, LogSourceColumn.PROGRESS)
-        self.dataChanged.emit(progress_index, progress_index, [self.ProgressRole])
+        index = self.index(row, LogSourceColumn.PROGRESS)
+        self.dataChanged.emit(index, index)
 
-        # 更新操作列
-        actions_index = self.index(row, LogSourceColumn.ACTIONS)
-        self.dataChanged.emit(actions_index, actions_index, [self.IsExtractingRole])
-
-    def updateRecord(self, log_id: int, log: LogSourceRecord):
-        """更新日志源记录"""
-        if log_id not in self.id_to_row:
-            return
-        row = self.id_to_row[log_id]
-
-        item = self.items[row]
-        item.log_source = log
-
-        # 更新整行
-        left_index = self.index(row, 0)
-        right_index = self.index(row, self.columnCount() - 1)
-        self.dataChanged.emit(left_index, right_index)
-
-    def removeById(self, log_id: int):
+    def remove(self, log_id: int):
         """根据ID移除数据项"""
         if log_id not in self.id_to_row:
             return

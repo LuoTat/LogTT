@@ -1,23 +1,35 @@
 import sqlite3
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QObject, QThread, pyqtSlot, pyqtSignal
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QHeaderView, QVBoxLayout
+from PyQt6.QtCore import (
+    Qt,
+    QObject,
+    QThread,
+    pyqtSlot,
+    pyqtSignal
+)
+from PyQt6.QtWidgets import (
+    QWidget,
+    QHeaderView,
+    QHBoxLayout,
+    QVBoxLayout
+)
 from qfluentwidgets import (
     InfoBar,
+    TableView,
     FluentIcon,
     MessageBox,
     PushButton,
-    TableView,
     SearchLineEdit,
     InfoBarPosition,
     PrimaryPushButton
 )
 
-from .LogSourceTableModel import LogSourceTableModel, LogSourceColumn
-from .LogSourceDelegate import ProgressBarDelegate, ActionButtonDelegate
 from .AddLogMessageBox import AddLogMessageBox
 from .ExtractLogMessageBox import ExtractLogMessageBox
+from .ProgressBarDelegate import ProgressBarDelegate
+from .ActionBarDelegate import ActionBarDelegate
+from .LogSourceTableModel import LogSourceTableModel, LogSourceColumn
 from modules.logparser import ParserFactory
 from modules.log_source_service import LogSourceService
 
@@ -115,16 +127,13 @@ class LogManagePage(QWidget):
         self.search_input = SearchLineEdit(self)
         self.search_input.setPlaceholderText("按URI搜索")
         self.search_input.setClearButtonEnabled(True)
-        self.search_input.setFixedHeight(36)
         self.search_input.searchSignal.connect(self._onSearchLog)
         self.search_input.clearSignal.connect(self._refreshModel)
 
         self.refresh_button = PushButton(FluentIcon.SYNC, "刷新", self)
-        self.refresh_button.setFixedHeight(36)
         self.refresh_button.clicked.connect(self._refreshModel)
 
         self.add_button = PrimaryPushButton(FluentIcon.ADD, "新增日志", self)
-        self.add_button.setFixedHeight(36)
         self.add_button.clicked.connect(self._onAddLog)
 
         tool_bar_layout.addWidget(self.search_input, 1)
@@ -163,35 +172,19 @@ class LogManagePage(QWidget):
 
         # 设置列委托
         self.progress_delegate = ProgressBarDelegate(self.table_view)
-        self.action_delegate = ActionButtonDelegate(self.model, self.table_view)
+        self.action_delegate = ActionBarDelegate(self.model, self.table_view)
         self.table_view.setItemDelegateForColumn(LogSourceColumn.PROGRESS, self.progress_delegate)
         self.table_view.setItemDelegateForColumn(LogSourceColumn.ACTIONS, self.action_delegate)
 
         self.main_layout.addWidget(self.table_view)
 
-    def _openPersistentEditors(self):
-        """为所有行开启持久编辑器"""
-        for row in range(self.model.rowCount()):
-            # 进度条列
-            progress_index = self.model.index(row, LogSourceColumn.PROGRESS)
-            self.table_view.openPersistentEditor(progress_index)
-
-            # 操作按钮列
-            action_index = self.model.index(row, LogSourceColumn.ACTIONS)
-            self.table_view.openPersistentEditor(action_index)
-
     def _updateTableLayout(self):
         """更新表格布局"""
-        header = self.table_view.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
         # 固定进度列和操作列宽度
-        header.setSectionResizeMode(LogSourceColumn.PROGRESS, QHeaderView.ResizeMode.Fixed)
-        self.table_view.setColumnWidth(LogSourceColumn.PROGRESS, 120)
-        header.setSectionResizeMode(LogSourceColumn.ACTIONS, QHeaderView.ResizeMode.ResizeToContents)
-
-        # 行高自适应
-        self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table_view.horizontalHeader().setSectionResizeMode(LogSourceColumn.PROGRESS, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_view.horizontalHeader().setSectionResizeMode(LogSourceColumn.ACTIONS, QHeaderView.ResizeMode.ResizeToContents)
+        # self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
     def _getLogProgress(self) -> dict[int, int]:
         """获取正在提取的任务进度映射"""
@@ -204,7 +197,6 @@ class LogManagePage(QWidget):
         log_progress = self._getLogProgress()
         self.model.setLogSources(logs, log_progress)
         self._updateTableLayout()
-        self._openPersistentEditors()
 
     @pyqtSlot(str)
     def _onSearchLog(self, keyword: str):
@@ -307,7 +299,7 @@ class LogManagePage(QWidget):
     @pyqtSlot(int)
     def _onExtractLog(self, log_id: int):
         """处理提取日志请求"""
-        item = self.model.getItemById(log_id)
+        item = self.model.getItem(log_id)
         if item is None:
             return
 
@@ -337,7 +329,7 @@ class LogManagePage(QWidget):
             self.log_extracting[log_id] = task_info
 
             # 更新模型状态
-            self.model.setExtracting(log_id, True, 0)
+            self.model.setProgress(log_id, 0)
 
             # 连接信号
             thread.started.connect(task.run)
@@ -354,7 +346,7 @@ class LogManagePage(QWidget):
         if log_id in self.log_extracting:
             self.log_extracting[log_id].progress = progress
         # 更新模型，触发UI刷新
-        self.model.updateProgress(log_id, progress)
+        self.model.setProgress(log_id, progress)
 
     @pyqtSlot(int, bool, str)
     def _onExtractFinished(self, log_id: int, success: bool, msg: str):
@@ -366,7 +358,7 @@ class LogManagePage(QWidget):
             task_info.thread.wait()
 
         # 更新模型状态
-        self.model.setExtracting(log_id, False)
+        self.model.setProgress(log_id, None)
 
         if success:
             InfoBar.success(
@@ -395,21 +387,21 @@ class LogManagePage(QWidget):
     @pyqtSlot(int)
     def _onViewLog(self, log_id: int):
         """处理查看日志请求"""
-        item = self.model.getItemById(log_id)
+        item = self.model.getItem(log_id)
         if item:
             self._showToast(f"查看日志：{item.source_uri}")
 
     @pyqtSlot(int)
     def _onViewTemplate(self, log_id: int):
         """处理查看模板请求"""
-        item = self.model.getItemById(log_id)
+        item = self.model.getItem(log_id)
         if item:
             self._showToast(f"查看模板：{item.source_uri}")
 
     @pyqtSlot(int)
     def _onDeleteLog(self, log_id: int):
         """处理删除日志请求"""
-        item = self.model.getItemById(log_id)
+        item = self.model.getItem(log_id)
         if item is None:
             return
 
