@@ -1,5 +1,6 @@
 import sqlite3
 from pathlib import Path
+from datetime import datetime
 from dataclasses import dataclass
 
 from PySide6.QtCore import (
@@ -28,7 +29,7 @@ from qfluentwidgets import (
 )
 
 from ui.APPConfig import appcfg
-from modules.log import LogService
+from modules.log import LogService, LogRecord
 from .LogExtractTask import LogExtractTask
 from .AddLogMessageBox import AddLogMessageBox
 from .ProgressBarDelegate import ProgressBarDelegate
@@ -154,7 +155,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=3000,
-            parent=self,
+            parent=self
         )
 
     def _interruptExtractTask(self, log_id: int):
@@ -258,7 +259,18 @@ class LogManagePage(QWidget):
         if dialog.exec():
             if dialog.selected_file_path:
                 try:
-                    self.log_service.add_local_log(dialog.selected_file_path)
+                    log = LogRecord(
+                        id=-1,
+                        log_type="本地文件",
+                        format_type=None,
+                        log_uri=Path(dialog.selected_file_path).resolve().as_posix(),
+                        create_time=datetime.now(),
+                        is_extracted=False,
+                        extract_method=None,
+                        line_count=None
+                    )
+                    log.id = self.log_service.add_log(log)
+                    self.model.addLog(log)
                     InfoBar.success(
                         title="导入成功",
                         content="本地日志已导入",
@@ -266,7 +278,7 @@ class LogManagePage(QWidget):
                         isClosable=True,
                         position=InfoBarPosition.TOP,
                         duration=3000,
-                        parent=self,
+                        parent=self
                     )
                 except sqlite3.IntegrityError:
                     InfoBar.warning(
@@ -276,7 +288,7 @@ class LogManagePage(QWidget):
                         isClosable=True,
                         position=InfoBarPosition.TOP,
                         duration=4000,
-                        parent=self,
+                        parent=self
                     )
                 except Exception as exc:
                     InfoBar.error(
@@ -286,14 +298,24 @@ class LogManagePage(QWidget):
                         isClosable=True,
                         position=InfoBarPosition.TOP,
                         duration=5000,
-                        parent=self,
+                        parent=self
                     )
-                self._onRefreshModel()
                 return
 
             if dialog.url_input.text():
                 try:
-                    self.log_service.add_network_log(dialog.url_input.text().strip())
+                    log = LogRecord(
+                        id=-1,
+                        log_type="网络地址",
+                        format_type=None,
+                        log_uri=dialog.url_input.text().strip(),
+                        create_time=datetime.now(),
+                        is_extracted=False,
+                        extract_method="Drain3",
+                        line_count=None
+                    )
+                    log.id = self.log_service.add_log(log)
+                    self.model.addLog(log)
                     InfoBar.success(
                         title="导入成功",
                         content="网络日志源已添加",
@@ -301,7 +323,7 @@ class LogManagePage(QWidget):
                         isClosable=True,
                         position=InfoBarPosition.TOP,
                         duration=3000,
-                        parent=self,
+                        parent=self
                     )
                 except sqlite3.IntegrityError:
                     InfoBar.warning(
@@ -311,7 +333,7 @@ class LogManagePage(QWidget):
                         isClosable=True,
                         position=InfoBarPosition.TOP,
                         duration=4000,
-                        parent=self,
+                        parent=self
                     )
                 except Exception as exc:
                     InfoBar.error(
@@ -321,9 +343,8 @@ class LogManagePage(QWidget):
                         isClosable=True,
                         position=InfoBarPosition.TOP,
                         duration=5000,
-                        parent=self,
+                        parent=self
                     )
-                self._onRefreshModel()
                 return
 
             InfoBar.warning(
@@ -333,7 +354,7 @@ class LogManagePage(QWidget):
                 isClosable=True,
                 position=InfoBarPosition.TOP,
                 duration=4000,
-                parent=self,
+                parent=self
             )
 
     @Slot(int)
@@ -401,7 +422,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=3000,
-            parent=self,
+            parent=self
         )
 
         self._onRefreshModel()
@@ -417,12 +438,12 @@ class LogManagePage(QWidget):
 
         InfoBar.info(
             title="提取中断",
-            content=f"日志提取已终止",
+            content="日志提取已终止",
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=3000,
-            parent=self,
+            parent=self
         )
 
         self._onRefreshModel()
@@ -451,7 +472,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=5000,
-            parent=self,
+            parent=self
         )
 
         self._onRefreshModel()
@@ -492,7 +513,7 @@ class LogManagePage(QWidget):
                     isClosable=True,
                     position=InfoBarPosition.TOP,
                     duration=3000,
-                    parent=self,
+                    parent=self
                 )
             except Exception as exc:
                 InfoBar.error(
@@ -502,5 +523,5 @@ class LogManagePage(QWidget):
                     isClosable=True,
                     position=InfoBarPosition.TOP,
                     duration=5000,
-                    parent=self,
+                    parent=self
                 )

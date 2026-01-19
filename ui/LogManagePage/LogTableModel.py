@@ -195,6 +195,14 @@ class LogTableModel(QAbstractTableModel):
         """根据ID获取行号"""
         return self.id_to_row.get(log_id)
 
+    def addLog(self, log: LogRecord):
+        """添加日志记录"""
+        self.beginInsertRows(QModelIndex(), len(self.items), len(self.items))
+        item = LogItem(log)
+        self.items.append(item)
+        self.id_to_row[log.id] = len(self.items) - 1
+        self.endInsertRows()
+
     def setLog(self, log_id: int, log: LogRecord):
         """设置日志记录"""
         if log_id not in self.id_to_row:
@@ -238,7 +246,6 @@ class LogTableModel(QAbstractTableModel):
 
     def clear(self):
         """清空所有数据"""
-
         self.beginResetModel()
         self.items.clear()
         self.id_to_row.clear()

@@ -205,7 +205,7 @@ class ExtractLogMessageBox(MessageBoxBase):
                 isClosable=True,
                 position=InfoBarPosition.TOP,
                 duration=4000,
-                parent=self,
+                parent=self
             )
             return False
         if format_name == "自定义":
@@ -216,7 +216,7 @@ class ExtractLogMessageBox(MessageBoxBase):
                 isClosable=True,
                 position=InfoBarPosition.TOP,
                 duration=4000,
-                parent=self,
+                parent=self
             )
             return False
 
@@ -228,7 +228,7 @@ class ExtractLogMessageBox(MessageBoxBase):
                 isClosable=True,
                 position=InfoBarPosition.TOP,
                 duration=4000,
-                parent=self,
+                parent=self
             )
             return False
 
@@ -246,7 +246,7 @@ class ExtractLogMessageBox(MessageBoxBase):
                 isClosable=True,
                 position=InfoBarPosition.TOP,
                 duration=4000,
-                parent=self,
+                parent=self
             )
             return False
 
@@ -268,7 +268,7 @@ class ExtractLogMessageBox(MessageBoxBase):
                             isClosable=True,
                             position=InfoBarPosition.TOP,
                             duration=4000,
-                            parent=self,
+                            parent=self
                         )
                         return False
 

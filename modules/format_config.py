@@ -50,7 +50,7 @@ class FormatConfigManager:
                 f,
                 allow_unicode=True,
                 indent=2,
-                width=float("inf"),
+                width=float("inf")
             )
 
     def is_format_type_exists(self, format_type: str) -> bool:

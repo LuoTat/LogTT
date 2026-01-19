@@ -32,9 +32,9 @@ class LogRepository:
             conn.commit()
 
     @staticmethod
-    def add(log: LogRecord):
+    def add(log: LogRecord) -> int:
         with get_connection() as conn:
-            conn.execute(
+            cursor = conn.execute(
                 """
                 insert into log (log_type, format_type, log_uri, create_time, is_extracted, extract_method, line_count)
                 values (?, ?, ?, ?, ?, ?, ?)
@@ -50,6 +50,8 @@ class LogRepository:
                 ]
             )
             conn.commit()
+
+            return cursor.lastrowid
 
     @staticmethod
     def delete(log_id: int):

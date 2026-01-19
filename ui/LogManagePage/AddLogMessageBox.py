@@ -121,5 +121,4 @@ class AddLogMessageBox(MessageBoxBase):
             self.file_path_label.setText(os.path.basename(file_path))
             self.file_path_label.setStyleSheet("color: #0078d4; padding-left: 8px; font-weight: 500;")
             self.file_path_label.setToolTip(file_path)
-            self.file_path_label.installEventFilter(
-                ToolTipFilter(self.file_path_label, showDelay=300, position=ToolTipPosition.RIGHT))
+            self.file_path_label.installEventFilter(ToolTipFilter(self.file_path_label, showDelay=300, position=ToolTipPosition.RIGHT))

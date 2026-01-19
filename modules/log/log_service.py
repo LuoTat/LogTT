@@ -11,31 +11,8 @@ class LogService:
     def __init__(self):
         self.repo = LogRepository()
 
-    def add_local_log(self, file_path: str):
-        log = LogRecord(
-            id=-1,
-            log_type="本地文件",
-            log_uri=Path(file_path).resolve().as_posix(),
-            create_time=datetime.now(),
-            is_extracted=False,
-            extract_method=None,
-            line_count=None,
-            format_type=None
-        )
-        self.repo.add(log)
-
-    def add_network_log(self, url: str):
-        log = LogRecord(
-            id=-1,
-            log_type="网络地址",
-            log_uri=url,
-            create_time=datetime.now(),
-            is_extracted=False,
-            extract_method="Drain3",
-            line_count=None,
-            format_type=None
-        )
-        self.repo.add(log)
+    def add_log(self, log: LogRecord) -> int:
+        return self.repo.add(log)
 
     def delete_log(self, log_id: int):
         self.repo.delete(log_id)
