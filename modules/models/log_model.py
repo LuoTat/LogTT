@@ -21,75 +21,71 @@ from modules.logparser import ParserFactory
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "logtt.db"
 
 
-class LogSqlHeader(IntEnum):
-    """日志表格头枚举"""
-
-    ID = 0  # id
-    LOG_TYPE = 1  # log_type
-    FORMAT_TYPE = 2  # format_type
-    LOG_URI = 3  # log_uri
-    CREATE_TIME = 4  # create_time
-    IS_EXTRACTED = 5  # is_extracted
-    EXTRACT_METHOD = 6  # extract_method
-    LINE_COUNT = 7  # line_count
-
-
-class LogStatus(IntEnum):
-    """日志状态枚举"""
-
-    EXTRACTED = 0  # 已提取
-    NOT_EXTRACTED = 1  # 未提取
-    EXTRACTING = 2  # 提取中
-
-
-class LogExtractTask(QObject):
-    """日志提取工作线程"""
-
-    finished = Signal(int, int)  # (log_id, line_count)
-    interrupted = Signal(int)  # (log_id)
-    error = Signal(int, str)  # (log_id, error_message)
-    progress = Signal(int, int)  # (log_id, progress)
-
-    def __init__(self, log_id: int, log_file: Path, algorithm: str, format_type: str, log_format: str, regex: list[str]):
-        super().__init__()
-        self.log_id = log_id
-        self.log_file = log_file
-        self.algorithm = algorithm
-        self.format_type = format_type
-        self.log_format = log_format
-        self.regex = regex
-
-    @Slot()
-    def run(self):
-        try:
-            parser_type = ParserFactory.get_parser_type(self.algorithm)
-            result = parser_type(
-                self.log_file,
-                self.log_format,
-                self.regex,
-                lambda: QThread.currentThread().isInterruptionRequested(),
-                lambda progress: self.progress.emit(self.log_id, progress)
-            ).parse()
-
-            # 提取完成
-            self.finished.emit(self.log_id, result.line_count)
-        except InterruptedError:
-            self.interrupted.emit(self.log_id)
-        except Exception as e:
-            self.error.emit(self.log_id, str(e))
-
-
-@dataclass
-class LogExtractTaskInfo:
-    """日志提取任务信息"""
-
-    thread: QThread
-    task: LogExtractTask
-    progress: int = 0
-
-
 class LogSqlModel(QSqlTableModel):
-    """日志数据模型 - 基于QSqlTableModel"""
+    """日志数据库模型"""
+
+    class SqlColumn(IntEnum):
+        """日志数据库字段枚举"""
+
+        ID = 0  # id
+        LOG_TYPE = 1  # log_type
+        FORMAT_TYPE = 2  # format_type
+        LOG_URI = 3  # log_uri
+        CREATE_TIME = 4  # create_time
+        IS_EXTRACTED = 5  # is_extracted
+        EXTRACT_METHOD = 6  # extract_method
+        LINE_COUNT = 7  # line_count
+
+    class LogStatus(IntEnum):
+        """日志状态枚举"""
+
+        EXTRACTED = 0  # 已提取
+        NOT_EXTRACTED = 1  # 未提取
+        EXTRACTING = 2  # 提取中
+
+    class LogExtractTask(QObject):
+        """日志提取工作线程"""
+
+        finished = Signal(int, int)  # (log_id, line_count)
+        interrupted = Signal(int)  # (log_id)
+        error = Signal(int, str)  # (log_id, error_message)
+        progress = Signal(int, int)  # (log_id, progress)
+
+        def __init__(self, log_id: int, log_file: Path, algorithm: str, format_type: str, log_format: str, regex: list[str]):
+            super().__init__()
+            self.log_id = log_id
+            self.log_file = log_file
+            self.algorithm = algorithm
+            self.format_type = format_type
+            self.log_format = log_format
+            self.regex = regex
+
+        @Slot()
+        def run(self):
+            try:
+                parser_type = ParserFactory.get_parser_type(self.algorithm)
+                result = parser_type(
+                    self.log_file,
+                    self.log_format,
+                    self.regex,
+                    lambda: QThread.currentThread().isInterruptionRequested(),
+                    lambda progress: self.progress.emit(self.log_id, progress)
+                ).parse()
+
+                # 提取完成
+                self.finished.emit(self.log_id, result.line_count)
+            except InterruptedError:
+                self.interrupted.emit(self.log_id)
+            except Exception as e:
+                self.error.emit(self.log_id, str(e))
+
+    @dataclass
+    class LogExtractTaskInfo:
+        """日志提取任务信息"""
+
+        thread: QThread
+        task: "LogSqlModel.LogExtractTask"
+        progress: int = 0
 
     # 自定义角色
     LogIdRole = Qt.ItemDataRole.UserRole + 1
@@ -108,7 +104,7 @@ class LogSqlModel(QSqlTableModel):
 
     def __init__(self, parent=None):
         # 创建数据库连接
-        self._init_database()
+        self._initDB()
 
         super().__init__(parent, self._db)
         self.setTable("log")
@@ -116,9 +112,9 @@ class LogSqlModel(QSqlTableModel):
         self.select()
 
         # 存储正在提取的任务信息: log_id -> LogExtractTaskInfo
-        self._extract_tasks: dict[int, LogExtractTaskInfo] = {}
+        self._extract_tasks: dict[int, LogSqlModel.LogExtractTaskInfo] = {}
 
-    def _init_database(self):
+    def _initDB(self):
         """初始化数据库连接，如果表不存在则创建"""
         connection_name = "log_connection"
 
@@ -133,9 +129,9 @@ class LogSqlModel(QSqlTableModel):
                 raise RuntimeError(f"无法打开数据库: {self._db.lastError().text()}")
 
         # 如果表不存在则创建
-        self._create_table_if_not_exists()
+        self._createLogTable()
 
-    def _create_table_if_not_exists(self):
+    def _createLogTable(self):
         """创建 log 表（如果不存在）"""
         query = self._db.exec(
             """
@@ -182,24 +178,24 @@ class LogSqlModel(QSqlTableModel):
 
     def _getId(self, index: QModelIndex) -> int:
         """根据索引获取log_id"""
-        return super().data(self.index(index.row(), LogSqlHeader.ID), Qt.ItemDataRole.DisplayRole)
+        return super().data(self.index(index.row(), LogSqlModel.SqlColumn.ID), Qt.ItemDataRole.DisplayRole)
 
     def _getStatus(self, index: QModelIndex) -> LogStatus:
         """获取日志状态"""
-        is_extracted = super().data(self.index(index.row(), LogSqlHeader.IS_EXTRACTED), Qt.ItemDataRole.DisplayRole)
+        is_extracted = super().data(self.index(index.row(), LogSqlModel.SqlColumn.IS_EXTRACTED), Qt.ItemDataRole.DisplayRole)
         if is_extracted:
-            return LogStatus.EXTRACTED
+            return LogSqlModel.LogStatus.EXTRACTED
         elif self._getId(index) in self._extract_tasks:
-            return LogStatus.EXTRACTING
+            return LogSqlModel.LogStatus.EXTRACTING
         else:
-            return LogStatus.NOT_EXTRACTED
+            return LogSqlModel.LogStatus.NOT_EXTRACTED
 
     def _getProgress(self, index: QModelIndex) -> int:
         """获取提取进度"""
-        is_extracted = super().data(self.index(index.row(), LogSqlHeader.IS_EXTRACTED), Qt.ItemDataRole.DisplayRole)
+        is_extracted = super().data(self.index(index.row(), LogSqlModel.SqlColumn.IS_EXTRACTED), Qt.ItemDataRole.DisplayRole)
         if is_extracted:
             return 100
-        elif log_id := self._getId(index) in self._extract_tasks:
+        elif (log_id := self._getId(index)) in self._extract_tasks:
             return self._extract_tasks[log_id].progress
         return 0
 
@@ -234,8 +230,8 @@ class LogSqlModel(QSqlTableModel):
 
         # 更新数据库
         row = self._getRow(log_id)
-        self.setData(self.index(row, LogSqlHeader.IS_EXTRACTED), 1)
-        self.setData(self.index(row, LogSqlHeader.LINE_COUNT), line_count)
+        self.setData(self.index(row, self.SqlColumn.IS_EXTRACTED), 1)
+        self.setData(self.index(row, self.SqlColumn.LINE_COUNT), line_count)
         self.submitAll()
 
         # 发出完成信号
@@ -276,11 +272,11 @@ class LogSqlModel(QSqlTableModel):
         """请求添加日志记录"""
         # 在第一行插入新记录
         self.insertRow(0)
-        self.setData(self.index(0, LogSqlHeader.LOG_TYPE), log_type)
-        self.setData(self.index(0, LogSqlHeader.LOG_URI), log_uri)
-        self.setData(self.index(0, LogSqlHeader.CREATE_TIME), datetime.now().isoformat(timespec="seconds"))
+        self.setData(self.index(0, self.SqlColumn.LOG_TYPE), log_type)
+        self.setData(self.index(0, self.SqlColumn.LOG_URI), log_uri)
+        self.setData(self.index(0, self.SqlColumn.CREATE_TIME), datetime.now().isoformat(timespec="seconds"))
         if extract_method:
-            self.setData(self.index(0, LogSqlHeader.EXTRACT_METHOD), extract_method)
+            self.setData(self.index(0, self.SqlColumn.EXTRACT_METHOD), extract_method)
 
         if self.submitAll():
             self.select()  # 同步ID
@@ -295,7 +291,6 @@ class LogSqlModel(QSqlTableModel):
 
     def requestDelete(self, index: QModelIndex):
         """请求删除日志记录"""
-
         # 如果有正在提取的任务，先中断
         self._interruptExtractTask(index)
 
@@ -310,15 +305,15 @@ class LogSqlModel(QSqlTableModel):
         """请求提取日志"""
         row = index.row()
         # 更新日志格式和提取方法到数据库
-        self.setData(self.index(row, LogSqlHeader.FORMAT_TYPE), format_type)
-        self.setData(self.index(row, LogSqlHeader.EXTRACT_METHOD), algorithm)
+        self.setData(self.index(row, self.SqlColumn.FORMAT_TYPE), format_type)
+        self.setData(self.index(row, self.SqlColumn.EXTRACT_METHOD), algorithm)
         self.submitAll()
 
         log_id = self._getId(index)
         # 创建提取任务
-        task = LogExtractTask(
+        task = LogSqlModel.LogExtractTask(
             log_id,
-            Path(super().data(self.index(row, LogSqlHeader.LOG_URI), Qt.ItemDataRole.DisplayRole)),
+            Path(super().data(self.index(row, self.SqlColumn.LOG_URI), Qt.ItemDataRole.DisplayRole)),
             algorithm,
             format_type,
             log_format,
@@ -329,7 +324,7 @@ class LogSqlModel(QSqlTableModel):
         thread = QThread()
 
         # 保存任务信息
-        task_info = LogExtractTaskInfo(thread, task)
+        task_info = LogSqlModel.LogExtractTaskInfo(thread, task)
         self._extract_tasks[log_id] = task_info
 
         # 连接信号
