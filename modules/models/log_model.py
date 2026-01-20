@@ -1,15 +1,15 @@
 from typing import Any
 from pathlib import Path
 from enum import IntEnum
-from datetime import datetime
 from dataclasses import dataclass
 
 from PySide6.QtCore import (
     Qt,
     Slot,
     Signal,
+    QObject,
     QThread,
-    QModelIndex, QObject
+    QModelIndex
 )
 from PySide6.QtSql import (
     QSqlDatabase,
@@ -138,13 +138,13 @@ class LogSqlModel(QSqlTableModel):
             CREATE TABLE IF NOT EXISTS log
             (
                 id             INTEGER PRIMARY KEY AUTOINCREMENT,
-                log_type       TEXT          NOT NULL,
+                log_type       TEXT                              NOT NULL,
                 format_type    TEXT,
-                log_uri        TEXT          NOT NULL UNIQUE,
-                create_time    TEXT          NOT NULL,
-                is_extracted   INT default 0 NOT NULL,
+                log_uri        TEXT                              NOT NULL UNIQUE,
+                create_time    TEXT    DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                is_extracted   INTEGER DEFAULT 0                 NOT NULL,
                 extract_method TEXT,
-                line_count     INT
+                line_count     INTEGER
             )
             """
         )
@@ -158,21 +158,15 @@ class LogSqlModel(QSqlTableModel):
         if not index.isValid():
             return None
 
-        # 显示角色
-        if role == Qt.ItemDataRole.DisplayRole:
-            return super().data(index, role)
-        # 对齐角色
-        elif role == Qt.ItemDataRole.TextAlignmentRole:
-            return Qt.AlignmentFlag.AlignCenter
-        # 自定义角色
-        elif role == self.LogIdRole:
+        # 处理自定义角色
+        if role == self.LogIdRole:
             return self._getId(index)
         elif role == self.StatusRole:
             return self._getStatus(index)
         elif role == self.ProgressRole:
             return self._getProgress(index)
 
-        return None
+        return super().data(index, role)
 
     # ==================== 私有辅助方法 ====================
 
@@ -274,7 +268,6 @@ class LogSqlModel(QSqlTableModel):
         self.insertRow(0)
         self.setData(self.index(0, self.SqlColumn.LOG_TYPE), log_type)
         self.setData(self.index(0, self.SqlColumn.LOG_URI), log_uri)
-        self.setData(self.index(0, self.SqlColumn.CREATE_TIME), datetime.now().isoformat(timespec="seconds"))
         if extract_method:
             self.setData(self.index(0, self.SqlColumn.EXTRACT_METHOD), extract_method)
 
