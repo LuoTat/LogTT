@@ -178,21 +178,21 @@ class LogSqlModel(QSqlTableModel):
 
     def _getId(self, index: QModelIndex) -> int:
         """根据索引获取log_id"""
-        return super().data(self.index(index.row(), LogSqlModel.SqlColumn.ID), Qt.ItemDataRole.DisplayRole)
+        return super().data(self.index(index.row(), self.SqlColumn.ID), Qt.ItemDataRole.DisplayRole)
 
     def _getStatus(self, index: QModelIndex) -> LogStatus:
         """获取日志状态"""
-        is_extracted = super().data(self.index(index.row(), LogSqlModel.SqlColumn.IS_EXTRACTED), Qt.ItemDataRole.DisplayRole)
+        is_extracted = super().data(self.index(index.row(), self.SqlColumn.IS_EXTRACTED), Qt.ItemDataRole.DisplayRole)
         if is_extracted:
-            return LogSqlModel.LogStatus.EXTRACTED
+            return self.LogStatus.EXTRACTED
         elif self._getId(index) in self._extract_tasks:
-            return LogSqlModel.LogStatus.EXTRACTING
+            return self.LogStatus.EXTRACTING
         else:
-            return LogSqlModel.LogStatus.NOT_EXTRACTED
+            return self.LogStatus.NOT_EXTRACTED
 
     def _getProgress(self, index: QModelIndex) -> int:
         """获取提取进度"""
-        is_extracted = super().data(self.index(index.row(), LogSqlModel.SqlColumn.IS_EXTRACTED), Qt.ItemDataRole.DisplayRole)
+        is_extracted = super().data(self.index(index.row(), self.SqlColumn.IS_EXTRACTED), Qt.ItemDataRole.DisplayRole)
         if is_extracted:
             return 100
         elif (log_id := self._getId(index)) in self._extract_tasks:
@@ -311,7 +311,7 @@ class LogSqlModel(QSqlTableModel):
 
         log_id = self._getId(index)
         # 创建提取任务
-        task = LogSqlModel.LogExtractTask(
+        task = self.LogExtractTask(
             log_id,
             Path(super().data(self.index(row, self.SqlColumn.LOG_URI), Qt.ItemDataRole.DisplayRole)),
             algorithm,
@@ -324,7 +324,7 @@ class LogSqlModel(QSqlTableModel):
         thread = QThread()
 
         # 保存任务信息
-        task_info = LogSqlModel.LogExtractTaskInfo(thread, task)
+        task_info = self.LogExtractTaskInfo(thread, task)
         self._extract_tasks[log_id] = task_info
 
         # 连接信号
