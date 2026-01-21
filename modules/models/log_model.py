@@ -88,9 +88,8 @@ class LogSqlModel(QSqlTableModel):
         progress: int = 0
 
     # 自定义角色
-    LogIdRole = Qt.ItemDataRole.UserRole + 1
-    StatusRole = Qt.ItemDataRole.UserRole + 2
-    ProgressRole = Qt.ItemDataRole.UserRole + 3
+    StatusRole = Qt.ItemDataRole.UserRole + 1
+    ProgressRole = Qt.ItemDataRole.UserRole + 2
 
     # UI 控制信号
     extractFinished = Signal(int, int)  # 提取完成 (log_id, line_count)
@@ -159,9 +158,7 @@ class LogSqlModel(QSqlTableModel):
             return None
 
         # 处理自定义角色
-        if role == self.LogIdRole:
-            return self._getId(index)
-        elif role == self.StatusRole:
+        if role == self.StatusRole:
             return self._getStatus(index)
         elif role == self.ProgressRole:
             return self._getProgress(index)
@@ -264,12 +261,12 @@ class LogSqlModel(QSqlTableModel):
 
     def requestAdd(self, log_type: str, log_uri: str, extract_method: str | None = None):
         """请求添加日志记录"""
-        # 在第一行插入新记录
-        self.insertRow(0)
-        self.setData(self.index(0, self.SqlColumn.LOG_TYPE), log_type)
-        self.setData(self.index(0, self.SqlColumn.LOG_URI), log_uri)
+        row = self.rowCount()
+        self.insertRow(row)
+        self.setData(self.index(row, self.SqlColumn.LOG_TYPE), log_type)
+        self.setData(self.index(row, self.SqlColumn.LOG_URI), log_uri)
         if extract_method:
-            self.setData(self.index(0, self.SqlColumn.EXTRACT_METHOD), extract_method)
+            self.setData(self.index(row, self.SqlColumn.EXTRACT_METHOD), extract_method)
 
         if self.submitAll():
             self.select()  # 同步ID
@@ -315,6 +312,7 @@ class LogSqlModel(QSqlTableModel):
 
         # 创建工作线程
         thread = QThread()
+        task.moveToThread(thread)
 
         # 保存任务信息
         task_info = self.LogExtractTaskInfo(thread, task)
@@ -333,10 +331,6 @@ class LogSqlModel(QSqlTableModel):
     def requestInterruptExtract(self, index: QModelIndex):
         """请求中断提取任务"""
         self._interruptExtractTask(index)
-
-    def refresh(self):
-        """刷新模型数据"""
-        self.select()
 
     def hasExtractingTasks(self) -> bool:
         """是否有正在提取的任务"""
