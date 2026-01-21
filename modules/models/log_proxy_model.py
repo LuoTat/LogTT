@@ -178,11 +178,11 @@ class LogProxyModel(QSortFilterProxyModel):
         right_data = source_model.index(right.row(), source_col).data(Qt.ItemDataRole.DisplayRole)
 
         # 处理 None 值
-        if left_data is None and right_data is None:
+        if left_data in (None, "") and right_data in (None, ""):
             return False
-        if left_data is None:
+        if left_data in (None, ""):
             return True
-        if right_data is None:
+        if right_data in (None, ""):
             return False
 
         return left_data < right_data
