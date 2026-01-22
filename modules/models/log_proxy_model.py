@@ -44,12 +44,10 @@ class LogProxyModel(QSortFilterProxyModel):
 
     # 源列到代理列的映射
     _SOURCE_TO_PROXY = {
-        LogSqlModel.SqlColumn.ID: -1,
         LogSqlModel.SqlColumn.LOG_TYPE: ProxyColumn.LOG_TYPE,
         LogSqlModel.SqlColumn.FORMAT_TYPE: ProxyColumn.FORMAT_TYPE,
         LogSqlModel.SqlColumn.LOG_URI: ProxyColumn.NAME,
         LogSqlModel.SqlColumn.CREATE_TIME: ProxyColumn.CREATE_TIME,
-        LogSqlModel.SqlColumn.IS_EXTRACTED: -1,
         LogSqlModel.SqlColumn.EXTRACT_METHOD: ProxyColumn.EXTRACT_METHOD,
         LogSqlModel.SqlColumn.LINE_COUNT: ProxyColumn.LINE_COUNT,
     }

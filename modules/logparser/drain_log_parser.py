@@ -44,7 +44,7 @@ class Node:
 
 @parser_register
 class DrainLogParser(BaseLogParser):
-    def __init__(self, log_file, log_format, regex, should_stop, progress_callback=None, depth=4, st=0.4, max_child=100, keep_para=False):
+    def __init__(self, log_id, log_file, log_format, regex, should_stop, progress_callback=None, depth=4, st=0.4, max_child=100, keep_para=False):
         """
         Attributes
         ----------
@@ -53,7 +53,7 @@ class DrainLogParser(BaseLogParser):
             max_child : max number of children of an internal node
             keep_para : whether to keep parameter list in structured log file
         """
-        super().__init__(log_file, log_format, regex, should_stop, progress_callback)
+        super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback)
         self.depth = depth - 2
         self.st = st
         self.max_child = max_child

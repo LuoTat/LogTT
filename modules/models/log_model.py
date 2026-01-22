@@ -35,6 +35,8 @@ class LogSqlModel(QSqlTableModel):
         IS_EXTRACTED = 5  # is_extracted
         EXTRACT_METHOD = 6  # extract_method
         LINE_COUNT = 7  # line_count
+        LOG_STRUCTURED = 8  # log_structured
+        LOG_TEMPLATES = 9  # log_templates
 
     class LogStatus(IntEnum):
         """日志状态枚举"""
@@ -46,7 +48,7 @@ class LogSqlModel(QSqlTableModel):
     class LogExtractTask(QObject):
         """日志提取工作线程"""
 
-        finished = Signal(int, int)  # (log_id, line_count)
+        finished = Signal(int, int, str, str)  # (log_id, line_count, log_structured_path, log_templates_path)
         interrupted = Signal(int)  # (log_id)
         error = Signal(int, str)  # (log_id, error_message)
         progress = Signal(int, int)  # (log_id, progress)
@@ -65,6 +67,7 @@ class LogSqlModel(QSqlTableModel):
             try:
                 parser_type = ParserFactory.get_parser_type(self.algorithm)
                 result = parser_type(
+                    self.log_id,
                     self.log_file,
                     self.log_format,
                     self.regex,
@@ -72,8 +75,8 @@ class LogSqlModel(QSqlTableModel):
                     lambda progress: self.progress.emit(self.log_id, progress)
                 ).parse()
 
-                # 提取完成
-                self.finished.emit(self.log_id, result.line_count)
+                # 提取完成，传递文件路径
+                self.finished.emit(self.log_id, result.line_count, str(result.log_structured_file), str(result.log_templates_file))
             except InterruptedError:
                 self.interrupted.emit(self.log_id)
             except Exception as e:
@@ -92,7 +95,7 @@ class LogSqlModel(QSqlTableModel):
     ProgressRole = Qt.ItemDataRole.UserRole + 2
 
     # UI 控制信号
-    extractFinished = Signal(int, int)  # 提取完成 (log_id, line_count)
+    extractFinished = Signal(int, int, str, str)  # 提取完成 (log_id, line_count, log_structured_path, log_templates_path)
     extractInterrupted = Signal(int)  # 提取中断 (log_id)
     extractError = Signal(int, str)  # 提取错误 (log_id, error_message)
     addSuccess = Signal()  # 添加成功
@@ -143,7 +146,9 @@ class LogSqlModel(QSqlTableModel):
                 create_time    TEXT    DEFAULT CURRENT_TIMESTAMP NOT NULL,
                 is_extracted   INTEGER DEFAULT 0                 NOT NULL,
                 extract_method TEXT,
-                line_count     INTEGER
+                line_count     INTEGER,
+                log_structured TEXT,
+                log_templates  TEXT
             )
             """
         )
@@ -210,8 +215,8 @@ class LogSqlModel(QSqlTableModel):
 
     # ==================== 提取回调方法 ====================
 
-    @Slot(int, int)
-    def _onExtractFinished(self, log_id: int, line_count: int):
+    @Slot(int, int, str, str)
+    def _onExtractFinished(self, log_id: int, line_count: int, log_structured_path: str, log_templates_path: str):
         """处理提取完成"""
         # 清理任务信息
         if log_id in self._extract_tasks:
@@ -223,10 +228,12 @@ class LogSqlModel(QSqlTableModel):
         row = self._getRow(log_id)
         self.setData(self.index(row, self.SqlColumn.IS_EXTRACTED), 1)
         self.setData(self.index(row, self.SqlColumn.LINE_COUNT), line_count)
+        self.setData(self.index(row, self.SqlColumn.LOG_STRUCTURED), log_structured_path)
+        self.setData(self.index(row, self.SqlColumn.LOG_TEMPLATES), log_templates_path)
         self.submitAll()
 
         # 发出完成信号
-        self.extractFinished.emit(log_id, line_count)
+        self.extractFinished.emit(log_id, line_count, log_structured_path, log_templates_path)
 
     @Slot(int)
     def _onExtractInterrupted(self, log_id: int):
