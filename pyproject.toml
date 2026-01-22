@@ -3,7 +3,7 @@ name = "LogTT"
 version = "0.1.0"
 description = "结构化日志分析与可视化系统"
 readme = "README.md"
-requires-python = "==3.12.*"
+requires-python = ">=3.14"
 dependencies = [
     "loguru>=0.7.3",
     "pandas>=2.3.3",
