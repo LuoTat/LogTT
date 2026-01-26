@@ -1,7 +1,11 @@
-from .log_model import LogSqlModel
-from .log_proxy_model import LogProxyModel
+from .log_table_model import LogTableModel, LogStatus, LogColumn
+from .duckdb_service import DuckDBService
+from .duckdb_table_model import DuckDBTableModel
 
 __all__ = [
-    'LogSqlModel',
-    'LogProxyModel',
+    'LogTableModel',
+    'LogStatus',
+    'LogColumn',
+    'DuckDBService',
+    'DuckDBTableModel',
 ]

@@ -3,6 +3,7 @@ from pathlib import Path
 from PySide6.QtCore import (
     Qt,
     Slot,
+    Signal,
     QPoint,
     QModelIndex
 )
@@ -26,7 +27,7 @@ from qfluentwidgets import (
 )
 
 from ui.APPConfig import appcfg
-from modules.models import LogSqlModel, LogProxyModel
+from modules.models import LogTableModel, LogStatus, LogColumn
 
 from .AddLogMessageBox import AddLogMessageBox
 from .ProgressBarDelegate import ProgressBarDelegate
@@ -35,6 +36,11 @@ from .ExtractLogMessageBox import ExtractLogMessageBox
 
 class LogManagePage(QWidget):
     """日志管理页面"""
+
+    # 查看日志请求信号 (log_id)
+    viewLogRequested = Signal(int)
+    # 查看模板请求信号 (log_id) - 待后续实现
+    viewTemplateRequested = Signal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -53,21 +59,19 @@ class LogManagePage(QWidget):
 
     def _initModel(self):
         """初始化数据模型"""
-        self.source_model = LogSqlModel(self)
-        self.proxy_model = LogProxyModel(self)
-        self.proxy_model.setSourceModel(self.source_model)
+        self.model = LogTableModel(self)
 
         # 连接模型信号 -> UI 反馈
-        self.source_model.extractFinished.connect(self._onExtractFinished)
-        self.source_model.extractInterrupted.connect(self._onExtractInterrupted)
-        self.source_model.extractError.connect(self._onExtractError)
+        self.model.extractFinished.connect(self._onExtractFinished)
+        self.model.extractInterrupted.connect(self._onExtractInterrupted)
+        self.model.extractError.connect(self._onExtractError)
 
-        self.source_model.addSuccess.connect(self._onAddSuccess)
-        self.source_model.addDuplicate.connect(self._onAddDuplicate)
-        self.source_model.addError.connect(self._onAddError)
+        self.model.addSuccess.connect(self._onAddSuccess)
+        self.model.addDuplicate.connect(self._onAddDuplicate)
+        self.model.addError.connect(self._onAddError)
 
-        self.source_model.deleteSuccess.connect(self._onDeleteSuccess)
-        self.source_model.deleteError.connect(self._onDeleteError)
+        self.model.deleteSuccess.connect(self._onDeleteSuccess)
+        self.model.deleteError.connect(self._onDeleteError)
 
     def _initToolbar(self):
         """初始化工具栏"""
@@ -77,11 +81,11 @@ class LogManagePage(QWidget):
         self.search_input = SearchLineEdit(self)
         self.search_input.setPlaceholderText("按名称搜索")
         self.search_input.setClearButtonEnabled(True)
-        self.search_input.searchSignal.connect(self._onSearchLog)
-        self.search_input.clearSignal.connect(self.proxy_model.clearSearch)
+        self.search_input.searchSignal.connect(lambda keyword: self.model.searchByName(keyword))
+        self.search_input.clearSignal.connect(self.model.clearSearch)
 
         self.refresh_button = PushButton(FluentIcon.SYNC, "刷新", self)
-        self.refresh_button.clicked.connect(self._onRefresh)
+        self.refresh_button.clicked.connect(self.model.refresh)
 
         self.add_button = PrimaryPushButton(FluentIcon.ADD, "新增日志", self)
         self.add_button.clicked.connect(self._onAddLog)
@@ -98,7 +102,7 @@ class LogManagePage(QWidget):
         self.table_view = TableView(self)
         self.table_view.setBorderVisible(True)
         self.table_view.setBorderRadius(8)
-        self.table_view.setModel(self.proxy_model)
+        self.table_view.setModel(self.model)
 
         # 禁用单元格换行
         self.table_view.setWordWrap(False)
@@ -107,14 +111,14 @@ class LogManagePage(QWidget):
         # 禁用编辑
         self.table_view.setEditTriggers(TableView.EditTrigger.NoEditTriggers)
         # 设置最后一列拉伸填充
-        self.table_view.horizontalHeader().setStretchLastSection(True)
+        # self.table_view.horizontalHeader().setStretchLastSection(True)
         # 设置每次只选择一行
         self.table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
         # 启用排序
-        self.table_view.setSortingEnabled(True)
+        # self.table_view.setSortingEnabled(True)
         # 设置进度条委托
         self.progress_delegate = ProgressBarDelegate(self.table_view)
-        self.table_view.setItemDelegateForColumn(LogProxyModel.ProxyColumn.PROGRESS, self.progress_delegate)
+        self.table_view.setItemDelegateForColumn(LogColumn.PROGRESS, self.progress_delegate)
         # 设置右键菜单
         self.table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table_view.customContextMenuRequested.connect(self._onContextMenuRequested)
@@ -129,7 +133,7 @@ class LogManagePage(QWidget):
     def _restoreColumnWidths(self):
         """从配置恢复列宽"""
         widths = appcfg.get(appcfg.logTableColumnWidths)
-        if widths and len(widths) == self.proxy_model.columnCount():
+        if widths and len(widths) == self.model.columnCount():
             header = self.table_view.horizontalHeader()
             for col, width in enumerate(widths):
                 if width > 0:
@@ -149,11 +153,11 @@ class LogManagePage(QWidget):
 
     def hasExtractingTasks(self) -> bool:
         """是否有正在提取的任务"""
-        return self.source_model.hasExtractingTasks()
+        return self.model.hasExtractingTasks()
 
     def interruptAllExtractTasks(self):
         """中断所有正在提取的任务"""
-        self.source_model.interruptAllExtractTasks()
+        self.model.interruptAllTasks()
 
     # ==================== 槽函数 ====================
 
@@ -161,66 +165,54 @@ class LogManagePage(QWidget):
     def _onColumnResized(self):
         """保存列宽到配置"""
         header = self.table_view.horizontalHeader()
-        widths = [header.sectionSize(col) for col in range(self.proxy_model.columnCount())]
+        widths = [header.sectionSize(col) for col in range(self.model.columnCount())]
         appcfg.set(appcfg.logTableColumnWidths, widths)
 
     @Slot(QPoint)
     def _onContextMenuRequested(self, pos: QPoint):
         """处理右键菜单请求"""
-        proxy_index = self.table_view.indexAt(pos)
-        if not proxy_index.isValid():
+        index = self.table_view.indexAt(pos)
+        if not index.isValid():
             return
 
         # 右键选中该行
-        self.table_view.setCurrentIndex(proxy_index)
+        self.table_view.setCurrentIndex(index)
 
         # 获取日志项状态
-        status = proxy_index.data(LogSqlModel.StatusRole)
+        status = index.data(LogTableModel.LOG_STATUS_ROLE)
 
         # 创建菜单
         menu = RoundMenu(parent=self.table_view)
 
-        if status == LogSqlModel.LogStatus.EXTRACTED:
+        if status == LogStatus.EXTRACTED:
             # 已提取的日志
             view_log_action = Action(FluentIcon.DOCUMENT, "查看日志")
-            view_log_action.triggered.connect(lambda: self._onViewLog(proxy_index))
+            view_log_action.triggered.connect(lambda: self._onViewLog(index))
             menu.addAction(view_log_action)
 
             view_template_action = Action(FluentIcon.BOOK_SHELF, "查看模板")
-            view_template_action.triggered.connect(lambda: self._onViewTemplate(proxy_index))
+            view_template_action.triggered.connect(lambda: self._onViewTemplate(index))
             menu.addAction(view_template_action)
-        elif status == LogSqlModel.LogStatus.NOT_EXTRACTED:
+        elif status == LogStatus.NOT_EXTRACTED:
             # 未提取的日志
             extract_action = Action(FluentIcon.PLAY, "开始提取")
-            extract_action.triggered.connect(lambda: self._onExtractLog(proxy_index))
+            extract_action.triggered.connect(lambda: self._onExtractLog(index))
             menu.addAction(extract_action)
         else:
             # 正在提取的日志
             stop_action = Action(FluentIcon.CANCEL, "终止提取")
-            stop_action.triggered.connect(lambda: self.source_model.requestInterruptExtract(self.proxy_model.mapToSource(proxy_index)))
+            stop_action.triggered.connect(lambda: self.model.requestInterruptTask(index))
             menu.addAction(stop_action)
 
         menu.addSeparator()
 
         # 删除操作
         delete_action = Action(FluentIcon.DELETE, "删除")
-        delete_action.triggered.connect(lambda: self._onDeleteLog(proxy_index))
+        delete_action.triggered.connect(lambda: self._onDeleteLog(index))
         menu.addAction(delete_action)
 
         # 显示菜单
         menu.exec(self.table_view.viewport().mapToGlobal(pos), aniType=MenuAnimationType.DROP_DOWN)
-
-    @Slot()
-    def _onRefresh(self):
-        """刷新表格数据"""
-        self.proxy_model.clearSearch()
-        self.source_model.refresh()
-
-    @Slot(str)
-    def _onSearchLog(self, keyword: str):
-        """搜索日志"""
-        keyword = keyword.strip()
-        self.proxy_model.searchByName(keyword)
 
     @Slot()
     def _onAddLog(self):
@@ -229,12 +221,12 @@ class LogManagePage(QWidget):
         if dialog.exec():
             if dialog.selected_file_path:
                 log_uri = Path(dialog.selected_file_path).resolve().as_posix()
-                self.source_model.requestAdd("本地文件", log_uri)
+                self.model.requestAdd("本地文件", log_uri)
                 return
 
             if dialog.url_input.text():
                 log_uri = dialog.url_input.text().strip()
-                self.source_model.requestAdd("网络地址", log_uri, "Drain3")
+                self.model.requestAdd("网络地址", log_uri, "Drain3")
                 return
 
             InfoBar.warning(
@@ -260,8 +252,8 @@ class LogManagePage(QWidget):
                 )
 
             # 请求模型执行提取
-            self.source_model.requestExtract(
-                self.proxy_model.mapToSource(index),
+            self.model.requestExtract(
+                index,
                 dialog.selected_algorithm,
                 dialog.selected_format_type,
                 dialog.selected_log_format,
@@ -270,20 +262,30 @@ class LogManagePage(QWidget):
 
     @Slot(int)
     def _onViewLog(self, index: QModelIndex):
-        """处理查看日志请求"""
-        self._showToast(f"查看日志：{self.proxy_model.mapToSource(index)}")
+        """处理查看日志请求，发送信号给主窗口跳转"""
+        log_id = self.model.data(
+            self.model.index(index.row(), SqlColumn.ID),
+            Qt.ItemDataRole.DisplayRole
+        )
+        if log_id is not None:
+            self.viewLogRequested.emit(int(log_id))
 
     @Slot(int)
     def _onViewTemplate(self, index: QModelIndex):
-        """处理查看模板请求"""
-        self._showToast(f"查看模板：{self.proxy_model.mapToSource(index)}")
+        """处理查看模板请求，发送信号给主窗口跳转"""
+        log_id = self.model.data(
+            self.model.index(index.row(), SqlColumn.ID),
+            Qt.ItemDataRole.DisplayRole
+        )
+        if log_id is not None:
+            self.viewTemplateRequested.emit(int(log_id))
 
     @Slot(int)
     def _onDeleteLog(self, index: QModelIndex):
         """处理删除日志请求"""
         confirm = MessageBox("确认删除", f"确定删除该日志吗？", self)
         if confirm.exec():
-            self.source_model.requestDelete(self.proxy_model.mapToSource(index))
+            self.model.requestDelete(index)
 
     # ==================== 模型信号回调 ====================
 
