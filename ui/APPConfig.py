@@ -12,7 +12,7 @@ class AppConfig(QConfig):
     logTableColumnWidths = ConfigItem(
         "LogManagePage",
         "LogTableColumnWidths",
-        [],  # 默认空列表，表示使用自动宽度
+        [],
     )
 
 
