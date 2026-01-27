@@ -149,8 +149,6 @@ class LogTableModel(QAbstractTableModel):
         self._duckdb_service.create_log_table_if_not_exists()
         # 一次性获取整个表的数据到内存中
         self._df: list[tuple] = self._duckdb_service.get_log_table()
-        # 过滤关键字
-        self._filter_keyword: str | None = None
         # 存储正在提取的任务信息: log_id -> LogExtractTaskInfo
         self._extract_tasks: dict[int, LogExtractTaskInfo] = dict()
 
@@ -458,24 +456,22 @@ class LogTableModel(QAbstractTableModel):
 
     def searchByName(self, keyword: str):
         """按 URI 关键字搜索"""
-        self._filter_keyword = keyword.strip().lower()
+        kw = keyword.strip().lower()
 
         # 关键字为空时恢复全量数据
-        if not self._filter_keyword:
-            self._filter_keyword = None
+        if not kw:
             self.refresh()
             return
 
         self.beginResetModel()
         self._df = [
             row for row in self._df
-            if self._filter_keyword in Path(row[SqlColumn.LOG_URI]).stem.lower()
+            if kw in Path(row[SqlColumn.LOG_URI]).stem.lower()
         ]
         self.endResetModel()
 
     def clearSearch(self):
         """清除搜索"""
-        self._filter_keyword = None
         # 恢复全量数据
         self.refresh()
 
