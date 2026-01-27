@@ -132,7 +132,7 @@ class LogTableModel(QAbstractTableModel):
     LOG_STATUS_ROLE = Qt.ItemDataRole.UserRole + 2
 
     # UI 控制信号
-    extractFinished = Signal(int, int, Path, Path)  # 提取完成 (log_id, line_count, log_structured_path, log_templates_path)
+    extractFinished = Signal(int, int)  # 提取完成 (log_id, line_count)
     extractInterrupted = Signal(int)  # 提取中断 (log_id)
     extractError = Signal(int, str)  # 提取错误 (log_id, error_message)
     addSuccess = Signal()  # 添加成功
@@ -337,7 +337,7 @@ class LogTableModel(QAbstractTableModel):
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
 
         # 发出完成信号
-        self.extractFinished.emit(log_id, line_count, log_structured_path, log_templates_path)
+        self.extractFinished.emit(log_id, line_count)
 
     @Slot(int)
     def _onExtractInterrupted(self, log_id: int):
