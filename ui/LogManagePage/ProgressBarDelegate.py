@@ -7,8 +7,6 @@ from PySide6.QtWidgets import (
     QStyleOptionProgressBar
 )
 
-from modules.models import LogSqlModel
-
 
 class ProgressBarDelegate(QStyledItemDelegate):
     """进度条列委托 - 用于显示日志提取进度"""
@@ -17,7 +15,7 @@ class ProgressBarDelegate(QStyledItemDelegate):
         super().__init__(parent)
 
     def paint(self, painter, option, index):
-        progress = index.data(LogSqlModel.ProgressRole)
+        progress = index.data()
 
         # 配置进度条样式选项
         progress_bar = QStyleOptionProgressBar()
