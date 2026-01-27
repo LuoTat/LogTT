@@ -292,7 +292,9 @@ class LogTableModel(QAbstractTableModel):
 
     def _setDfData(self, row: int, column: SqlColumn, value: object):
         """更新内存DataFrame"""
-        self._df[row][column] = value
+        row_list = list(self._df[row])
+        row_list[column] = value
+        self._df[row] = tuple(row_list)
 
     def _setSqlData(self, log_id: int, column: SqlColumn, value: object):
         """同步数据库"""
@@ -327,8 +329,8 @@ class LogTableModel(QAbstractTableModel):
         # 更新数据库和ui状态
         self._setSqlData(log_id, SqlColumn.IS_EXTRACTED, True)
         self._setSqlData(log_id, SqlColumn.LINE_COUNT, line_count)
-        self._setSqlData(log_id, SqlColumn.LOG_STRUCTURED, log_structured_path)
-        self._setSqlData(log_id, SqlColumn.LOG_TEMPLATES, log_templates_path)
+        self._setSqlData(log_id, SqlColumn.LOG_STRUCTURED, str(log_structured_path))
+        self._setSqlData(log_id, SqlColumn.LOG_TEMPLATES, str(log_templates_path))
         if (row := self._getRow(log_id)) is not None:
             self._setDfData(row, SqlColumn.IS_EXTRACTED, True)
             self._setDfData(row, SqlColumn.LINE_COUNT, line_count)
