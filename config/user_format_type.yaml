@@ -1,6 +1,0 @@
-Test:
-  log_format: '<Month> <Date> <Time> <Level> <Component>(\[<PID>\])?: <Content>'
-  regex: []
-aaaa:
-  log_format: '<Date> <Time> <Pid> <Level> <Component>: <Content>'
-  regex: []
