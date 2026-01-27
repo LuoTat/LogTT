@@ -22,7 +22,6 @@ from qfluentwidgets import (
     PushButton,
     SearchLineEdit,
     InfoBarPosition,
-    MenuAnimationType,
     PrimaryPushButton
 )
 
@@ -39,7 +38,7 @@ class LogManagePage(QWidget):
 
     # 查看日志请求信号 (log_id)
     viewLogRequested = Signal(int)
-    # 查看模板请求信号 (log_id) - 待后续实现
+    # 查看模板请求信号 (log_id)
     viewTemplateRequested = Signal(int)
 
     def __init__(self, parent=None):
@@ -78,6 +77,7 @@ class LogManagePage(QWidget):
         tool_bar_layout = QHBoxLayout()
         tool_bar_layout.setSpacing(16)
 
+        # TODO:处理不能捕获回车事件的问题
         self.search_input = SearchLineEdit(self)
         self.search_input.setPlaceholderText("按名称搜索")
         self.search_input.setClearButtonEnabled(True)
@@ -110,12 +110,10 @@ class LogManagePage(QWidget):
         self.table_view.verticalHeader().hide()
         # 禁用编辑
         self.table_view.setEditTriggers(TableView.EditTrigger.NoEditTriggers)
-        # 设置最后一列拉伸填充
-        # self.table_view.horizontalHeader().setStretchLastSection(True)
         # 设置每次只选择一行
         self.table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
         # 启用排序
-        # self.table_view.setSortingEnabled(True)
+        self.table_view.setSortingEnabled(True)
         # 设置进度条委托
         self.progress_delegate = ProgressBarDelegate(self.table_view)
         self.table_view.setItemDelegateForColumn(LogColumn.PROGRESS, self.progress_delegate)
@@ -132,24 +130,9 @@ class LogManagePage(QWidget):
 
     def _restoreColumnWidths(self):
         """从配置恢复列宽"""
-        widths = appcfg.get(appcfg.logTableColumnWidths)
-        if widths and len(widths) == self.model.columnCount():
-            header = self.table_view.horizontalHeader()
+        if widths := appcfg.get(appcfg.logTableColumnWidths):
             for col, width in enumerate(widths):
-                if width > 0:
-                    header.resizeSection(col, width)
-
-    def _showToast(self, text: str):
-        """显示提示信息"""
-        InfoBar.info(
-            title=text,
-            content="功能待实现",
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=3000,
-            parent=self
-        )
+                self.table_view.horizontalHeader().resizeSection(col, width)
 
     def hasExtractingTasks(self) -> bool:
         """是否有正在提取的任务"""
@@ -161,7 +144,7 @@ class LogManagePage(QWidget):
 
     # ==================== 槽函数 ====================
 
-    @Slot(int, int, int)
+    @Slot()
     def _onColumnResized(self):
         """保存列宽到配置"""
         header = self.table_view.horizontalHeader()
@@ -212,7 +195,7 @@ class LogManagePage(QWidget):
         menu.addAction(delete_action)
 
         # 显示菜单
-        menu.exec(self.table_view.viewport().mapToGlobal(pos), aniType=MenuAnimationType.DROP_DOWN)
+        menu.exec(self.table_view.viewport().mapToGlobal(pos))
 
     @Slot()
     def _onAddLog(self):
@@ -239,7 +222,7 @@ class LogManagePage(QWidget):
                 parent=self
             )
 
-    @Slot(int)
+    @Slot(QModelIndex)
     def _onExtractLog(self, index: QModelIndex):
         """处理提取日志请求"""
         dialog = ExtractLogMessageBox(self)
@@ -260,27 +243,19 @@ class LogManagePage(QWidget):
                 dialog.selected_regex
             )
 
-    @Slot(int)
+    @Slot(QModelIndex)
     def _onViewLog(self, index: QModelIndex):
         """处理查看日志请求，发送信号给主窗口跳转"""
-        log_id = self.model.data(
-            self.model.index(index.row(), SqlColumn.ID),
-            Qt.ItemDataRole.DisplayRole
-        )
-        if log_id is not None:
-            self.viewLogRequested.emit(int(log_id))
+        log_id = index.data(LogTableModel.LOG_ID_ROLE)
+        self.viewLogRequested.emit(log_id)
 
-    @Slot(int)
+    @Slot(QModelIndex)
     def _onViewTemplate(self, index: QModelIndex):
         """处理查看模板请求，发送信号给主窗口跳转"""
-        log_id = self.model.data(
-            self.model.index(index.row(), SqlColumn.ID),
-            Qt.ItemDataRole.DisplayRole
-        )
-        if log_id is not None:
-            self.viewTemplateRequested.emit(int(log_id))
+        log_id = index.data(LogTableModel.LOG_ID_ROLE)
+        self.viewTemplateRequested.emit(log_id)
 
-    @Slot(int)
+    @Slot(QModelIndex)
     def _onDeleteLog(self, index: QModelIndex):
         """处理删除日志请求"""
         confirm = MessageBox("确认删除", f"确定删除该日志吗？", self)
@@ -290,7 +265,7 @@ class LogManagePage(QWidget):
     # ==================== 模型信号回调 ====================
 
     @Slot(int, int)
-    def _onExtractFinished(self, log_id: int, line_count: int):
+    def _onExtractFinished(self, _: int, line_count: int):
         """处理提取完成"""
         InfoBar.success(
             title="提取成功",
@@ -303,7 +278,7 @@ class LogManagePage(QWidget):
         )
 
     @Slot(int)
-    def _onExtractInterrupted(self, log_id: int):
+    def _onExtractInterrupted(self, _: int):
         """处理提取中断"""
         InfoBar.info(
             title="提取中断",
@@ -315,14 +290,8 @@ class LogManagePage(QWidget):
             parent=self
         )
 
-    @Slot(int, int)
-    def _onExtractProgress(self, log_id: int, progress: int):
-        """处理提取进度更新"""
-        # 进度更新由模型内部处理，UI 不需要额外操作
-        pass
-
     @Slot(int, str)
-    def _onExtractError(self, log_id: int, msg: str):
+    def _onExtractError(self, _: int, msg: str):
         """处理提取错误"""
         InfoBar.error(
             title="提取失败",
@@ -334,7 +303,7 @@ class LogManagePage(QWidget):
             parent=self
         )
 
-    @Slot(int)
+    @Slot()
     def _onAddSuccess(self):
         """处理添加成功"""
         InfoBar.success(
@@ -373,7 +342,7 @@ class LogManagePage(QWidget):
             parent=self
         )
 
-    @Slot(int)
+    @Slot()
     def _onDeleteSuccess(self):
         """处理删除成功"""
         InfoBar.success(
@@ -386,7 +355,7 @@ class LogManagePage(QWidget):
             parent=self
         )
 
-    @Slot(int, str)
+    @Slot(str)
     def _onDeleteError(self, msg: str):
         """处理删除失败"""
         InfoBar.error(
