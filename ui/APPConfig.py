@@ -1,8 +1,4 @@
-from qfluentwidgets import (
-    qconfig,
-    QConfig,
-    ConfigItem
-)
+from qfluentwidgets import ConfigItem, QConfig, qconfig
 
 
 class AppConfig(QConfig):

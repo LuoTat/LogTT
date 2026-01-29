@@ -1,14 +1,10 @@
-from typing import Any
-from pathlib import Path
 from enum import IntEnum
+from pathlib import Path
+from typing import Any
 
-from PySide6.QtCore import (
-    Qt,
-    QModelIndex,
-    QAbstractListModel
-)
+from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
 
-from .duckdb_service import DuckDBService
+from modules.duckdb_service import DuckDBService
 
 
 class SqlColumn(IntEnum):
@@ -72,12 +68,12 @@ class ExtractedLogListModel(QAbstractListModel):
 
     # ==================== 公共方法 ====================
 
-    def getRow(self, log_id: int) -> int | None:
+    def getRow(self, log_id: int) -> int:
         """根据 log_id 获取行号"""
         for idx, row in enumerate(self._df):
             if row[SqlColumn.ID] == log_id:
                 return idx
-        return None
+        return -1
 
     def refresh(self):
         """刷新数据"""

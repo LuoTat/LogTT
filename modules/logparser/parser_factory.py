@@ -1,5 +1,3 @@
-from typing import Dict, Type
-
 from .base_log_parser import BaseLogParser
 
 
@@ -11,13 +9,13 @@ def parser_register(cls):
 class ParserFactory:
     """解析器工厂"""
 
-    all_parsers: Dict[str, Type[BaseLogParser]] = {}
+    _all_parsers: dict[str, type[BaseLogParser]] = {}
 
     @classmethod
-    def get_parser_type(cls, parser_name: str) -> Type[BaseLogParser]:
-        if parser_name not in cls.all_parsers:
+    def get_parser_type(cls, parser_name: str) -> type[BaseLogParser]:
+        if parser_name not in cls._all_parsers:
             raise ValueError(f"未知的解析器: {parser_name}")
-        return cls.all_parsers[parser_name]
+        return cls._all_parsers[parser_name]
 
     @classmethod
     def get_parser_description(cls, parser_name: str) -> str:
@@ -26,8 +24,8 @@ class ParserFactory:
 
     @classmethod
     def get_all_parsers_name(cls) -> list[str]:
-        return list(cls.all_parsers.keys())
+        return list(cls._all_parsers.keys())
 
     @classmethod
-    def register_parser(cls, parser_class: Type[BaseLogParser]):
-        cls.all_parsers[parser_class.name()] = parser_class
+    def register_parser(cls, parser_class: type[BaseLogParser]):
+        cls._all_parsers[parser_class.name()] = parser_class

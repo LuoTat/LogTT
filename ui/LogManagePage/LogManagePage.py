@@ -1,36 +1,26 @@
 from pathlib import Path
 
-from PySide6.QtCore import (
-    Qt,
-    Slot,
-    Signal,
-    QPoint,
-    QModelIndex
-)
-from PySide6.QtWidgets import (
-    QWidget,
-    QHBoxLayout,
-    QVBoxLayout
-)
+from PySide6.QtCore import QModelIndex, QPoint, Qt, Signal, Slot
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import (
     Action,
-    InfoBar,
-    RoundMenu,
-    TableView,
     FluentIcon,
-    MessageBox,
-    PushButton,
-    SearchLineEdit,
+    InfoBar,
     InfoBarPosition,
-    PrimaryPushButton
+    MessageBox,
+    PrimaryPushButton,
+    PushButton,
+    RoundMenu,
+    SearchLineEdit,
+    TableView,
 )
 
+from modules.models import LogColumn, LogStatus, LogTableModel
 from ui.APPConfig import appcfg
-from modules.models import LogTableModel, LogStatus, LogColumn
 
 from .AddLogMessageBox import AddLogMessageBox
-from .ProgressBarDelegate import ProgressBarDelegate
 from .ExtractLogMessageBox import ExtractLogMessageBox
+from .ProgressBarDelegate import ProgressBarDelegate
 
 
 class LogManagePage(QWidget):
@@ -46,9 +36,9 @@ class LogManagePage(QWidget):
         self.setObjectName("LogManagePage")
 
         # 主布局
-        self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(24, 24, 24, 24)
-        self.main_layout.setSpacing(16)
+        self._main_layout = QVBoxLayout(self)
+        self._main_layout.setContentsMargins(24, 24, 24, 24)
+        self._main_layout.setSpacing(16)
 
         # 初始化模型
         self._initModel()
@@ -56,116 +46,108 @@ class LogManagePage(QWidget):
         self._initToolbar()
         self._initTableView()
 
+    # ==================== 私有方法 ====================
+
     def _initModel(self):
         """初始化数据模型"""
-        self.model = LogTableModel(self)
+        self._model = LogTableModel(self)
 
         # 连接模型信号 -> UI 反馈
-        self.model.extractFinished.connect(self._onExtractFinished)
-        self.model.extractInterrupted.connect(self._onExtractInterrupted)
-        self.model.extractError.connect(self._onExtractError)
+        self._model.extractFinished.connect(self._onExtractFinished)
+        self._model.extractInterrupted.connect(self._onExtractInterrupted)
+        self._model.extractError.connect(self._onExtractError)
 
-        self.model.addSuccess.connect(self._onAddSuccess)
-        self.model.addDuplicate.connect(self._onAddDuplicate)
-        self.model.addError.connect(self._onAddError)
+        self._model.addSuccess.connect(self._onAddSuccess)
+        self._model.addDuplicate.connect(self._onAddDuplicate)
+        self._model.addError.connect(self._onAddError)
 
-        self.model.deleteSuccess.connect(self._onDeleteSuccess)
-        self.model.deleteError.connect(self._onDeleteError)
+        self._model.deleteSuccess.connect(self._onDeleteSuccess)
+        self._model.deleteError.connect(self._onDeleteError)
 
     def _initToolbar(self):
         """初始化工具栏"""
         tool_bar_layout = QHBoxLayout()
         tool_bar_layout.setSpacing(16)
 
-        # TODO:处理不能捕获回车事件的问题
-        self.search_input = SearchLineEdit(self)
-        self.search_input.setPlaceholderText("按名称搜索")
-        self.search_input.setClearButtonEnabled(True)
-        self.search_input.searchSignal.connect(lambda keyword: self.model.searchByName(keyword))
-        self.search_input.clearSignal.connect(self.model.clearSearch)
+        self._search_edit = SearchLineEdit(self)
+        self._search_edit.setPlaceholderText("按名称搜索")
+        self._search_edit.setClearButtonEnabled(True)
+        self._search_edit.returnPressed.connect(lambda: self._model.searchByName(self._search_edit.text()))
+        self._search_edit.searchSignal.connect(lambda keyword: self._model.searchByName(keyword))
+        self._search_edit.clearSignal.connect(self._model.clearSearch)
 
-        self.refresh_button = PushButton(FluentIcon.SYNC, "刷新", self)
-        self.refresh_button.clicked.connect(self.model.refresh)
+        self._refresh_button = PushButton(FluentIcon.SYNC, "刷新", self)
+        self._refresh_button.clicked.connect(self._model.refresh)
 
-        self.add_button = PrimaryPushButton(FluentIcon.ADD, "新增日志", self)
-        self.add_button.clicked.connect(self._onAddLog)
+        self._add_button = PrimaryPushButton(FluentIcon.ADD, "新增日志", self)
+        self._add_button.clicked.connect(self._onAddLog)
 
-        tool_bar_layout.addWidget(self.search_input, 1)
+        tool_bar_layout.addWidget(self._search_edit, 1)
         tool_bar_layout.addStretch(1)
-        tool_bar_layout.addWidget(self.refresh_button)
-        tool_bar_layout.addWidget(self.add_button)
+        tool_bar_layout.addWidget(self._refresh_button)
+        tool_bar_layout.addWidget(self._add_button)
 
-        self.main_layout.addLayout(tool_bar_layout)
+        self._main_layout.addLayout(tool_bar_layout)
 
     def _initTableView(self):
         """初始化表格视图"""
-        self.table_view = TableView(self)
-        self.table_view.setBorderVisible(True)
-        self.table_view.setBorderRadius(8)
-        self.table_view.setModel(self.model)
+        self._table_view = TableView(self)
+        self._table_view.setBorderVisible(True)
+        self._table_view.setBorderRadius(8)
+        self._table_view.setModel(self._model)
 
         # 禁用单元格换行
-        self.table_view.setWordWrap(False)
+        self._table_view.setWordWrap(False)
         # 隐藏垂直表头
-        self.table_view.verticalHeader().hide()
-        # 禁用编辑
-        self.table_view.setEditTriggers(TableView.EditTrigger.NoEditTriggers)
+        self._table_view.verticalHeader().hide()
         # 设置每次只选择一行
-        self.table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
+        self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
         # 启用排序
-        self.table_view.setSortingEnabled(True)
+        self._table_view.setSortingEnabled(True)
         # 设置进度条委托
-        self.progress_delegate = ProgressBarDelegate(self.table_view)
-        self.table_view.setItemDelegateForColumn(LogColumn.PROGRESS, self.progress_delegate)
+        self._progress_delegate = ProgressBarDelegate(self._table_view)
+        self._table_view.setItemDelegateForColumn(LogColumn.PROGRESS, self._progress_delegate)
         # 设置右键菜单
-        self.table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.table_view.customContextMenuRequested.connect(self._onContextMenuRequested)
+        self._table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._table_view.customContextMenuRequested.connect(self._onContextMenuRequested)
         # 连接列宽变化信号，保存列宽
-        self.table_view.horizontalHeader().sectionResized.connect(self._onColumnResized)
+        self._table_view.horizontalHeader().sectionResized.connect(self._onColumnResized)
 
         # 恢复列宽
         self._restoreColumnWidths()
 
-        self.main_layout.addWidget(self.table_view)
+        self._main_layout.addWidget(self._table_view)
 
     def _restoreColumnWidths(self):
         """从配置恢复列宽"""
         if widths := appcfg.get(appcfg.logTableColumnWidths):
             for col, width in enumerate(widths):
-                self.table_view.horizontalHeader().resizeSection(col, width)
-
-    def hasExtractingTasks(self) -> bool:
-        """是否有正在提取的任务"""
-        return self.model.hasExtractingTasks()
-
-    def interruptAllExtractTasks(self):
-        """中断所有正在提取的任务"""
-        self.model.interruptAllTasks()
+                self._table_view.horizontalHeader().resizeSection(col, width)
 
     # ==================== 槽函数 ====================
 
     @Slot()
     def _onColumnResized(self):
         """保存列宽到配置"""
-        header = self.table_view.horizontalHeader()
-        widths = [header.sectionSize(col) for col in range(self.model.columnCount())]
+        header = self._table_view.horizontalHeader()
+        widths = [header.sectionSize(col) for col in range(self._model.columnCount())]
         appcfg.set(appcfg.logTableColumnWidths, widths)
 
     @Slot(QPoint)
     def _onContextMenuRequested(self, pos: QPoint):
         """处理右键菜单请求"""
-        index = self.table_view.indexAt(pos)
+        index = self._table_view.indexAt(pos)
         if not index.isValid():
             return
 
         # 右键选中该行
-        self.table_view.setCurrentIndex(index)
+        self._table_view.setCurrentIndex(index)
 
         # 获取日志项状态
         status = index.data(LogTableModel.LOG_STATUS_ROLE)
 
         # 创建菜单
-        menu = RoundMenu(parent=self.table_view)
+        menu = RoundMenu(parent=self._table_view)
 
         if status == LogStatus.EXTRACTED:
             # 已提取的日志
@@ -184,7 +166,7 @@ class LogManagePage(QWidget):
         else:
             # 正在提取的日志
             stop_action = Action(FluentIcon.CANCEL, "终止提取")
-            stop_action.triggered.connect(lambda: self.model.requestInterruptTask(index))
+            stop_action.triggered.connect(lambda: self._model.requestInterruptTask(index))
             menu.addAction(stop_action)
 
         menu.addSeparator()
@@ -195,52 +177,40 @@ class LogManagePage(QWidget):
         menu.addAction(delete_action)
 
         # 显示菜单
-        menu.exec(self.table_view.viewport().mapToGlobal(pos))
+        menu.exec(self._table_view.viewport().mapToGlobal(pos))
 
     @Slot()
     def _onAddLog(self):
         """新增日志"""
+        # TODO:这里的父类考虑设置为主窗口
         dialog = AddLogMessageBox(self)
         if dialog.exec():
-            if dialog.selected_file_path:
-                log_uri = Path(dialog.selected_file_path).resolve().as_posix()
-                self.model.requestAdd("本地文件", log_uri)
+            log_uri = dialog.log_uri
+            if dialog.is_local_file:
+                self._model.requestAdd("本地文件", log_uri)
                 return
-
-            if dialog.url_input.text():
-                log_uri = dialog.url_input.text().strip()
-                self.model.requestAdd("网络地址", log_uri, "Drain3")
-                return
-
-            InfoBar.warning(
-                title="未选择文件",
-                content="请选择UDP/TCP日志源或本地日志文件",
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=4000,
-                parent=self
-            )
+            else:
+                self._model.requestAdd("网络地址", log_uri, "Drain3")
 
     @Slot(QModelIndex)
     def _onExtractLog(self, index: QModelIndex):
         """处理提取日志请求"""
         dialog = ExtractLogMessageBox(self)
         if dialog.exec():
-            if dialog.is_custom_mode:
-                dialog.format_config_manager.save_custom_format(
+            if dialog._is_custom_mode:
+                dialog._format_config_manager.save_custom_format(
                     dialog.selected_format_type,
                     dialog.selected_log_format,
-                    dialog.selected_regex
+                    dialog.selected_regex,
                 )
 
             # 请求模型执行提取
-            self.model.requestExtract(
+            self._model.requestExtract(
                 index,
                 dialog.selected_algorithm,
                 dialog.selected_format_type,
                 dialog.selected_log_format,
-                dialog.selected_regex
+                dialog.selected_regex,
             )
 
     @Slot(QModelIndex)
@@ -258,11 +228,9 @@ class LogManagePage(QWidget):
     @Slot(QModelIndex)
     def _onDeleteLog(self, index: QModelIndex):
         """处理删除日志请求"""
-        confirm = MessageBox("确认删除", f"确定删除该日志吗？", self)
+        confirm = MessageBox("确认删除", "确定删除该日志吗？", self)
         if confirm.exec():
-            self.model.requestDelete(index)
-
-    # ==================== 模型信号回调 ====================
+            self._model.requestDelete(index)
 
     @Slot(int, int)
     def _onExtractFinished(self, _: int, line_count: int):
@@ -274,7 +242,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=3000,
-            parent=self
+            parent=self,
         )
 
     @Slot(int)
@@ -287,7 +255,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=3000,
-            parent=self
+            parent=self,
         )
 
     @Slot(int, str)
@@ -300,7 +268,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=5000,
-            parent=self
+            parent=self,
         )
 
     @Slot()
@@ -313,7 +281,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=3000,
-            parent=self
+            parent=self,
         )
 
     @Slot()
@@ -326,7 +294,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=4000,
-            parent=self
+            parent=self,
         )
 
     @Slot(str)
@@ -339,7 +307,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=5000,
-            parent=self
+            parent=self,
         )
 
     @Slot()
@@ -352,7 +320,7 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=3000,
-            parent=self
+            parent=self,
         )
 
     @Slot(str)
@@ -365,5 +333,15 @@ class LogManagePage(QWidget):
             isClosable=True,
             position=InfoBarPosition.TOP,
             duration=5000,
-            parent=self
+            parent=self,
         )
+
+    # ==================== 公共方法 ====================
+
+    def hasExtractingTasks(self) -> bool:
+        """是否有正在提取的任务"""
+        return self._model.hasExtractingTasks()
+
+    def interruptAllExtractTasks(self):
+        """中断所有正在提取的任务"""
+        self._model.interruptAllTasks()

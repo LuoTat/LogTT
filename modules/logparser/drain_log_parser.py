@@ -15,13 +15,14 @@
 # =========================================================================
 
 
-import regex as re
-import pandas as pd
 import hashlib
 from datetime import datetime
 
-from .parse_result import ParseResult
+import pandas as pd
+import regex as re
+
 from .base_log_parser import BaseLogParser
+from .parse_result import ParseResult
 from .parser_factory import parser_register
 
 
@@ -44,7 +45,19 @@ class Node:
 
 @parser_register
 class DrainLogParser(BaseLogParser):
-    def __init__(self, log_id, log_file, log_format, regex, should_stop, progress_callback=None, depth=4, st=0.4, max_child=100, keep_para=False):
+    def __init__(
+        self,
+        log_id,
+        log_file,
+        log_format,
+        regex,
+        should_stop,
+        progress_callback=None,
+        depth=4,
+        st=0.4,
+        max_child=100,
+        keep_para=False,
+    ):
         """
         Attributes
         ----------
@@ -54,11 +67,11 @@ class DrainLogParser(BaseLogParser):
             keep_para : whether to keep parameter list in structured log file
         """
         super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback)
-        self.depth = depth - 2
-        self.st = st
-        self.max_child = max_child
-        self.keep_para = keep_para
-        self.df_log = None
+        self._depth = depth - 2
+        self._st = st
+        self._max_child = max_child
+        self._keep_para = keep_para
+        self._df_log = None
 
     @staticmethod
     def _has_numbers(s):
@@ -75,7 +88,7 @@ class DrainLogParser(BaseLogParser):
 
         currentDepth = 1
         for token in seq:
-            if currentDepth >= self.depth or currentDepth > seqLen:
+            if currentDepth >= self._depth or currentDepth > seqLen:
                 break
 
             if token in parentn.childD:
@@ -105,7 +118,7 @@ class DrainLogParser(BaseLogParser):
         currentDepth = 1
         for token in log_clust.logTemplate:
             # Add current log cluster to the leaf node
-            if currentDepth >= self.depth or currentDepth > seqLen:
+            if currentDepth >= self._depth or currentDepth > seqLen:
                 if len(parentn.childD) == 0:
                     parentn.childD = [log_clust]
                 else:
@@ -116,18 +129,18 @@ class DrainLogParser(BaseLogParser):
             if token not in parentn.childD:
                 if not self._has_numbers(token):
                     if "<*>" in parentn.childD:
-                        if len(parentn.childD) < self.max_child:
+                        if len(parentn.childD) < self._max_child:
                             newNode = Node(depth=currentDepth + 1, digit_or_token=token)
                             parentn.childD[token] = newNode
                             parentn = newNode
                         else:
                             parentn = parentn.childD["<*>"]
                     else:
-                        if len(parentn.childD) + 1 < self.max_child:
+                        if len(parentn.childD) + 1 < self._max_child:
                             newNode = Node(depth=currentDepth + 1, digit_or_token=token)
                             parentn.childD[token] = newNode
                             parentn = newNode
-                        elif len(parentn.childD) + 1 == self.max_child:
+                        elif len(parentn.childD) + 1 == self._max_child:
                             newNode = Node(depth=currentDepth + 1, digit_or_token="<*>")
                             parentn.childD["<*>"] = newNode
                             parentn = newNode
@@ -180,7 +193,7 @@ class DrainLogParser(BaseLogParser):
                 maxNumOfPara = curNumOfPara
                 maxClust = logClust
 
-        if maxSim >= self.st:
+        if maxSim >= self._st:
             retLogClust = maxClust
 
         return retLogClust
@@ -202,8 +215,8 @@ class DrainLogParser(BaseLogParser):
         return retVal
 
     def _output_result(self, log_clust_l):
-        log_templates = [0] * self.df_log.shape[0]
-        log_templateids = [0] * self.df_log.shape[0]
+        log_templates = [0] * self._df_log.shape[0]
+        log_templateids = [0] * self._df_log.shape[0]
         df_events = []
         for logClust in log_clust_l:
             template_str = " ".join(logClust.logTemplate)
@@ -215,21 +228,25 @@ class DrainLogParser(BaseLogParser):
                 log_templateids[logID] = template_id
             df_events.append([template_id, template_str, occurrence])
 
-        self.df_log["EventId"] = log_templateids
-        self.df_log["EventTemplate"] = log_templates
-        if self.keep_para:
-            self.df_log["ParameterList"] = self.df_log.apply(self._get_parameter_list, axis=1)
-        self.df_log.to_csv(self.log_structured_file, index=False)
+        self._df_log["EventId"] = log_templateids
+        self._df_log["EventTemplate"] = log_templates
+        if self._keep_para:
+            self._df_log["ParameterList"] = self._df_log.apply(self._get_parameter_list, axis=1)
+        self._df_log.to_csv(self._log_structured_file, index=False)
 
-        occ_dict = dict(self.df_log["EventTemplate"].value_counts())
+        occ_dict = dict(self._df_log["EventTemplate"].value_counts())
         df_event = pd.DataFrame()
-        df_event["EventTemplate"] = self.df_log["EventTemplate"].unique()
+        df_event["EventTemplate"] = self._df_log["EventTemplate"].unique()
         df_event["EventId"] = df_event["EventTemplate"].map(lambda x: hashlib.md5(x.encode("utf-8")).hexdigest()[0:8])
         df_event["Occurrences"] = df_event["EventTemplate"].map(occ_dict)
-        df_event.to_csv(self.log_templates_file, index=False, columns=["EventId", "EventTemplate", "Occurrences"])
+        df_event.to_csv(
+            self._log_templates_file,
+            index=False,
+            columns=["EventId", "EventTemplate", "Occurrences"],
+        )
 
     def parse(self) -> ParseResult:
-        print(f"Parsing file: {self.log_file}")
+        print(f"Parsing file: {self._log_file}")
         start_time = datetime.now()
         rootNode = Node()
         logCluL = []
@@ -237,8 +254,8 @@ class DrainLogParser(BaseLogParser):
         self._load_data()
 
         count = 0
-        for idx, line in self.df_log.iterrows():
-            if self.should_stop():
+        for idx, line in self._df_log.iterrows():
+            if self._should_stop():
                 raise InterruptedError
 
             logID = line["LineId"]
@@ -259,25 +276,30 @@ class DrainLogParser(BaseLogParser):
                     matchCluster.logTemplate = newTemplate
 
             count += 1
-            if count % 1000 == 0 or count == len(self.df_log):
-                progress = count * 100.0 / len(self.df_log)
+            if count % 1000 == 0 or count == len(self._df_log):
+                progress = count * 100.0 / len(self._df_log)
                 print(f"Processed {progress:.1f}% of log lines.")
-                if self.progress_callback:
-                    self.progress_callback(int(progress))
+                if self._progress_callback:
+                    self._progress_callback(int(progress))
 
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self._output_result(logCluL)
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
-        return ParseResult(self.log_file, self.log_structured_file, self.log_templates_file, len(self.df_log))
+        return ParseResult(
+            self._log_file,
+            len(self._df_log),
+            self._log_structured_file,
+            self._log_templates_file,
+        )
 
     def _load_data(self):
         headers, regex = self._generate_logformat_regex()
-        self.df_log = self._log_to_dataframe(regex, headers)
+        self._df_log = self._log_to_dataframe(regex, headers)
 
     def _preprocess(self, line):
-        for currentRex in self.regex:
+        for currentRex in self._regex:
             line = re.sub(currentRex, "<*>", line)
         return line
 
@@ -285,9 +307,9 @@ class DrainLogParser(BaseLogParser):
         """Function to transform log file to dataframe"""
         log_messages = []
         linecount = 0
-        with open(self.log_file, "r") as fin:
+        with open(self._log_file, "r") as fin:
             for line in fin.readlines():
-                if self.should_stop():
+                if self._should_stop():
                     raise InterruptedError
                 try:
                     match = regex.search(line.strip())
@@ -306,7 +328,7 @@ class DrainLogParser(BaseLogParser):
     def _generate_logformat_regex(self):
         """Function to generate regular expression to split log messages"""
         headers = []
-        splitters = re.split("(<[^<>]+>)", self.log_format)
+        splitters = re.split("(<[^<>]+>)", self._log_format)
         regex = ""
         for k in range(len(splitters)):
             if k % 2 == 0:
@@ -329,7 +351,7 @@ class DrainLogParser(BaseLogParser):
         template_regex = "^" + template_regex.replace(r"\<\*\>", "(.*?)") + "$"
         parameter_list = re.findall(template_regex, row["Content"])
         parameter_list = parameter_list[0] if parameter_list else ()
-        parameter_list = (list(parameter_list) if isinstance(parameter_list, tuple) else [parameter_list])
+        parameter_list = list(parameter_list) if isinstance(parameter_list, tuple) else [parameter_list]
         return parameter_list
 
     @staticmethod

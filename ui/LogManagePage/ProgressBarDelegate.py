@@ -1,10 +1,9 @@
 from PySide6.QtCore import QSize
-
 from PySide6.QtWidgets import (
-    QStyle,
     QApplication,
+    QStyle,
     QStyledItemDelegate,
-    QStyleOptionProgressBar
+    QStyleOptionProgressBar,
 )
 
 
@@ -13,6 +12,8 @@ class ProgressBarDelegate(QStyledItemDelegate):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+    # ==================== 重写方法 ====================
 
     def paint(self, painter, option, index):
         progress = index.data()

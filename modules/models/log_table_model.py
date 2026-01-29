@@ -1,22 +1,22 @@
-import duckdb
-from typing import Any
-from pathlib import Path
-from enum import IntEnum
 from dataclasses import dataclass
+from enum import IntEnum
+from pathlib import Path
+from typing import Any
 
+import duckdb
 from PySide6.QtCore import (
-    Qt,
-    Slot,
-    Signal,
-    QObject,
-    QThread,
-    QModelIndex,
     QAbstractTableModel,
+    QModelIndex,
+    QObject,
+    Qt,
+    QThread,
+    Signal,
+    Slot,
 )
 from PySide6.QtGui import QColor
 
+from modules.duckdb_service import DuckDBService
 from modules.logparser import ParserFactory
-from modules.models.duckdb_service import DuckDBService
 
 
 class LogColumn(IntEnum):
@@ -63,34 +63,47 @@ class LogExtractTask(QObject):
     error = Signal(int, str)  # (log_id, error_message)
     progress = Signal(int, int)  # (log_id, progress)
 
-    def __init__(self, log_id: int, log_file: Path, algorithm: str, format_type: str, log_format: str, regex: list[str]):
+    def __init__(
+        self,
+        log_id: int,
+        log_file: Path,
+        algorithm: str,
+        format_type: str,
+        log_format: str,
+        regex: list[str],
+    ):
         super().__init__()
-        self.log_id = log_id
-        self.log_file = log_file
-        self.algorithm = algorithm
-        self.format_type = format_type
-        self.log_format = log_format
-        self.regex = regex
+        self._log_id = log_id
+        self._log_file = log_file
+        self._algorithm = algorithm
+        self._format_type = format_type
+        self._log_format = log_format
+        self._regex = regex
 
     @Slot()
     def run(self):
         try:
-            parser_type = ParserFactory.get_parser_type(self.algorithm)
+            parser_type = ParserFactory.get_parser_type(self._algorithm)
             result = parser_type(
-                self.log_id,
-                self.log_file,
-                self.log_format,
-                self.regex,
+                self._log_id,
+                self._log_file,
+                self._log_format,
+                self._regex,
                 lambda: QThread.currentThread().isInterruptionRequested(),
-                lambda progress: self.progress.emit(self.log_id, progress)
+                lambda progress: self.progress.emit(self._log_id, progress),
             ).parse()
 
             # 提取完成，传递文件路径
-            self.finished.emit(self.log_id, result.line_count, result.log_structured_file, result.log_templates_file)
+            self.finished.emit(
+                self._log_id,
+                result.line_count,
+                result.log_structured_file,
+                result.log_templates_file,
+            )
         except InterruptedError:
-            self.interrupted.emit(self.log_id)
+            self.interrupted.emit(self._log_id)
         except Exception as e:
-            self.error.emit(self.log_id, str(e))
+            self.error.emit(self._log_id, str(e))
 
 
 @dataclass
@@ -106,9 +119,29 @@ class LogTableModel(QAbstractTableModel):
     """日志管理页面的日志表模型"""
 
     # 显示的表头
-    _TABLE_HEADERS = ["名称", "日志行数", "日志类型", "日志格式", "创建时间", "进度", "状态", "提取方法"]
+    _TABLE_HEADERS = [
+        "名称",
+        "日志行数",
+        "日志类型",
+        "日志格式",
+        "创建时间",
+        "进度",
+        "状态",
+        "提取方法",
+    ]
     # 数据库表头
-    _SQL_HEADERS = ["id", "log_type", "format_type", "log_uri", "create_time", "is_extracted", "extract_method", "line_count", "log_structured", "log_templates"]
+    _SQL_HEADERS = [
+        "id",
+        "log_type",
+        "format_type",
+        "log_uri",
+        "create_time",
+        "is_extracted",
+        "extract_method",
+        "line_count",
+        "log_structured",
+        "log_templates",
+    ]
     # 模型列到数据库列的映射
     _MODEL_TO_SQL = [
         SqlColumn.LOG_URI,
@@ -118,14 +151,10 @@ class LogTableModel(QAbstractTableModel):
         SqlColumn.CREATE_TIME,
         None,  # 进度虚拟列
         None,  # 状态虚拟列
-        SqlColumn.EXTRACT_METHOD
+        SqlColumn.EXTRACT_METHOD,
     ]
     # 状态显示文本
-    _STATUS_TO_TEXT = [
-        "已提取",
-        "未提取",
-        "提取中"
-    ]
+    _STATUS_TO_TEXT = ["已提取", "未提取", "提取中"]
 
     # 用户自定义角色
     LOG_ID_ROLE = Qt.ItemDataRole.UserRole + 1
@@ -153,13 +182,19 @@ class LogTableModel(QAbstractTableModel):
         self._extract_tasks: dict[int, LogExtractTaskInfo] = dict()
 
     # ==================== 重写方法 ====================
+
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._df)
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._TABLE_HEADERS)
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+    def headerData(
+        self,
+        section: int,
+        orientation: Qt.Orientation,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any:
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
             return self._TABLE_HEADERS[section]
         return None
@@ -198,7 +233,8 @@ class LogTableModel(QAbstractTableModel):
         if col == LogColumn.PROGRESS:
             self.layoutAboutToBeChanged.emit()
             progress_values = [
-                100 if row_tuple[SqlColumn.IS_EXTRACTED]
+                100
+                if row_tuple[SqlColumn.IS_EXTRACTED]
                 else self._extract_tasks.get(row_tuple[SqlColumn.ID], LogExtractTaskInfo(None, None, 0)).progress
                 for row_tuple in self._df
             ]
@@ -215,8 +251,11 @@ class LogTableModel(QAbstractTableModel):
         if col == LogColumn.STATUS:
             self.layoutAboutToBeChanged.emit()
             status_values = [
-                LogStatus.EXTRACTED if row_tuple[SqlColumn.IS_EXTRACTED]
-                else (LogStatus.EXTRACTING if row_tuple[SqlColumn.ID] in self._extract_tasks else LogStatus.NOT_EXTRACTED)
+                LogStatus.EXTRACTED
+                if row_tuple[SqlColumn.IS_EXTRACTED]
+                else (
+                    LogStatus.EXTRACTING if row_tuple[SqlColumn.ID] in self._extract_tasks else LogStatus.NOT_EXTRACTED
+                )
                 for row_tuple in self._df
             ]
             pairs = sorted(
@@ -238,14 +277,14 @@ class LogTableModel(QAbstractTableModel):
         )
         self.layoutChanged.emit()
 
-    # ==================== 私有辅助方法 ====================
+    # ==================== 私有方法 ====================
 
-    def _getRow(self, log_id: int) -> int | None:
+    def _getRow(self, log_id: int) -> int:
         """根据 log_id 获取行号"""
         for idx, row in enumerate(self._df):
             if row[SqlColumn.ID] == log_id:
                 return idx
-        return None
+        return -1
 
     def _getDisplayData(self, index: QModelIndex) -> Any:
         """获取显示数据"""
@@ -316,10 +355,16 @@ class LogTableModel(QAbstractTableModel):
             task_info.thread.quit()
             task_info.thread.wait()
 
-    # ==================== 提取回调方法 ====================
+    # ==================== 槽函数 ====================
 
     @Slot(int, int, Path, Path)
-    def _onExtractFinished(self, log_id: int, line_count: int, log_structured_path: Path, log_templates_path: Path):
+    def _onExtractFinished(
+        self,
+        log_id: int,
+        line_count: int,
+        log_structured_path: Path,
+        log_templates_path: Path,
+    ):
         """处理提取完成"""
         # 清理任务信息
         self._cleanTask(log_id)
@@ -329,7 +374,7 @@ class LogTableModel(QAbstractTableModel):
         self._setSqlData(log_id, SqlColumn.LINE_COUNT, line_count)
         self._setSqlData(log_id, SqlColumn.LOG_STRUCTURED, str(log_structured_path))
         self._setSqlData(log_id, SqlColumn.LOG_TEMPLATES, str(log_templates_path))
-        if (row := self._getRow(log_id)) is not None:
+        if (row := self._getRow(log_id)) >= 0:
             self._setDfData(row, SqlColumn.IS_EXTRACTED, True)
             self._setDfData(row, SqlColumn.LINE_COUNT, line_count)
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
@@ -344,7 +389,7 @@ class LogTableModel(QAbstractTableModel):
         self._cleanTask(log_id)
 
         # 更新ui状态
-        if (row := self._getRow(log_id)) is not None:
+        if (row := self._getRow(log_id)) >= 0:
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
         # 发出中断信号
         self.extractInterrupted.emit(log_id)
@@ -356,7 +401,7 @@ class LogTableModel(QAbstractTableModel):
         self._cleanTask(log_id)
 
         # 更新ui状态
-        if (row := self._getRow(log_id)) is not None:
+        if (row := self._getRow(log_id)) >= 0:
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
         # 发出错误信号
         self.extractError.emit(log_id, error_msg)
@@ -366,12 +411,12 @@ class LogTableModel(QAbstractTableModel):
         """处理提取进度"""
         self._extract_tasks[log_id].progress = progress
         # 更新ui状态
-        if (row := self._getRow(log_id)) is not None:
+        if (row := self._getRow(log_id)) >= 0:
             self.dataChanged.emit(self.index(row, LogColumn.PROGRESS), self.index(row, LogColumn.PROGRESS))
 
-    # ==================== 数据操作方法 ====================
+    # ==================== 公共方法 ====================
 
-    def requestAdd(self, log_type: str, log_uri: str, extract_method: str | None = None):
+    def requestAdd(self, log_type: str, log_uri: str, extract_method: str = ""):
         """请求添加日志记录"""
         # 更新数据库和ui状态
         try:
@@ -402,7 +447,14 @@ class LogTableModel(QAbstractTableModel):
         except Exception as e:
             self.deleteError.emit(str(e))
 
-    def requestExtract(self, index: QModelIndex, algorithm: str, format_type: str, log_format: str, regex: list[str]):
+    def requestExtract(
+        self,
+        index: QModelIndex,
+        algorithm: str,
+        format_type: str,
+        log_format: str,
+        regex: list[str],
+    ):
         """请求提取日志"""
         row = index.row()
         log_id = index.data(self.LOG_ID_ROLE)
@@ -411,7 +463,10 @@ class LogTableModel(QAbstractTableModel):
         self._setSqlData(log_id, SqlColumn.EXTRACT_METHOD, algorithm)
         self._setDfData(row, SqlColumn.FORMAT_TYPE, format_type)
         self._setDfData(row, SqlColumn.EXTRACT_METHOD, algorithm)
-        self.dataChanged.emit(self.index(row, LogColumn.FORMAT_TYPE), self.index(row, LogColumn.EXTRACT_METHOD))
+        self.dataChanged.emit(
+            self.index(row, LogColumn.FORMAT_TYPE),
+            self.index(row, LogColumn.EXTRACT_METHOD),
+        )
 
         # 创建提取任务
         task = LogExtractTask(
@@ -420,7 +475,7 @@ class LogTableModel(QAbstractTableModel):
             algorithm,
             format_type,
             log_format,
-            regex
+            regex,
         )
 
         # 创建工作线程
@@ -464,10 +519,7 @@ class LogTableModel(QAbstractTableModel):
             return
 
         self.beginResetModel()
-        self._df = [
-            row for row in self._df
-            if kw in Path(row[SqlColumn.LOG_URI]).stem.lower()
-        ]
+        self._df = [row for row in self._df if kw in Path(row[SqlColumn.LOG_URI]).stem.lower()]
         self.endResetModel()
 
     def clearSearch(self):
