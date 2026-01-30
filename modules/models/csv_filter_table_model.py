@@ -127,6 +127,7 @@ class CsvFilterTableModel(QAbstractTableModel):
                     self._current_filter.remove(row_value)
 
             self.filterChanged.emit(self._current_filter)
+            self.dataChanged.emit(index, index, role)
 
         return True
 
