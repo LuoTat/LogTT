@@ -224,45 +224,39 @@ class LogTableModel(QAbstractTableModel):
         return None
 
     def sort(self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder) -> None:
-        # TODO: 优化排序性能
         col = LogColumn(column)
         descending = order == Qt.SortOrder.DescendingOrder
 
         # 虚拟列：进度
         if col == LogColumn.PROGRESS:
+
+            def sort_progress(log: tuple) -> int:
+                log_id = log[SqlColumn.ID]
+                if log[SqlColumn.IS_EXTRACTED]:
+                    return 100
+                elif log_id in self._extract_tasks:
+                    return self._extract_tasks[log_id].progress
+                else:
+                    return 0
+
             self.layoutAboutToBeChanged.emit()
-            progress_values = [
-                100
-                if row_tuple[SqlColumn.IS_EXTRACTED]
-                else self._extract_tasks.get(row_tuple[SqlColumn.ID], LogExtractTaskInfo(None, None, 0)).progress
-                for row_tuple in self._df
-            ]
-            pairs = sorted(
-                zip(self._df, progress_values),
-                key=lambda p: p[1],
-                reverse=descending,
-            )
-            self._df = [p[0] for p in pairs]
+            self._df = sorted(self._df, key=sort_progress, reverse=descending)
             self.layoutChanged.emit()
             return
 
         # 虚拟列：状态
         if col == LogColumn.STATUS:
+
+            def sort_status(log: tuple) -> int:
+                if log[SqlColumn.IS_EXTRACTED]:
+                    return LogStatus.EXTRACTED
+                elif log[SqlColumn.ID] in self._extract_tasks:
+                    return LogStatus.EXTRACTING
+                else:
+                    return LogStatus.NOT_EXTRACTED
+
             self.layoutAboutToBeChanged.emit()
-            status_values = [
-                LogStatus.EXTRACTED
-                if row_tuple[SqlColumn.IS_EXTRACTED]
-                else (
-                    LogStatus.EXTRACTING if row_tuple[SqlColumn.ID] in self._extract_tasks else LogStatus.NOT_EXTRACTED
-                )
-                for row_tuple in self._df
-            ]
-            pairs = sorted(
-                zip(self._df, status_values),
-                key=lambda p: p[1],
-                reverse=descending,
-            )
-            self._df = [p[0] for p in pairs]
+            self._df = sorted(self._df, key=sort_status, reverse=descending)
             self.layoutChanged.emit()
             return
 
@@ -271,7 +265,7 @@ class LogTableModel(QAbstractTableModel):
         self.layoutAboutToBeChanged.emit()
         self._df = sorted(
             self._df,
-            key=lambda r: (r[sql_col] is None, r[sql_col]),
+            key=lambda log: (log[sql_col] is None, log[sql_col]),
             reverse=descending,
         )
         self.layoutChanged.emit()
