@@ -180,8 +180,7 @@ class LogManagePage(QWidget):
     @Slot()
     def _onAddLog(self):
         """新增日志"""
-        # TODO:这里的父类考虑设置为主窗口
-        dialog = AddLogMessageBox(self)
+        dialog = AddLogMessageBox(self.window())
         if dialog.exec():
             log_uri = dialog.log_uri
             if dialog.is_local_file:
@@ -193,7 +192,7 @@ class LogManagePage(QWidget):
     @Slot(QModelIndex)
     def _onExtractLog(self, index: QModelIndex):
         """处理提取日志请求"""
-        dialog = ExtractLogMessageBox(self)
+        dialog = ExtractLogMessageBox(self.window())
         if dialog.exec():
             # 请求模型执行提取
             self._log_table_model.requestExtract(

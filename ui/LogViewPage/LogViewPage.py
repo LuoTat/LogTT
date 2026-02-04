@@ -209,7 +209,7 @@ class LogViewPage(QWidget):
     def _onSetColumnFilter(self, column_name: str):
         """设置列过滤"""
         all_filters = self._csv_file_table_model.getAllFilters()
-        dialog = ColumnFilterMessageBox(self._csv_file_table_model.tableName(), column_name, all_filters, self)
+        dialog = ColumnFilterMessageBox(self._csv_file_table_model.tableName(), column_name, all_filters, self.window())
         if dialog.exec():
             self._csv_file_table_model.setColumnFilter(column_name, dialog.current_filter)
             self._updateInfoLabel()
