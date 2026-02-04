@@ -8,8 +8,11 @@ class AppConfig(QConfig):
     logTableColumnWidths = ConfigItem(
         "LogManagePage",
         "LogTableColumnWidths",
-        [],
+        list(),
     )
+
+    # 用户自定义日志格式
+    userFormatType = ConfigItem("UserConfig", "FormatType", list())
 
 
 # 创建全局配置实例

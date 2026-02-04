@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from PySide6.QtCore import QModelIndex, QPoint, Qt, Signal, Slot
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import (
@@ -15,8 +13,8 @@ from qfluentwidgets import (
     TableView,
 )
 
+from modules.app_config import appcfg
 from modules.models import LogColumn, LogStatus, LogTableModel
-from ui.APPConfig import appcfg
 
 from .AddLogMessageBox import AddLogMessageBox
 from .ExtractLogMessageBox import ExtractLogMessageBox
@@ -197,20 +195,13 @@ class LogManagePage(QWidget):
         """处理提取日志请求"""
         dialog = ExtractLogMessageBox(self)
         if dialog.exec():
-            if dialog._is_custom_mode:
-                dialog._format_config_manager.save_custom_format(
-                    dialog.selected_format_type,
-                    dialog.selected_log_format,
-                    dialog.selected_regex,
-                )
-
             # 请求模型执行提取
             self._model.requestExtract(
                 index,
-                dialog.selected_algorithm,
-                dialog.selected_format_type,
-                dialog.selected_log_format,
-                dialog.selected_regex,
+                dialog.logparser_type,
+                dialog.format_type,
+                dialog.log_format,
+                dialog.log_regex,
             )
 
     @Slot(QModelIndex)

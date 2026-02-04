@@ -74,7 +74,6 @@ class AddLogMessageBox(MessageBoxBase):
         self._url_edit = LineEdit(card)
         self._url_edit.setPlaceholderText("例如：syslog://192.168.1.100:514")
         self._url_edit.setClearButtonEnabled(True)
-        self._url_edit.setFixedHeight(36)
         card_layout.addWidget(self._url_edit)
 
         hint_label = BodyLabel("支持 UDP/TCP，默认端口 514", card)
@@ -108,7 +107,6 @@ class AddLogMessageBox(MessageBoxBase):
 
         select_file_layout = QHBoxLayout()
         self._select_file_button = PushButton(FluentIcon.FOLDER_ADD, "选择文件", card)
-        self._select_file_button.setFixedHeight(36)
         self._select_file_button.clicked.connect(self._onSelectFile)
 
         self._file_path_label = BodyLabel("未选择文件", card)

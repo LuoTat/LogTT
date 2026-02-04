@@ -16,7 +16,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor
 
 from modules.duckdb_service import DuckDBService
-from modules.logparser import ParserFactory
+from modules.logparser.base_log_parser import BaseLogParser
 
 
 class LogColumn(IntEnum):
@@ -67,7 +67,7 @@ class LogExtractTask(QObject):
         self,
         log_id: int,
         log_file: Path,
-        algorithm: str,
+        logparser_type: type[BaseLogParser],
         format_type: str,
         log_format: str,
         regex: list[str],
@@ -75,7 +75,7 @@ class LogExtractTask(QObject):
         super().__init__()
         self._log_id = log_id
         self._log_file = log_file
-        self._algorithm = algorithm
+        self._logparser_type = logparser_type
         self._format_type = format_type
         self._log_format = log_format
         self._regex = regex
@@ -83,8 +83,7 @@ class LogExtractTask(QObject):
     @Slot()
     def run(self):
         try:
-            parser_type = ParserFactory.get_parser_type(self._algorithm)
-            result = parser_type(
+            result = self._logparser_type(
                 self._log_id,
                 self._log_file,
                 self._log_format,
@@ -450,7 +449,7 @@ class LogTableModel(QAbstractTableModel):
     def requestExtract(
         self,
         index: QModelIndex,
-        algorithm: str,
+        logparser_type: type[BaseLogParser],
         format_type: str,
         log_format: str,
         regex: list[str],
@@ -460,9 +459,9 @@ class LogTableModel(QAbstractTableModel):
         log_id = index.data(self.LOG_ID_ROLE)
         # 更新数据库和ui状态
         self._setSqlData(log_id, SqlColumn.FORMAT_TYPE, format_type)
-        self._setSqlData(log_id, SqlColumn.EXTRACT_METHOD, algorithm)
+        self._setSqlData(log_id, SqlColumn.EXTRACT_METHOD, logparser_type.name())
         self._setDfData(row, SqlColumn.FORMAT_TYPE, format_type)
-        self._setDfData(row, SqlColumn.EXTRACT_METHOD, algorithm)
+        self._setDfData(row, SqlColumn.EXTRACT_METHOD, logparser_type.name())
         self.dataChanged.emit(
             self.index(row, LogColumn.FORMAT_TYPE),
             self.index(row, LogColumn.EXTRACT_METHOD),
@@ -472,7 +471,7 @@ class LogTableModel(QAbstractTableModel):
         task = LogExtractTask(
             log_id,
             Path(self._df[row][SqlColumn.LOG_URI]),
-            algorithm,
+            logparser_type,
             format_type,
             log_format,
             regex,
