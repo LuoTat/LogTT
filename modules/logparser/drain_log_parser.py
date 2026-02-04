@@ -287,12 +287,7 @@ class DrainLogParser(BaseLogParser):
         self._output_result(logCluL)
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
-        return ParseResult(
-            self._log_file,
-            len(self._df_log),
-            self._log_structured_file,
-            self._log_templates_file,
-        )
+        return ParseResult(self._log_file, len(self._df_log), self._log_structured_file, self._log_templates_file)
 
     def _load_data(self):
         headers, regex = self._generate_logformat_regex()

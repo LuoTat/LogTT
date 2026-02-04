@@ -159,26 +159,3 @@ class CsvFilterTableModel(QAbstractTableModel):
         self.beginResetModel()
         self._cacheRowData(0)
         self.endResetModel()
-
-    # def setAllChecked(self, checked: bool):
-    #     """设置所有项的选中状态"""
-    #     self.beginResetModel()
-    #     if checked:
-    #         self._checked_values = set(str(v) for v in self._df.iloc[:, 0])
-    #     else:
-    #         self._checked_values.clear()
-    #     self.endResetModel()
-    #     self.selectionChanged.emit()
-    #
-    # def isAllChecked(self) -> bool:
-    #     """检查是否全选"""
-    #     all_values = set(str(v) for v in self._df.iloc[:, 0])
-    #     return self._checked_values == all_values
-    #
-    # def getSelectedValues(self) -> set[str]:
-    #     """获取选中的值"""
-    #     return self._checked_values.copy()
-    #
-    # def getSelectedCount(self) -> int:
-    #     """获取选中的数量"""
-    #     return len(self._checked_values)
