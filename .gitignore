@@ -14,3 +14,4 @@ wheels/
 tmp/
 log_full/
 logtt.duckdb
+config.json
