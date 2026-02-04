@@ -211,6 +211,7 @@ class ExtractLogMessageBox(MessageBoxBase):
     def _onLogParserSelected(self, index: int):
         model_index = self._logparser_list_model.index(index)
         parser_discription = model_index.data(LogParserListModel.LOG_PARSER_DISCRIPTION_ROLE)
+
         self._hint_label.setText(parser_discription)
 
     @Slot(int)
