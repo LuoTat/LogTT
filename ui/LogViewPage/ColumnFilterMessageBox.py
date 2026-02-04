@@ -38,13 +38,13 @@ class ColumnFilterMessageBox(MessageBoxBase):
     # ==================== 私有方法 ====================
 
     def _initModel(self):
-        self._model = CsvFilterTableModel(
+        self._csv_filter_table_model = CsvFilterTableModel(
             self._table_name,
             self._column_name,
             self._all_filters,
             self,
         )
-        self._model.filterChanged.connect(self._onfilterChanged)
+        self._csv_filter_table_model.filterChanged.connect(self._onfilterChanged)
 
     def _initTitle(self):
         """初始化标题"""
@@ -66,7 +66,7 @@ class ColumnFilterMessageBox(MessageBoxBase):
         self._table_view = TableView(self)
         self._table_view.setBorderVisible(True)
         self._table_view.setBorderRadius(8)
-        self._table_view.setModel(self._model)
+        self._table_view.setModel(self._csv_filter_table_model)
 
         # 禁用单元格换行
         self._table_view.setWordWrap(False)

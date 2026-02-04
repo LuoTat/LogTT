@@ -100,9 +100,9 @@ class LogViewPage(QWidget):
 
     def _updateInfoLabel(self):
         """更新行数统计标签"""
-        if self._model:
-            total = self._model.totalRowCount()
-            filtered = self._model.filteredRowCount()
+        if self._csv_file_table_model:
+            total = self._csv_file_table_model.totalRowCount()
+            filtered = self._csv_file_table_model.filteredRowCount()
 
             if total == filtered:
                 self._info_label.setText(f"共 {total:,} 行")
@@ -166,8 +166,8 @@ class LogViewPage(QWidget):
             )
 
         # 创建新的模型实例
-        self._model = CsvFileTableModel(structured_table_name, self)
-        self._table_view.setModel(self._model)
+        self._csv_file_table_model = CsvFileTableModel(structured_table_name, self)
+        self._table_view.setModel(self._csv_file_table_model)
         self._updateInfoLabel()
 
     @Slot(QPoint)
@@ -177,7 +177,9 @@ class LogViewPage(QWidget):
         if not index.isValid():
             return
 
-        column_name = self._model.headerData(index.column(), Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
+        column_name = self._csv_file_table_model.headerData(
+            index.column(), Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole
+        )
 
         # 创建菜单
         menu = RoundMenu(parent=self._table_view)
@@ -188,7 +190,7 @@ class LogViewPage(QWidget):
         menu.addAction(filter_action)
 
         # 如果该列有过滤，添加清除选项
-        if self._model.isColumnFiltered(column_name):
+        if self._csv_file_table_model.isColumnFiltered(column_name):
             clear_action = Action(FluentIcon.DELETE, f"清除 '{column_name}' 的筛选器")
             clear_action.triggered.connect(lambda: self._onClearColumnFilter(column_name))
             menu.addAction(clear_action)
@@ -206,10 +208,10 @@ class LogViewPage(QWidget):
     @Slot(str)
     def _onSetColumnFilter(self, column_name: str):
         """设置列过滤"""
-        all_filters = self._model.getAllFilters()
+        all_filters = self._csv_file_table_model.getAllFilters()
         # 打开过滤对话框
         dialog = ColumnFilterMessageBox(
-            self._model.tableName(),
+            self._csv_file_table_model.tableName(),
             column_name,
             all_filters,
             self,
@@ -217,17 +219,17 @@ class LogViewPage(QWidget):
 
         if dialog.exec():
             new_filter = dialog._current_filter
-            self._model.setColumnFilter(column_name, new_filter)
+            self._csv_file_table_model.setColumnFilter(column_name, new_filter)
             self._updateInfoLabel()
 
     @Slot(str)
     def _onClearColumnFilter(self, column_name: str):
         """清除列过滤"""
-        self._model.clearColumnFilter(column_name)
+        self._csv_file_table_model.clearColumnFilter(column_name)
         self._updateInfoLabel()
 
     @Slot()
     def _onClearAllFilters(self):
         """清除所有过滤"""
-        self._model.clearAllFilters()
+        self._csv_file_table_model.clearAllFilters()
         self._updateInfoLabel()

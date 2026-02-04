@@ -48,19 +48,19 @@ class LogManagePage(QWidget):
 
     def _initModel(self):
         """初始化数据模型"""
-        self._model = LogTableModel(self)
+        self._log_table_model = LogTableModel(self)
 
         # 连接模型信号 -> UI 反馈
-        self._model.extractFinished.connect(self._onExtractFinished)
-        self._model.extractInterrupted.connect(self._onExtractInterrupted)
-        self._model.extractError.connect(self._onExtractError)
+        self._log_table_model.extractFinished.connect(self._onExtractFinished)
+        self._log_table_model.extractInterrupted.connect(self._onExtractInterrupted)
+        self._log_table_model.extractError.connect(self._onExtractError)
 
-        self._model.addSuccess.connect(self._onAddSuccess)
-        self._model.addDuplicate.connect(self._onAddDuplicate)
-        self._model.addError.connect(self._onAddError)
+        self._log_table_model.addSuccess.connect(self._onAddSuccess)
+        self._log_table_model.addDuplicate.connect(self._onAddDuplicate)
+        self._log_table_model.addError.connect(self._onAddError)
 
-        self._model.deleteSuccess.connect(self._onDeleteSuccess)
-        self._model.deleteError.connect(self._onDeleteError)
+        self._log_table_model.deleteSuccess.connect(self._onDeleteSuccess)
+        self._log_table_model.deleteError.connect(self._onDeleteError)
 
     def _initToolbar(self):
         """初始化工具栏"""
@@ -70,12 +70,12 @@ class LogManagePage(QWidget):
         self._search_edit = SearchLineEdit(self)
         self._search_edit.setPlaceholderText("按名称搜索")
         self._search_edit.setClearButtonEnabled(True)
-        self._search_edit.returnPressed.connect(lambda: self._model.searchByName(self._search_edit.text()))
-        self._search_edit.searchSignal.connect(lambda keyword: self._model.searchByName(keyword))
-        self._search_edit.clearSignal.connect(self._model.clearSearch)
+        self._search_edit.returnPressed.connect(lambda: self._log_table_model.searchByName(self._search_edit.text()))
+        self._search_edit.searchSignal.connect(lambda keyword: self._log_table_model.searchByName(keyword))
+        self._search_edit.clearSignal.connect(self._log_table_model.clearSearch)
 
         self._refresh_button = PushButton(FluentIcon.SYNC, "刷新", self)
-        self._refresh_button.clicked.connect(self._model.refresh)
+        self._refresh_button.clicked.connect(self._log_table_model.refresh)
 
         self._add_button = PrimaryPushButton(FluentIcon.ADD, "新增日志", self)
         self._add_button.clicked.connect(self._onAddLog)
@@ -92,7 +92,7 @@ class LogManagePage(QWidget):
         self._table_view = TableView(self)
         self._table_view.setBorderVisible(True)
         self._table_view.setBorderRadius(8)
-        self._table_view.setModel(self._model)
+        self._table_view.setModel(self._log_table_model)
 
         # 禁用单元格换行
         self._table_view.setWordWrap(False)
@@ -128,7 +128,7 @@ class LogManagePage(QWidget):
     def _onColumnResized(self):
         """保存列宽到配置"""
         header = self._table_view.horizontalHeader()
-        widths = [header.sectionSize(col) for col in range(self._model.columnCount())]
+        widths = [header.sectionSize(col) for col in range(self._log_table_model.columnCount())]
         appcfg.set(appcfg.logTableColumnWidths, widths)
 
     @Slot(QPoint)
@@ -164,7 +164,7 @@ class LogManagePage(QWidget):
         else:
             # 正在提取的日志
             stop_action = Action(FluentIcon.CANCEL, "终止提取")
-            stop_action.triggered.connect(lambda: self._model.requestInterruptTask(index))
+            stop_action.triggered.connect(lambda: self._log_table_model.requestInterruptTask(index))
             menu.addAction(stop_action)
 
         menu.addSeparator()
@@ -185,10 +185,10 @@ class LogManagePage(QWidget):
         if dialog.exec():
             log_uri = dialog.log_uri
             if dialog.is_local_file:
-                self._model.requestAdd("本地文件", log_uri)
+                self._log_table_model.requestAdd("本地文件", log_uri)
                 return
             else:
-                self._model.requestAdd("网络地址", log_uri, "Drain3")
+                self._log_table_model.requestAdd("网络地址", log_uri, "Drain3")
 
     @Slot(QModelIndex)
     def _onExtractLog(self, index: QModelIndex):
@@ -196,7 +196,7 @@ class LogManagePage(QWidget):
         dialog = ExtractLogMessageBox(self)
         if dialog.exec():
             # 请求模型执行提取
-            self._model.requestExtract(
+            self._log_table_model.requestExtract(
                 index,
                 dialog.logparser_type,
                 dialog.format_type,
@@ -221,7 +221,7 @@ class LogManagePage(QWidget):
         """处理删除日志请求"""
         confirm = MessageBox("确认删除", "确定删除该日志吗？", self)
         if confirm.exec():
-            self._model.requestDelete(index)
+            self._log_table_model.requestDelete(index)
 
     @Slot(int, int)
     def _onExtractFinished(self, _: int, line_count: int):
@@ -331,8 +331,8 @@ class LogManagePage(QWidget):
 
     def hasExtractingTasks(self) -> bool:
         """是否有正在提取的任务"""
-        return self._model.hasExtractingTasks()
+        return self._log_table_model.hasExtractingTasks()
 
     def interruptAllExtractTasks(self):
         """中断所有正在提取的任务"""
-        self._model.interruptAllTasks()
+        self._log_table_model.interruptAllTasks()
