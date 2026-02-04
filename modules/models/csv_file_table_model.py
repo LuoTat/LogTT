@@ -61,9 +61,10 @@ class CsvFileTableModel(QAbstractTableModel):
         row = index.row()
         col = index.column()
 
+        if not (self._cache_offset <= row < self._cache_offset + self._cache_limit):
+            self._cacheRowData(row)
+
         if role == Qt.ItemDataRole.DisplayRole:
-            if not (self._cache_offset <= row < self._cache_offset + self._cache_limit):
-                self._cacheRowData(row)
             return str(self._cache_df.item(row - self._cache_offset, col))
 
         return None
@@ -90,10 +91,6 @@ class CsvFileTableModel(QAbstractTableModel):
         """获取当前表名"""
         return self._table_name
 
-    # def columns(self) -> list[str]:
-    #     """获取列名列表"""
-    #     return self._columns.copy()
-
     def totalRowCount(self) -> int:
         """获取总行数"""
         return self._total_row_count
@@ -117,20 +114,20 @@ class CsvFileTableModel(QAbstractTableModel):
     def setColumnFilter(self, column_name: str, values: list[str]):
         """设置列的过滤值"""
         self._filters[column_name] = values
-        self.beginResetModel()
-        self._cacheRowData(0)
-        self.endResetModel()
+        self.refresh()
 
     def clearColumnFilter(self, column_name: str):
         """清除列的过滤"""
         self._filters.pop(column_name)
-        self.beginResetModel()
-        self._cacheRowData(0)
-        self.endResetModel()
+        self.refresh()
 
     def clearAllFilters(self):
         """清除所有过滤"""
         self._filters.clear()
+        self.refresh()
+
+    def refresh(self):
+        """刷新模型数据"""
         self.beginResetModel()
         self._cacheRowData(0)
         self.endResetModel()

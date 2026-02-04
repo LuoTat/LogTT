@@ -41,16 +41,14 @@ class CsvFilterTableModel(QAbstractTableModel):
         self._cache_offset: int = 0
         self._cache_limit: int = 0
 
-        # 排序的状态
-        self._sort: tuple[str, bool] | None = None
-
         # 关键字过滤状态
         self._keyword: str = str()
 
         # 当前已选中的值集合
         self._current_filter = all_filters.get(column_name, [])
-        # 出除当前列的其他过滤条件
-        all_filters.pop(column_name)
+        # 去除当前列的其他过滤条件
+        if column_name in all_filters:
+            all_filters.pop(column_name)
         self._other_filters = all_filters
 
         # 预加载第一页数据，主要是为了提前获取总行数
@@ -91,19 +89,15 @@ class CsvFilterTableModel(QAbstractTableModel):
         row = index.row()
         col = index.column()
 
+        if not (self._cache_offset <= row < self._cache_offset + self._cache_limit):
+            self._cacheRowData(row)
+
         if role == Qt.ItemDataRole.DisplayRole:
-            if not (self._cache_offset <= row < self._cache_offset + self._cache_limit):
-                self._cacheRowData(row)
             return str(self._cache_df.item(row - self._cache_offset, col))
 
         if role == Qt.ItemDataRole.CheckStateRole:
             if col != 0:
                 return None
-
-            if self._current_filter is None:
-                return Qt.CheckState.Unchecked
-            if not (self._cache_offset <= row < self._cache_offset + self._cache_limit):
-                self._cacheRowData(row)
             row_value = str(self._cache_df.item(row - self._cache_offset, 0))
             return Qt.CheckState.Checked if row_value in self._current_filter else Qt.CheckState.Unchecked
 
@@ -116,30 +110,17 @@ class CsvFilterTableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.CheckStateRole:
             row_value = str(self._cache_df.item(index.row() - self._cache_offset, 0))
 
-            if self._current_filter is None:
-                self._current_filter = []
-
             if Qt.CheckState(value) == Qt.CheckState.Checked:
-                if row_value not in self._current_filter:
-                    self._current_filter.append(row_value)
+                self._current_filter.append(row_value)
             else:
-                if row_value in self._current_filter:
-                    self._current_filter.remove(row_value)
+                self._current_filter.remove(row_value)
 
             self.filterChanged.emit(self._current_filter)
-            self.dataChanged.emit(index, index, role)
+            self.dataChanged.emit(index, index, [role])
 
-        return True
+            return True
 
-    def sort(self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder) -> None:
-        # 只允许计数列排序
-        if column == 0:
-            return
-        self._sort = ("count", order == Qt.SortOrder.AscendingOrder)
-        self.beginResetModel()
-        # 重头开始加载数据
-        self._cacheRowData(0)
-        self.endResetModel()
+        return False
 
     # ==================== 私有方法 ====================
 
@@ -154,7 +135,6 @@ class CsvFilterTableModel(QAbstractTableModel):
                 self._column_name,
                 self._cache_offset,
                 self._cache_limit,
-                self._sort,
                 self._keyword,
                 self._other_filters,
             )
@@ -166,16 +146,13 @@ class CsvFilterTableModel(QAbstractTableModel):
 
     def searchByKeyword(self, keyword: str):
         """按关键字搜索"""
-        kw = keyword.strip().lower()
+        self._keyword = keyword.strip().lower()
+        self.refresh()
 
-        # 关键字为空时恢复全量数据
-        if not kw:
-            self.refresh()
-            return
-        self._keyword = kw
-        self.beginResetModel()
-        self._cacheRowData(0)
-        self.endResetModel()
+    def clearSearch(self):
+        """清除搜索"""
+        self._keyword = str()
+        self.refresh()
 
     def refresh(self):
         """刷新模型数据"""

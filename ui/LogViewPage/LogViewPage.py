@@ -74,7 +74,7 @@ class LogViewPage(QWidget):
         tool_bar_layout.addStretch()
 
         # 统计信息
-        self._info_label = BodyLabel("", self)
+        self._info_label = BodyLabel(self)
         tool_bar_layout.addWidget(self._info_label)
 
         self._main_layout.addLayout(tool_bar_layout)
@@ -209,17 +209,9 @@ class LogViewPage(QWidget):
     def _onSetColumnFilter(self, column_name: str):
         """设置列过滤"""
         all_filters = self._csv_file_table_model.getAllFilters()
-        # 打开过滤对话框
-        dialog = ColumnFilterMessageBox(
-            self._csv_file_table_model.tableName(),
-            column_name,
-            all_filters,
-            self,
-        )
-
+        dialog = ColumnFilterMessageBox(self._csv_file_table_model.tableName(), column_name, all_filters, self)
         if dialog.exec():
-            new_filter = dialog._current_filter
-            self._csv_file_table_model.setColumnFilter(column_name, new_filter)
+            self._csv_file_table_model.setColumnFilter(column_name, dialog.current_filter)
             self._updateInfoLabel()
 
     @Slot(str)

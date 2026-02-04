@@ -197,11 +197,7 @@ class LogManagePage(QWidget):
         if dialog.exec():
             # 请求模型执行提取
             self._log_table_model.requestExtract(
-                index,
-                dialog.logparser_type,
-                dialog.format_type,
-                dialog.log_format,
-                dialog.log_regex,
+                index, dialog.logparser_type, dialog.format_type, dialog.log_format, dialog.log_regex
             )
 
     @Slot(QModelIndex)

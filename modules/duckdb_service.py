@@ -164,7 +164,6 @@ class DuckDBService:
         column_name: str,
         offset: int,
         limit: int,
-        sort: tuple[str, bool] | None = None,
         keyword: str | None = None,
         other_filters: dict[str, list[object]] | None = None,
     ) -> tuple[polars.DataFrame, int]:
@@ -195,8 +194,8 @@ class DuckDBService:
             if keyword:
                 rel = rel.filter(self._build_like_filter_expr(column_name, keyword))
                 total_count = rel.shape[0]
-            if sort:
-                rel = rel.sort(self._build_sort_expr(sort))
+
+            rel = rel.sort(self._build_sort_expr(("count", False)))
             rel = rel.limit(limit, offset)
             return rel.pl(), total_count
 
