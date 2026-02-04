@@ -35,6 +35,7 @@ class ColumnFilterMessageBox(MessageBoxBase):
         self._initSearchEdit()
         self._initTableView()
         self.widget.setMinimumWidth(700)
+        self.widget.setMinimumHeight(800)
 
     # ==================== 私有方法 ====================
 
