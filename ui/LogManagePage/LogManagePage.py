@@ -92,6 +92,12 @@ class LogManagePage(QWidget):
         self._table_view = TableView(self)
         self._table_view.setBorderVisible(True)
         self._table_view.setBorderRadius(8)
+
+        # 启用排序，为了不默认排序任何列必须在setModel之前设置
+        self._table_view.setSortingEnabled(True)
+        # 消除显示的排序指示器
+        self._table_view.horizontalHeader().setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
+
         self._table_view.setModel(self._log_table_model)
 
         # 禁用单元格换行
@@ -100,8 +106,6 @@ class LogManagePage(QWidget):
         self._table_view.verticalHeader().hide()
         # 设置每次只选择一行
         self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
-        # 启用排序
-        self._table_view.setSortingEnabled(True)
         # 设置进度条委托
         self._progress_delegate = ProgressBarDelegate(self._table_view)
         self._table_view.setItemDelegateForColumn(LogColumn.PROGRESS, self._progress_delegate)

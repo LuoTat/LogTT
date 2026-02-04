@@ -224,6 +224,10 @@ class LogTableModel(QAbstractTableModel):
         return None
 
     def sort(self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder) -> None:
+        # 无效列索引
+        if column < 0:
+            return
+
         col = LogColumn(column)
         descending = order == Qt.SortOrder.DescendingOrder
 
