@@ -131,17 +131,7 @@ class LogViewPage(QWidget):
         # 检查表是否存在，不存在则导入
         duckdb_service = DuckDBService()
         if not duckdb_service.table_exists(structured_table_name):
-            InfoBar.info(
-                title="正在导入数据",
-                content="首次加载，请稍候...",
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=3000,
-                parent=self,
-            )
             try:
-                # TODO:解决ui卡顿问题
                 # 导入CSV文件
                 duckdb_service.create_table_from_csv(Path(log_structured_path))
             except Exception as e:
