@@ -2,6 +2,7 @@ from typing import Any
 
 import polars
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PySide6.QtGui import QColor
 
 from modules.duckdb_service import DuckDBService
 
@@ -66,6 +67,13 @@ class CsvFileTableModel(QAbstractTableModel):
 
         if role == Qt.ItemDataRole.DisplayRole:
             return str(self._cache_df.item(row - self._cache_offset, col))
+
+        # 处理前景色角色
+        elif role == Qt.ItemDataRole.ForegroundRole:
+            column_name = self._columns[col]
+            if column_name in self._filters:
+                return QColor(Qt.GlobalColor.cyan)
+            return None
 
         return None
 
