@@ -144,6 +144,17 @@ class CsvFilterTableModel(QAbstractTableModel):
 
     # ==================== 公共方法 ====================
 
+    def toggleCheckState(self, index: QModelIndex):
+        """切换指定行的复选框状态"""
+        current_state = index.data(Qt.ItemDataRole.CheckStateRole)
+
+        if current_state == Qt.CheckState.Checked:
+            new_state = Qt.CheckState.Unchecked
+        else:
+            new_state = Qt.CheckState.Checked
+
+        self.setData(index, new_state, Qt.ItemDataRole.CheckStateRole)
+
     def searchByKeyword(self, keyword: str):
         """按关键字搜索"""
         self._keyword = keyword.strip().lower()

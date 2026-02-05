@@ -1,4 +1,5 @@
 from PySide6.QtCore import (
+    QModelIndex,
     Slot,
 )
 from PySide6.QtWidgets import QHeaderView
@@ -72,6 +73,8 @@ class ColumnFilterMessageBox(MessageBoxBase):
         self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
         # 设置水平表头拉伸填充
         self._table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        # 连接点击信号，使点击整行都能触发复选框
+        self._table_view.clicked.connect(self._onTableViewClicked)
 
         self.viewLayout.addWidget(self._table_view)
 
@@ -91,6 +94,11 @@ class ColumnFilterMessageBox(MessageBoxBase):
     def _onClearSearch(self):
         """清除搜索"""
         self._csv_filter_table_model.clearSearch()
+
+    @Slot(QModelIndex)
+    def _onTableViewClicked(self, index):
+        """表格被点击时切换复选框状态"""
+        self._csv_filter_table_model.toggleCheckState(index)
 
     # ==================== 公共方法 ====================
 
