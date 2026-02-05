@@ -92,9 +92,13 @@ class LogViewPage(QWidget):
         self._table_view.verticalHeader().hide()
         # 设置每次只选择一行
         self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
-        # 设置右键菜单
+        # 设置表格单元格右键菜单
         self._table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._table_view.customContextMenuRequested.connect(self._onContextMenuRequested)
+        # 设置表头右键菜单
+        header = self._table_view.horizontalHeader()
+        header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        header.customContextMenuRequested.connect(self._onHeaderContextMenuRequested)
 
         self._main_layout.addWidget(self._table_view)
 
@@ -160,17 +164,8 @@ class LogViewPage(QWidget):
         self._table_view.setModel(self._csv_file_table_model)
         self._updateInfoLabel()
 
-    @Slot(QPoint)
-    def _onContextMenuRequested(self, pos: QPoint):
-        """处理右键菜单请求"""
-        index = self._table_view.indexAt(pos)
-        if not index.isValid():
-            return
-
-        column_name = self._csv_file_table_model.headerData(
-            index.column(), Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole
-        )
-
+    def _showColumnFilterMenu(self, column_name: str, global_pos: QPoint):
+        """显示列过滤菜单"""
         # 创建菜单
         menu = RoundMenu(parent=self._table_view)
 
@@ -193,7 +188,37 @@ class LogViewPage(QWidget):
         menu.addAction(clear_all_action)
 
         # 显示菜单
-        menu.exec(self._table_view.viewport().mapToGlobal(pos))
+        menu.exec(global_pos)
+
+    @Slot(QPoint)
+    def _onContextMenuRequested(self, pos: QPoint):
+        """处理表格单元格右键菜单请求"""
+        index = self._table_view.indexAt(pos)
+        if not index.isValid():
+            return
+
+        column_name = self._csv_file_table_model.headerData(
+            index.column(), Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole
+        )
+
+        global_pos = self._table_view.viewport().mapToGlobal(pos)
+        self._showColumnFilterMenu(column_name, global_pos)
+
+    @Slot(QPoint)
+    def _onHeaderContextMenuRequested(self, pos: QPoint):
+        """处理表头右键菜单请求"""
+        header = self._table_view.horizontalHeader()
+        column_index = header.logicalIndexAt(pos.x())
+
+        if column_index < 0:
+            return
+
+        column_name = self._csv_file_table_model.headerData(
+            column_index, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole
+        )
+
+        global_pos = header.mapToGlobal(pos)
+        self._showColumnFilterMenu(column_name, global_pos)
 
     @Slot(str)
     def _onSetColumnFilter(self, column_name: str):
