@@ -18,7 +18,7 @@
 import hashlib
 from datetime import datetime
 
-import pandas as pd
+import polars as pl
 import regex as re
 
 from .base_log_parser import BaseLogParser
@@ -215,8 +215,8 @@ class DrainLogParser(BaseLogParser):
         return retVal
 
     def _output_result(self, log_clust_l):
-        log_templates = [0] * self._df_log.shape[0]
-        log_templateids = [0] * self._df_log.shape[0]
+        log_templates = [0] * self._df_log.height
+        log_templateids = [0] * self._df_log.height
         df_events = []
         for logClust in log_clust_l:
             template_str = " ".join(logClust.logTemplate)
@@ -228,22 +228,32 @@ class DrainLogParser(BaseLogParser):
                 log_templateids[logID] = template_id
             df_events.append([template_id, template_str, occurrence])
 
-        self._df_log["EventId"] = log_templateids
-        self._df_log["EventTemplate"] = log_templates
-        if self._keep_para:
-            self._df_log["ParameterList"] = self._df_log.apply(self._get_parameter_list, axis=1)
-        self._df_log.to_csv(self._log_structured_file, index=False)
-
-        occ_dict = dict(self._df_log["EventTemplate"].value_counts())
-        df_event = pd.DataFrame()
-        df_event["EventTemplate"] = self._df_log["EventTemplate"].unique()
-        df_event["EventId"] = df_event["EventTemplate"].map(lambda x: hashlib.md5(x.encode("utf-8")).hexdigest()[0:8])
-        df_event["Occurrences"] = df_event["EventTemplate"].map(occ_dict)
-        df_event.to_csv(
-            self._log_templates_file,
-            index=False,
-            columns=["EventId", "EventTemplate", "Occurrences"],
+        self._df_log = self._df_log.with_columns(
+            [
+                pl.Series("EventId", log_templateids),
+                pl.Series("EventTemplate", log_templates),
+            ]
         )
+        if self._keep_para:
+            self._df_log = self._df_log.with_columns(
+                pl.struct(["EventTemplate", "Content"])
+                .map_elements(self._get_parameter_list, return_dtype=pl.List(pl.Utf8))
+                .alias("ParameterList")
+            )
+        self._df_log.write_csv(self._log_structured_file)
+
+        df_event = (
+            self._df_log["EventTemplate"]
+            .value_counts()
+            .rename({"count": "Occurrences"})
+            .with_columns(
+                pl.col("EventTemplate")
+                .map_elements(lambda x: hashlib.md5(x.encode("utf-8")).hexdigest()[0:8])
+                .alias("EventId")
+            )
+            .select(["EventId", "EventTemplate", "Occurrences"])
+        )
+        df_event.write_csv(self._log_templates_file)
 
     def parse(self) -> ParseResult:
         print(f"Parsing file: {self._log_file}")
@@ -254,7 +264,7 @@ class DrainLogParser(BaseLogParser):
         self._load_data()
 
         count = 0
-        for idx, line in self._df_log.iterrows():
+        for line in self._df_log.iter_rows(named=True):
             if self._should_stop():
                 raise InterruptedError
 
@@ -276,8 +286,8 @@ class DrainLogParser(BaseLogParser):
                     matchCluster.logTemplate = newTemplate
 
             count += 1
-            if count % 1000 == 0 or count == len(self._df_log):
-                progress = count * 100.0 / len(self._df_log)
+            if count % 1000 == 0 or count == self._df_log.height:
+                progress = count * 100.0 / self._df_log.height
                 print(f"Processed {progress:.1f}% of log lines.")
                 if self._progress_callback:
                     self._progress_callback(int(progress))
@@ -287,7 +297,7 @@ class DrainLogParser(BaseLogParser):
         self._output_result(logCluL)
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
-        return ParseResult(self._log_file, len(self._df_log), self._log_structured_file, self._log_templates_file)
+        return ParseResult(self._log_file, self._df_log.height, self._log_structured_file, self._log_templates_file)
 
     def _load_data(self):
         headers, regex = self._generate_logformat_regex()
@@ -300,24 +310,23 @@ class DrainLogParser(BaseLogParser):
 
     def _log_to_dataframe(self, regex, headers):
         """Function to transform log file to dataframe"""
-        log_messages = []
+        log_messages = {h: [] for h in headers}
         linecount = 0
         with open(self._log_file, "r") as fin:
-            for line in fin.readlines():
+            for line in fin:
                 if self._should_stop():
                     raise InterruptedError
                 try:
                     match = regex.search(line.strip())
-                    message = [match.group(header) for header in headers]
-                    log_messages.append(message)
+                    for header in headers:
+                        log_messages[header].append(match.group(header))
                     linecount += 1
                 except Exception as e:
                     print(f"[Warning] Skip line: {line}")
                     print(e)
-        logdf = pd.DataFrame(log_messages, columns=headers)
-        logdf.insert(0, "LineId", None)
-        logdf["LineId"] = [i + 1 for i in range(linecount)]
-        print(f"Total lines: {len(logdf)}")
+        logdf = pl.DataFrame(log_messages)
+        logdf = logdf.with_row_index("LineId", offset=1)
+        print(f"Total lines: {logdf.height}")
         return logdf
 
     def _generate_logformat_regex(self):
