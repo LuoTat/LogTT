@@ -1,3 +1,5 @@
+from string import Template
+
 from PySide6.QtCore import QUrl, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import QApplication
@@ -11,6 +13,7 @@ from qfluentwidgets import (
 
 from .LogManagePage import LogManagePage
 from .LogViewPage import LogViewPage
+from .TemplateViewPage import TemplateViewPage
 
 
 class APPMainWindow(FluentWindow):
@@ -23,8 +26,11 @@ class APPMainWindow(FluentWindow):
         self.log_manage_page = LogManagePage(self)
         # 日志查看界面
         self.log_view_page = LogViewPage(self)
+        # 模板查看界面
+        self.template_view_page = TemplateViewPage(self)
 
         self.log_manage_page.viewLogRequested.connect(self._onViewLogRequested)
+        self.log_manage_page.viewTemplateRequested.connect(self._onViewTemplateRequested)
 
         self._initNavigation()
         self._initWindow()
@@ -32,6 +38,7 @@ class APPMainWindow(FluentWindow):
     def _initNavigation(self):
         self.addSubInterface(self.log_manage_page, FluentIcon.LIBRARY, "日志管理")
         self.addSubInterface(self.log_view_page, FluentIcon.DOCUMENT, "日志查看")
+        self.addSubInterface(self.template_view_page, FluentIcon.PIE_SINGLE, "模板查看")
         # self.navigationInterface.addSeparator()
 
         # 底部头像按钮
@@ -63,6 +70,12 @@ class APPMainWindow(FluentWindow):
         """处理查看日志请求，跳转到日志查看页面"""
         self.log_view_page.setLog(log_id)
         self.switchTo(self.log_view_page)
+
+    @Slot(int)
+    def _onViewTemplateRequested(self, log_id: int):
+        """处理查看模板请求，跳转到模板查看页面"""
+        self.template_view_page.setLog(log_id)
+        self.switchTo(self.template_view_page)
 
     @Slot()
     def _onAvatar(self):

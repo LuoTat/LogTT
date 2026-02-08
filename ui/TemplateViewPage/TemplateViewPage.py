@@ -8,6 +8,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QHeaderView,
     QVBoxLayout,
     QWidget,
 )
@@ -27,12 +28,12 @@ from modules.models import CsvFileTableModel, ExtractedLogListModel
 from ui.Widgets import ColumnFilterMessageBox
 
 
-class LogViewPage(QWidget):
-    """日志查看页面"""
+class TemplateViewPage(QWidget):
+    """模板查看页面"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setObjectName("LogViewPage")
+        self.setObjectName("TemplateViewPage")
 
         # 主布局
         self._main_layout = QVBoxLayout(self)
@@ -91,6 +92,8 @@ class LogViewPage(QWidget):
         self._table_view.verticalHeader().hide()
         # 设置每次只选择一行
         self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
+        # 设置水平表头拉伸填充
+        self._table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         # 设置表格单元格右键菜单
         self._table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._table_view.customContextMenuRequested.connect(self._onContextMenuRequested)
@@ -128,15 +131,15 @@ class LogViewPage(QWidget):
     def _onLogSelected(self, index: int):
         # 从模型获取数据
         model_index = self._extracted_log_list_model.index(index)
-        log_structured_path = model_index.data(ExtractedLogListModel.LOG_STRUCTURED_PATH_ROLE)
-        structured_table_name = model_index.data(ExtractedLogListModel.STRUCTURED_TABLE_NAME_ROLE)
+        log_templates_path = model_index.data(ExtractedLogListModel.LOG_TEMPLATES_PATH_ROLE)
+        templates_table_name = model_index.data(ExtractedLogListModel.TEMPLATES_TABLE_NAME_ROLE)
 
         # 检查表是否存在，不存在则导入
         duckdb_service = DuckDBService()
-        if not duckdb_service.table_exists(structured_table_name):
+        if not duckdb_service.table_exists(templates_table_name):
             try:
                 # 导入CSV文件
-                duckdb_service.create_table_from_csv(Path(log_structured_path))
+                duckdb_service.create_table_from_csv(Path(log_templates_path))
             except Exception as e:
                 InfoBar.error(
                     title="导入失败",
@@ -159,7 +162,7 @@ class LogViewPage(QWidget):
             )
 
         # 创建新的模型实例
-        self._csv_file_table_model = CsvFileTableModel(structured_table_name, self)
+        self._csv_file_table_model = CsvFileTableModel(templates_table_name, self)
         self._table_view.setModel(self._csv_file_table_model)
         self._updateInfoLabel()
 
