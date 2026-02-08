@@ -45,7 +45,7 @@ class CsvFilterTableModel(QAbstractTableModel):
         self._keyword: str = str()
 
         # 当前已选中的值集合
-        self._current_filter = all_filters.get(column_name, [])
+        self._current_filter = all_filters.get(column_name, list())
         # 去除当前列的其他过滤条件
         if column_name in all_filters:
             all_filters.pop(column_name)

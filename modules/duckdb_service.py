@@ -90,7 +90,7 @@ class DuckDBService:
         filters: dict[str, list[object]],
     ) -> duckdb.Expression:
         """构建精确匹配过滤条件"""
-        filter_exprs = []
+        filter_exprs = list()
         for col, values in filters.items():
             # 单列多值 → IN 列表
             col_expr = duckdb.ColumnExpression(col).isin(*[duckdb.ConstantExpression(v) for v in values])

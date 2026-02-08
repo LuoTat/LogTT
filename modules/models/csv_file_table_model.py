@@ -114,7 +114,7 @@ class CsvFileTableModel(QAbstractTableModel):
 
     def getColumnFilter(self, column_name: str) -> list[str]:
         """获取列的过滤值"""
-        return self._filters.get(column_name, [])
+        return self._filters.get(column_name, list())
 
     def setColumnFilter(self, column_name: str, values: list[str]):
         """设置列的过滤值"""
