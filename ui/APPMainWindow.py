@@ -1,5 +1,3 @@
-from string import Template
-
 from PySide6.QtCore import QUrl, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import QApplication
