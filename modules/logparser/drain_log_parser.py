@@ -270,7 +270,7 @@ class DrainLogParser(BaseLogParser):
                 raise InterruptedError
 
             logID = line["LineId"]
-            logmessageL = self._preprocess(line["Content"]).strip().split()
+            logmessageL = line["Content"].strip().split()
             matchCluster = self._tree_search(rootNode, logmessageL)
 
             # Match no existing log cluster
@@ -303,11 +303,11 @@ class DrainLogParser(BaseLogParser):
     def _load_data(self):
         headers, regex = self._generate_logformat_regex()
         self._df_log = self._log_to_dataframe(regex, headers)
-
-    def _preprocess(self, line):
-        for currentRex in self._regex:
-            line = re.sub(currentRex, "<*>", line)
-        return line
+        # 使用 Polars 原生字符串操作批量预处理，利用 Rust 多核并行加速
+        content_col = pl.col("Content")
+        for rex in self._regex:
+            content_col = content_col.str.replace_all(rex, "<*>")
+        self._df_log = self._df_log.with_columns(content_col)
 
     def _log_to_dataframe(self, regex, headers):
         """Function to transform log file to dataframe"""
