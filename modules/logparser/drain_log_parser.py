@@ -74,18 +74,17 @@ class DrainLogParser(BaseLogParser):
         self._df_log = None
 
     def _output_result(self, log_clust_l):
+        self._output_dir.mkdir(parents=True, exist_ok=True)
+
         log_templates = [0] * self._df_log.height
         log_templateids = [0] * self._df_log.height
-        df_events = []
         for logClust in log_clust_l:
             template_str = " ".join(logClust.logTemplate)
-            occurrence = len(logClust.logIDL)
             template_id = hashlib.md5(template_str.encode("utf-8")).hexdigest()[0:8]
             for logID in logClust.logIDL:
                 logID -= 1
                 log_templates[logID] = template_str
                 log_templateids[logID] = template_id
-            df_events.append([template_id, template_str, occurrence])
 
         self._df_log = self._df_log.with_columns(
             [
@@ -260,7 +259,7 @@ class DrainLogParser(BaseLogParser):
         print(f"Parsing file: {self._log_file}")
         start_time = datetime.now()
         rootNode = Node()
-        logCluL = []
+        logCluL = list()
 
         self._df_log = load_data(self._log_file, self._log_format, self._regex, self._should_stop)
 
@@ -292,8 +291,6 @@ class DrainLogParser(BaseLogParser):
                 print(f"Processed {progress:.1f}% of log lines.")
                 if self._progress_callback:
                     self._progress_callback(int(progress))
-
-        self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self._output_result(logCluL)
 
