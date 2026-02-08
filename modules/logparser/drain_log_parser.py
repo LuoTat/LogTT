@@ -15,22 +15,19 @@
 # =========================================================================
 
 
-import hashlib
 from datetime import datetime
-
-import polars as pl
 
 from .base_log_parser import BaseLogParser
 from .parse_result import ParseResult
 from .parser_factory import parser_register
-from .utils import get_parameter_list, load_data
+from .utils import load_data, output_result
 
 
 class Logcluster:
     def __init__(self, log_template="", log_idl=None):
         self.logTemplate = log_template
         if log_idl is None:
-            log_idl = []
+            log_idl = list()
         self.logIDL = log_idl
 
 
@@ -74,50 +71,25 @@ class DrainLogParser(BaseLogParser):
         self._df_log = None
 
     def _output_result(self, log_clust_l):
-        self._output_dir.mkdir(parents=True, exist_ok=True)
-
         log_templates = [0] * self._df_log.height
-        log_templateids = [0] * self._df_log.height
         for logClust in log_clust_l:
             template_str = " ".join(logClust.logTemplate)
-            template_id = hashlib.md5(template_str.encode("utf-8")).hexdigest()[0:8]
             for logID in logClust.logIDL:
-                logID -= 1
-                log_templates[logID] = template_str
-                log_templateids[logID] = template_id
+                log_templates[logID - 1] = template_str
 
-        self._df_log = self._df_log.with_columns(
-            [
-                pl.Series("EventId", log_templateids),
-                pl.Series("EventTemplate", log_templates),
-            ]
+        output_result(
+            self._df_log,
+            log_templates,
+            self._output_dir,
+            self._log_structured_file,
+            self._log_templates_file,
+            self._keep_para,
         )
-        if self._keep_para:
-            self._df_log = self._df_log.with_columns(
-                pl.struct(["EventTemplate", "Content"])
-                .map_elements(get_parameter_list, return_dtype=pl.List(pl.String))
-                .alias("ParameterList")
-            )
-        self._df_log.write_csv(self._log_structured_file)
-
-        df_event = (
-            self._df_log["EventTemplate"]
-            .value_counts()
-            .rename({"count": "Occurrences"})
-            .with_columns(
-                pl.col("EventTemplate")
-                .map_elements(lambda x: hashlib.md5(x.encode("utf-8")).hexdigest()[0:8])
-                .alias("EventId")
-            )
-            .select(["EventId", "EventTemplate", "Occurrences"])
-            .sort("Occurrences", descending=True)
-        )
-        df_event.write_csv(self._log_templates_file)
 
     @staticmethod
     def _get_template(seq1, seq2):
         assert len(seq1) == len(seq2)
-        retVal = []
+        retVal = list()
 
         i = 0
         for word in seq1:
@@ -263,8 +235,7 @@ class DrainLogParser(BaseLogParser):
 
         self._df_log = load_data(self._log_file, self._log_format, self._regex, self._should_stop)
 
-        count = 0
-        for line in self._df_log.iter_rows(named=True):
+        for idx, line in enumerate(self._df_log.iter_rows(named=True)):
             if self._should_stop():
                 raise InterruptedError
 
@@ -285,9 +256,8 @@ class DrainLogParser(BaseLogParser):
                 if " ".join(newTemplate) != " ".join(matchCluster.logTemplate):
                     matchCluster.logTemplate = newTemplate
 
-            count += 1
-            if count % 1000 == 0 or count == self._df_log.height:
-                progress = count * 100.0 / self._df_log.height
+            if idx % 10000 == 0 or idx == self._df_log.height - 1:
+                progress = idx * 100.0 / self._df_log.height
                 print(f"Processed {progress:.1f}% of log lines.")
                 if self._progress_callback:
                     self._progress_callback(int(progress))
