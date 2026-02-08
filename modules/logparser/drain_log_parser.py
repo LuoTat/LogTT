@@ -252,6 +252,7 @@ class DrainLogParser(BaseLogParser):
                 .alias("EventId")
             )
             .select(["EventId", "EventTemplate", "Occurrences"])
+            .sort("Occurrences", descending=True)
         )
         df_event.write_csv(self._log_templates_file)
 
