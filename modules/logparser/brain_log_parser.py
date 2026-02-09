@@ -279,7 +279,7 @@ class BrainLogParser(BaseLogParser):
 
         self._df_log = load_data(self._log_file, self._log_format, self._regex, self._should_stop)
 
-        contents = self._df_log["Content"].to_[]
+        contents = self._df_log["Content"].to_list()
 
         group_len, tuple_vector, frequency_vector = self._get_frequency_vector(contents, self._delimiter)
 
