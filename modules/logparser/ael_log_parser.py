@@ -44,9 +44,9 @@ class AELLogParser(BaseLogParser):
         regex,
         should_stop,
         progress_callback=None,
+        keep_para=False,
         min_event_count=2,
         merge_percent=0.5,
-        keep_para=False,
     ):
         """
         Attributes
@@ -55,11 +55,10 @@ class AELLogParser(BaseLogParser):
             merge_percent : maximum percentage of difference to merge two events
             keep_para : whether to keep parameter list in structured log file
         """
-        super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback)
+        super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback, keep_para)
 
         self._min_event_count = min_event_count
         self._merge_percent = merge_percent
-        self._keep_para = keep_para
         self._merged_events = list()
         self._bins = dict()
         self._df_log = None
@@ -92,11 +91,8 @@ class AELLogParser(BaseLogParser):
 
     @staticmethod
     def _has_diff(tokens1, tokens2, merge_percent):
-        diff = 0
-        for idx in range(len(tokens1)):
-            if tokens1[idx] != tokens2[idx]:
-                diff += 1
-        return True if 0 < diff * 1.0 / len(tokens1) <= merge_percent else False
+        diff = sum(1 for t1, t2 in zip(tokens1, tokens2) if t1 != t2)
+        return 0 < diff / len(tokens1) <= merge_percent
 
     def _reconcile(self):
         """

@@ -32,12 +32,10 @@ class Logcluster:
 
 
 class Node:
-    def __init__(self, child_d=None, depth=0, digit_or_token=None):
+    def __init__(self, child_d=None):
         if child_d is None:
             child_d = dict()
         self.childD = child_d
-        self.depth = depth
-        self.digitOrtoken = digit_or_token
 
 
 @parser_register
@@ -50,10 +48,10 @@ class DrainLogParser(BaseLogParser):
         regex,
         should_stop,
         progress_callback=None,
+        keep_para=False,
         depth=4,
         st=0.4,
         max_child=100,
-        keep_para=False,
     ):
         """
         Attributes
@@ -63,19 +61,18 @@ class DrainLogParser(BaseLogParser):
             max_child : max number of children of an internal node
             keep_para : whether to keep parameter list in structured log file
         """
-        super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback)
+        super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback, keep_para)
         self._depth = depth - 2
         self._st = st
         self._max_child = max_child
-        self._keep_para = keep_para
         self._df_log = None
 
     def _output_result(self, log_clust_l):
         log_templates = [0] * self._df_log.height
-        for logClust in log_clust_l:
-            template_str = " ".join(logClust.logTemplate)
-            for logID in logClust.logIDL:
-                log_templates[logID - 1] = template_str
+        for log_clust in log_clust_l:
+            template_str = " ".join(log_clust.logTemplate)
+            for log_id in log_clust.logIDL:
+                log_templates[log_id - 1] = template_str
 
         output_result(
             self._df_log,
@@ -89,37 +86,26 @@ class DrainLogParser(BaseLogParser):
     @staticmethod
     def _get_template(seq1, seq2):
         assert len(seq1) == len(seq2)
-        retVal = list()
-
-        i = 0
-        for word in seq1:
-            if word == seq2[i]:
-                retVal.append(word)
-            else:
-                retVal.append("<*>")
-
-            i += 1
-
-        return retVal
+        return [w1 if w1 == w2 else "<*>" for w1, w2 in zip(seq1, seq2)]
 
     @staticmethod
     def _has_numbers(s):
         return any(char.isdigit() for char in s)
 
     def _add_seq_to_prefix_tree(self, rn, log_clust):
-        seqLen = len(log_clust.logTemplate)
-        if seqLen not in rn.childD:
-            firtLayerNode = Node(depth=1, digit_or_token=seqLen)
-            rn.childD[seqLen] = firtLayerNode
+        seq_len = len(log_clust.logTemplate)
+        if seq_len not in rn.childD:
+            first_layer_node = Node()
+            rn.childD[seq_len] = first_layer_node
         else:
-            firtLayerNode = rn.childD[seqLen]
+            first_layer_node = rn.childD[seq_len]
 
-        parentn = firtLayerNode
+        parentn = first_layer_node
 
-        currentDepth = 1
+        current_depth = 1
         for token in log_clust.logTemplate:
             # Add current log cluster to the leaf node
-            if currentDepth >= self._depth or currentDepth > seqLen:
+            if current_depth >= self._depth or current_depth > seq_len:
                 if len(parentn.childD) == 0:
                     parentn.childD = [log_clust]
                 else:
@@ -131,28 +117,28 @@ class DrainLogParser(BaseLogParser):
                 if not self._has_numbers(token):
                     if "<*>" in parentn.childD:
                         if len(parentn.childD) < self._max_child:
-                            newNode = Node(depth=currentDepth + 1, digit_or_token=token)
-                            parentn.childD[token] = newNode
-                            parentn = newNode
+                            new_node = Node()
+                            parentn.childD[token] = new_node
+                            parentn = new_node
                         else:
                             parentn = parentn.childD["<*>"]
                     else:
                         if len(parentn.childD) + 1 < self._max_child:
-                            newNode = Node(depth=currentDepth + 1, digit_or_token=token)
-                            parentn.childD[token] = newNode
-                            parentn = newNode
+                            new_node = Node()
+                            parentn.childD[token] = new_node
+                            parentn = new_node
                         elif len(parentn.childD) + 1 == self._max_child:
-                            newNode = Node(depth=currentDepth + 1, digit_or_token="<*>")
-                            parentn.childD["<*>"] = newNode
-                            parentn = newNode
+                            new_node = Node()
+                            parentn.childD["<*>"] = new_node
+                            parentn = new_node
                         else:
                             parentn = parentn.childD["<*>"]
 
                 else:
                     if "<*>" not in parentn.childD:
-                        newNode = Node(depth=currentDepth + 1, digit_or_token="<*>")
-                        parentn.childD["<*>"] = newNode
-                        parentn = newNode
+                        new_node = Node()
+                        parentn.childD["<*>"] = new_node
+                        parentn = new_node
                     else:
                         parentn = parentn.childD["<*>"]
 
@@ -160,57 +146,57 @@ class DrainLogParser(BaseLogParser):
             else:
                 parentn = parentn.childD[token]
 
-            currentDepth += 1
+            current_depth += 1
 
     @staticmethod
     def _seq_dist(seq1, seq2):
         # seq1 is template
         assert len(seq1) == len(seq2)
-        simTokens = 0
-        numOfPar = 0
+        sim_tokens = 0
+        num_of_par = 0
 
         for token1, token2 in zip(seq1, seq2):
             if token1 == "<*>":
-                numOfPar += 1
+                num_of_par += 1
                 continue
             if token1 == token2:
-                simTokens += 1
+                sim_tokens += 1
 
-        retVal = float(simTokens) / len(seq1)
+        ret_val = float(sim_tokens) / len(seq1)
 
-        return retVal, numOfPar
+        return ret_val, num_of_par
 
     def _fast_match(self, log_clust_l, seq):
-        retLogClust = None
+        ret_log_clust = None
 
-        maxSim = -1
-        maxNumOfPara = -1
-        maxClust = None
+        max_sim = -1
+        max_num_of_para = -1
+        max_clust = None
 
-        for logClust in log_clust_l:
-            curSim, curNumOfPara = self._seq_dist(logClust.logTemplate, seq)
-            if curSim > maxSim or (curSim == maxSim and curNumOfPara > maxNumOfPara):
-                maxSim = curSim
-                maxNumOfPara = curNumOfPara
-                maxClust = logClust
+        for log_clust in log_clust_l:
+            cur_sim, cur_num_of_para = self._seq_dist(log_clust.logTemplate, seq)
+            if cur_sim > max_sim or (cur_sim == max_sim and cur_num_of_para > max_num_of_para):
+                max_sim = cur_sim
+                max_num_of_para = cur_num_of_para
+                max_clust = log_clust
 
-        if maxSim >= self._st:
-            retLogClust = maxClust
+        if max_sim >= self._st:
+            ret_log_clust = max_clust
 
-        return retLogClust
+        return ret_log_clust
 
     def _tree_search(self, rn, seq):
-        retLogClust = None
+        ret_log_clust = None
 
-        seqLen = len(seq)
-        if seqLen not in rn.childD:
-            return retLogClust
+        seq_len = len(seq)
+        if seq_len not in rn.childD:
+            return ret_log_clust
 
-        parentn = rn.childD[seqLen]
+        parentn = rn.childD[seq_len]
 
-        currentDepth = 1
+        current_depth = 1
         for token in seq:
-            if currentDepth >= self._depth or currentDepth > seqLen:
+            if current_depth >= self._depth or current_depth > seq_len:
                 break
 
             if token in parentn.childD:
@@ -218,20 +204,20 @@ class DrainLogParser(BaseLogParser):
             elif "<*>" in parentn.childD:
                 parentn = parentn.childD["<*>"]
             else:
-                return retLogClust
-            currentDepth += 1
+                return ret_log_clust
+            current_depth += 1
 
-        logClustL = parentn.childD
+        log_clust_l = parentn.childD
 
-        retLogClust = self._fast_match(logClustL, seq)
+        ret_log_clust = self._fast_match(log_clust_l, seq)
 
-        return retLogClust
+        return ret_log_clust
 
     def parse(self) -> ParseResult:
         print(f"Parsing file: {self._log_file}")
         start_time = datetime.now()
         rootNode = Node()
-        logCluL = list()
+        log_clust_l = list()
 
         self._df_log = load_data(self._log_file, self._log_format, self._regex, self._should_stop)
 
@@ -239,22 +225,22 @@ class DrainLogParser(BaseLogParser):
             if self._should_stop():
                 raise InterruptedError
 
-            logID = line["LineId"]
-            logmessageL = line["Content"].strip().split()
-            matchCluster = self._tree_search(rootNode, logmessageL)
+            log_id = line["LineId"]
+            log_message_l = line["Content"].strip().split()
+            match_cluster = self._tree_search(rootNode, log_message_l)
 
             # Match no existing log cluster
-            if matchCluster is None:
-                newCluster = Logcluster(log_template=logmessageL, log_idl=[logID])
-                logCluL.append(newCluster)
-                self._add_seq_to_prefix_tree(rootNode, newCluster)
+            if match_cluster is None:
+                new_cluster = Logcluster(log_template=log_message_l, log_idl=[log_id])
+                log_clust_l.append(new_cluster)
+                self._add_seq_to_prefix_tree(rootNode, new_cluster)
 
             # Add the new log message to the existing cluster
             else:
-                newTemplate = self._get_template(logmessageL, matchCluster.logTemplate)
-                matchCluster.logIDL.append(logID)
-                if " ".join(newTemplate) != " ".join(matchCluster.logTemplate):
-                    matchCluster.logTemplate = newTemplate
+                new_template = self._get_template(log_message_l, match_cluster.logTemplate)
+                match_cluster.logIDL.append(log_id)
+                if " ".join(new_template) != " ".join(match_cluster.logTemplate):
+                    match_cluster.logTemplate = new_template
 
             if idx % 10000 == 0 or idx == self._df_log.height - 1:
                 progress = idx * 100.0 / self._df_log.height
@@ -262,7 +248,7 @@ class DrainLogParser(BaseLogParser):
                 if self._progress_callback:
                     self._progress_callback(int(progress))
 
-        self._output_result(logCluL)
+        self._output_result(log_clust_l)
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
         return ParseResult(self._log_file, self._df_log.height, self._log_structured_file, self._log_templates_file)
