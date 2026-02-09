@@ -145,17 +145,17 @@ class SpellLogParser(BaseLogParser):
         if not lcs:
             return ret_val
 
-        lcs = lcs[::-1]
-        for i, token in enumerate(seq, 1):
+        lcs.reverse()
+        for i, token in enumerate(seq):
             if token == lcs[-1]:
                 ret_val.append(token)
                 lcs.pop()
             else:
                 ret_val.append("<*>")
             if not lcs:
+                if i < len(seq) - 1:
+                    ret_val.append("<*>")
                 break
-        if i < len(seq):
-            ret_val.append("<*>")
         return ret_val
 
     def lcs_match(self, log_clusters, seq):
