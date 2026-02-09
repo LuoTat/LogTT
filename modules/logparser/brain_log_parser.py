@@ -52,11 +52,13 @@ class TupleTree:
         root_set_detail = dict()
         root_set = dict()
         for idx, fc in enumerate(self._word_combinations):
+            count = self._group_len[idx]
             threshold = (max(fc, key=lambda tup: tup[0])[0]) * threshold_per
             m = 0
             candidate = fc[0]
             for fc_w in fc:
                 if fc_w[0] >= threshold:
+                    self._sorted_tuple_vector[idx].append((int(count[0]), -1, -1))
                     root_set_detail_ID.setdefault(fc_w, list()).append(self._sorted_tuple_vector[idx])
                     root_set.setdefault(fc_w, list()).append(self._word_combinations_reverse[idx])
                     root_set_detail.setdefault(fc_w, list()).append(self._tuple_vector[idx])
@@ -65,6 +67,7 @@ class TupleTree:
                     candidate = fc_w
                     m = fc_w[0]
                 if fc_w == fc[-1]:
+                    self._sorted_tuple_vector[idx].append((int(count[0]), -1, -1))
                     root_set_detail_ID.setdefault(candidate, list()).append(self._sorted_tuple_vector[idx])
                     root_set.setdefault(candidate, list()).append(self._word_combinations_reverse[idx])
                     root_set_detail.setdefault(fc_w, list()).append(self._tuple_vector[idx])
@@ -134,7 +137,7 @@ class BrainLogParser(BaseLogParser):
         should_stop,
         progress_callback=None,
         keep_para=False,
-        threshold=2,
+        threshold=5,
         delimeter=None,
     ):
         """
@@ -307,7 +310,7 @@ class BrainLogParser(BaseLogParser):
 
             root_set_detail_ID = Tree.up_split(root_set_detail_ID, root_set)
             parse_result = Tree.down_split(root_set_detail_ID, self._threshold, root_set_detail)
-            template_set.update(BrainLogParser._extract_templates(parse_result))
+            template_set.update(self._extract_templates(parse_result))
 
         self._output_result(template_set)
 
