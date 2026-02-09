@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
+import struct
 from typing import Any
 
 import duckdb
@@ -43,8 +44,10 @@ class SqlColumn(IntEnum):
     IS_EXTRACTED = 5  # is_extracted
     EXTRACT_METHOD = 6  # extract_method
     LINE_COUNT = 7  # line_count
-    LOG_STRUCTURED = 8  # log_structured
-    LOG_TEMPLATES = 9  # log_templates
+    LOG_STRUCTURED_PATH = 8  # log_structured_path
+    LOG_TEMPLATES_PATH = 9  # log_templates_path
+    STRUCTURED_TABLE_NAME = 10  # structured_table_name
+    TEMPLATES_TABLE_NAME = 11  # templates_table_name
 
 
 class LogStatus(IntEnum):
@@ -71,6 +74,8 @@ class LogExtractTask(QObject):
         format_type: str,
         log_format: str,
         regex: list[str],
+        structured_table_name: str,
+        templates_table_name: str,
     ):
         super().__init__()
         self._log_id = log_id
@@ -79,6 +84,8 @@ class LogExtractTask(QObject):
         self._format_type = format_type
         self._log_format = log_format
         self._regex = regex
+        self._structured_table_name = structured_table_name
+        self._templates_table_name = templates_table_name
 
     @Slot()
     def run(self):
@@ -88,6 +95,8 @@ class LogExtractTask(QObject):
                 self._log_file,
                 self._log_format,
                 self._regex,
+                self._structured_table_name,
+                self._templates_table_name,
                 lambda: QThread.currentThread().isInterruptionRequested(),
                 lambda progress: self.progress.emit(self._log_id, progress),
             ).parse()
@@ -138,8 +147,10 @@ class LogTableModel(QAbstractTableModel):
         "is_extracted",
         "extract_method",
         "line_count",
-        "log_structured",
-        "log_templates",
+        "log_structured_path",
+        "log_templates_path",
+        "structured_table_name",
+        "templates_table_name",
     ]
     # 模型列到数据库列的映射
     _MODEL_TO_SQL = [
@@ -369,8 +380,8 @@ class LogTableModel(QAbstractTableModel):
         # 更新数据库和ui状态
         self._set_sql_data(log_id, SqlColumn.IS_EXTRACTED, True)
         self._set_sql_data(log_id, SqlColumn.LINE_COUNT, line_count)
-        self._set_sql_data(log_id, SqlColumn.LOG_STRUCTURED, str(log_structured_path))
-        self._set_sql_data(log_id, SqlColumn.LOG_TEMPLATES, str(log_templates_path))
+        self._set_sql_data(log_id, SqlColumn.LOG_STRUCTURED_PATH, str(log_structured_path))
+        self._set_sql_data(log_id, SqlColumn.LOG_TEMPLATES_PATH, str(log_templates_path))
         if (row := self._get_row(log_id)) >= 0:
             self._set_df_data(row, SqlColumn.IS_EXTRACTED, True)
             self._set_df_data(row, SqlColumn.LINE_COUNT, line_count)
@@ -436,7 +447,15 @@ class LogTableModel(QAbstractTableModel):
         try:
             row = index.row()
             log_id = index.data(self.LOG_ID_ROLE)
+            structured_table_name = self._df[row][SqlColumn.STRUCTURED_TABLE_NAME]
+            templates_table_name = self._df[row][SqlColumn.TEMPLATES_TABLE_NAME]
+
+            # 删除关联的结构化表和模板表
+            self._duckdb_service.drop_table(structured_table_name)
+            self._duckdb_service.drop_table(templates_table_name)
+            # 删除日志记录
             self._duckdb_service.delete_log(log_id)
+
             self.beginRemoveRows(QModelIndex(), row, row)
             self._df.pop(row)
             self.endRemoveRows()
@@ -473,6 +492,8 @@ class LogTableModel(QAbstractTableModel):
             format_type,
             log_format,
             regex,
+            self._df[row][SqlColumn.STRUCTURED_TABLE_NAME],
+            self._df[row][SqlColumn.TEMPLATES_TABLE_NAME],
         )
 
         # 创建工作线程
