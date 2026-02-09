@@ -68,7 +68,7 @@ class ExtractedLogListModel(QAbstractListModel):
 
     # ==================== 公共方法 ====================
 
-    def getRow(self, log_id: int) -> int:
+    def get_row(self, log_id: int) -> int:
         """根据 log_id 获取行号"""
         for idx, row in enumerate(self._df):
             if row[SqlColumn.ID] == log_id:

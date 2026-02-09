@@ -178,7 +178,7 @@ class LogTableModel(QAbstractTableModel):
         # 一次性获取整个表的数据到内存中
         self._df: list[tuple] = self._duckdb_service.get_log_table()
         # 存储正在提取的任务信息: log_id -> LogExtractTaskInfo
-        self._extract_tasks: dict[int, LogExtractTaskInfo] = dict()
+        self._extract_tasks: dict[int, LogExtractTaskInfo] = {}
 
     # ==================== 重写方法 ====================
 
@@ -204,11 +204,11 @@ class LogTableModel(QAbstractTableModel):
 
         # 处理显示和编辑角色
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
-            return self._getDisplayData(index)
+            return self._get_display_data(index)
 
         # 处理前景色角色
         elif role == Qt.ItemDataRole.ForegroundRole:
-            status = self._getStatus(index)
+            status = self._get_status(index)
             if status == LogStatus.EXTRACTING:
                 return QColor(Qt.GlobalColor.green)
             return None
@@ -219,7 +219,7 @@ class LogTableModel(QAbstractTableModel):
 
         # 处理自定义角色 - LOG_STATUS_ROLE
         elif role == self.LOG_STATUS_ROLE:
-            return self._getStatus(index)
+            return self._get_status(index)
 
         return None
 
@@ -276,25 +276,25 @@ class LogTableModel(QAbstractTableModel):
 
     # ==================== 私有方法 ====================
 
-    def _getRow(self, log_id: int) -> int:
+    def _get_row(self, log_id: int) -> int:
         """根据 log_id 获取行号"""
         for idx, row in enumerate(self._df):
             if row[SqlColumn.ID] == log_id:
                 return idx
         return -1
 
-    def _getDisplayData(self, index: QModelIndex) -> Any:
+    def _get_display_data(self, index: QModelIndex) -> Any:
         """获取显示数据"""
         row = index.row()
         col = index.column()
 
         # 进度列
         if col == LogColumn.PROGRESS:
-            return self._getProgress(index)
+            return self._get_progress(index)
 
         # 状态列
         elif col == LogColumn.STATUS:
-            status = self._getStatus(index)
+            status = self._get_status(index)
             return self._STATUS_TO_TEXT[status]
 
         # 名称列
@@ -305,7 +305,7 @@ class LogTableModel(QAbstractTableModel):
         # 常规列
         return str(self._df[row][self._MODEL_TO_SQL[col]])
 
-    def _getStatus(self, index: QModelIndex) -> LogStatus:
+    def _get_status(self, index: QModelIndex) -> LogStatus:
         """获取日志状态"""
         is_extracted = self._df[index.row()][SqlColumn.IS_EXTRACTED]
         if is_extracted:
@@ -315,7 +315,7 @@ class LogTableModel(QAbstractTableModel):
         else:
             return LogStatus.NOT_EXTRACTED
 
-    def _getProgress(self, index: QModelIndex) -> int:
+    def _get_progress(self, index: QModelIndex) -> int:
         """获取提取进度"""
         is_extracted = self._df[index.row()][SqlColumn.IS_EXTRACTED]
         if is_extracted:
@@ -324,17 +324,17 @@ class LogTableModel(QAbstractTableModel):
             return self._extract_tasks[log_id].progress
         return 0
 
-    def _setDfData(self, row: int, column: SqlColumn, value: object):
+    def _set_df_data(self, row: int, column: SqlColumn, value: object):
         """更新内存DataFrame"""
         row_list = list(self._df[row])
         row_list[column] = value
         self._df[row] = tuple(row_list)
 
-    def _setSqlData(self, log_id: int, column: SqlColumn, value: object):
+    def _set_sql_data(self, log_id: int, column: SqlColumn, value: object):
         """同步数据库"""
         self._duckdb_service.update_log(log_id, self._SQL_HEADERS[column], value)
 
-    def _interruptTask(self, index: QModelIndex):
+    def _interrupt_task(self, index: QModelIndex):
         """中断提取任务"""
         log_id = index.data(self.LOG_ID_ROLE)
         if log_id not in self._extract_tasks:
@@ -345,7 +345,7 @@ class LogTableModel(QAbstractTableModel):
         task_info.thread.quit()
         task_info.thread.wait()
 
-    def _cleanTask(self, log_id: int):
+    def _clean_task(self, log_id: int):
         """清理任务信息"""
         if log_id in self._extract_tasks:
             task_info = self._extract_tasks.pop(log_id)
@@ -355,7 +355,7 @@ class LogTableModel(QAbstractTableModel):
     # ==================== 槽函数 ====================
 
     @Slot(int, int, Path, Path)
-    def _onExtractFinished(
+    def _on_extract_finished(
         self,
         log_id: int,
         line_count: int,
@@ -364,56 +364,56 @@ class LogTableModel(QAbstractTableModel):
     ):
         """处理提取完成"""
         # 清理任务信息
-        self._cleanTask(log_id)
+        self._clean_task(log_id)
 
         # 更新数据库和ui状态
-        self._setSqlData(log_id, SqlColumn.IS_EXTRACTED, True)
-        self._setSqlData(log_id, SqlColumn.LINE_COUNT, line_count)
-        self._setSqlData(log_id, SqlColumn.LOG_STRUCTURED, str(log_structured_path))
-        self._setSqlData(log_id, SqlColumn.LOG_TEMPLATES, str(log_templates_path))
-        if (row := self._getRow(log_id)) >= 0:
-            self._setDfData(row, SqlColumn.IS_EXTRACTED, True)
-            self._setDfData(row, SqlColumn.LINE_COUNT, line_count)
+        self._set_sql_data(log_id, SqlColumn.IS_EXTRACTED, True)
+        self._set_sql_data(log_id, SqlColumn.LINE_COUNT, line_count)
+        self._set_sql_data(log_id, SqlColumn.LOG_STRUCTURED, str(log_structured_path))
+        self._set_sql_data(log_id, SqlColumn.LOG_TEMPLATES, str(log_templates_path))
+        if (row := self._get_row(log_id)) >= 0:
+            self._set_df_data(row, SqlColumn.IS_EXTRACTED, True)
+            self._set_df_data(row, SqlColumn.LINE_COUNT, line_count)
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
 
         # 发出完成信号
         self.extractFinished.emit(log_id, line_count)
 
     @Slot(int)
-    def _onExtractInterrupted(self, log_id: int):
+    def _on_extract_interrupted(self, log_id: int):
         """处理提取中断"""
         # 清理任务信息
-        self._cleanTask(log_id)
+        self._clean_task(log_id)
 
         # 更新ui状态
-        if (row := self._getRow(log_id)) >= 0:
+        if (row := self._get_row(log_id)) >= 0:
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
         # 发出中断信号
         self.extractInterrupted.emit(log_id)
 
     @Slot(int, str)
-    def _onExtractErrored(self, log_id: int, error_msg: str):
+    def _on_extract_errored(self, log_id: int, error_msg: str):
         """处理提取错误"""
         # 清理任务信息
-        self._cleanTask(log_id)
+        self._clean_task(log_id)
 
         # 更新ui状态
-        if (row := self._getRow(log_id)) >= 0:
+        if (row := self._get_row(log_id)) >= 0:
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
         # 发出错误信号
         self.extractError.emit(log_id, error_msg)
 
     @Slot(int, int)
-    def _onExtractProgress(self, log_id: int, progress: int):
+    def _on_extract_progress(self, log_id: int, progress: int):
         """处理提取进度"""
         self._extract_tasks[log_id].progress = progress
         # 更新ui状态
-        if (row := self._getRow(log_id)) >= 0:
+        if (row := self._get_row(log_id)) >= 0:
             self.dataChanged.emit(self.index(row, LogColumn.PROGRESS), self.index(row, LogColumn.PROGRESS))
 
     # ==================== 公共方法 ====================
 
-    def requestAdd(self, log_type: str, log_uri: str, extract_method: str = ""):
+    def request_add(self, log_type: str, log_uri: str, extract_method: str = ""):
         """请求添加日志记录"""
         # 更新数据库和ui状态
         try:
@@ -428,10 +428,10 @@ class LogTableModel(QAbstractTableModel):
         except Exception as e:
             self.addError.emit(str(e))
 
-    def requestDelete(self, index: QModelIndex):
+    def request_delete(self, index: QModelIndex):
         """请求删除日志记录"""
         # 如果有正在提取的任务，先中断
-        self._interruptTask(index)
+        self._interrupt_task(index)
         # 更新数据库和ui状态
         try:
             row = index.row()
@@ -444,7 +444,7 @@ class LogTableModel(QAbstractTableModel):
         except Exception as e:
             self.deleteError.emit(str(e))
 
-    def requestExtract(
+    def request_extract(
         self,
         index: QModelIndex,
         logparser_type: type[BaseLogParser],
@@ -456,10 +456,10 @@ class LogTableModel(QAbstractTableModel):
         row = index.row()
         log_id = index.data(self.LOG_ID_ROLE)
         # 更新数据库和ui状态
-        self._setSqlData(log_id, SqlColumn.FORMAT_TYPE, format_type)
-        self._setSqlData(log_id, SqlColumn.EXTRACT_METHOD, logparser_type.name())
-        self._setDfData(row, SqlColumn.FORMAT_TYPE, format_type)
-        self._setDfData(row, SqlColumn.EXTRACT_METHOD, logparser_type.name())
+        self._set_sql_data(log_id, SqlColumn.FORMAT_TYPE, format_type)
+        self._set_sql_data(log_id, SqlColumn.EXTRACT_METHOD, logparser_type.name())
+        self._set_df_data(row, SqlColumn.FORMAT_TYPE, format_type)
+        self._set_df_data(row, SqlColumn.EXTRACT_METHOD, logparser_type.name())
         self.dataChanged.emit(
             self.index(row, LogColumn.FORMAT_TYPE),
             self.index(row, LogColumn.EXTRACT_METHOD),
@@ -485,28 +485,28 @@ class LogTableModel(QAbstractTableModel):
 
         # 连接信号
         thread.started.connect(task.run)
-        task.finished.connect(self._onExtractFinished)
-        task.interrupted.connect(self._onExtractInterrupted)
-        task.error.connect(self._onExtractErrored)
-        task.progress.connect(self._onExtractProgress)
+        task.finished.connect(self._on_extract_finished)
+        task.interrupted.connect(self._on_extract_interrupted)
+        task.error.connect(self._on_extract_errored)
+        task.progress.connect(self._on_extract_progress)
 
         # 启动线程
         thread.start()
 
-    def requestInterruptTask(self, index: QModelIndex):
+    def request_interrupt_task(self, index: QModelIndex):
         """请求中断提取任务"""
-        self._interruptTask(index)
+        self._interrupt_task(index)
 
-    def hasExtractingTasks(self) -> bool:
+    def has_extracting_tasks(self) -> bool:
         """是否有正在提取的任务"""
         return len(self._extract_tasks) > 0
 
-    def interruptAllTasks(self):
+    def interrupt_all_tasks(self):
         """中断所有正在提取的任务"""
         for row in range(self.rowCount()):
-            self._interruptTask(self.index(row, 0))
+            self._interrupt_task(self.index(row, 0))
 
-    def searchByName(self, keyword: str):
+    def search_by_name(self, keyword: str):
         """按 URI 关键字搜索"""
         kw = keyword.strip().lower()
 
@@ -519,7 +519,7 @@ class LogTableModel(QAbstractTableModel):
         self._df = [row for row in self._df if kw in Path(row[SqlColumn.LOG_URI]).stem.lower()]
         self.endResetModel()
 
-    def clearSearch(self):
+    def clear_search(self):
         """清除搜索"""
         # 恢复全量数据
         self.refresh()

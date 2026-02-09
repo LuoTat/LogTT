@@ -9,7 +9,7 @@ def parser_register(cls):
 class ParserFactory:
     """解析器工厂"""
 
-    _all_parsers_type: list[type[BaseLogParser]] = list()
+    _all_parsers_type: list[type[BaseLogParser]] = []
 
     @classmethod
     def register_parser(cls, parser_class: type[BaseLogParser]):

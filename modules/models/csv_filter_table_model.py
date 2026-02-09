@@ -45,14 +45,14 @@ class CsvFilterTableModel(QAbstractTableModel):
         self._keyword: str = str()
 
         # 当前已选中的值集合
-        self._current_filter = all_filters.get(column_name, list())
+        self._current_filter = all_filters.get(column_name, [])
         # 去除当前列的其他过滤条件
         if column_name in all_filters:
             all_filters.pop(column_name)
         self._other_filters = all_filters
 
         # 预加载第一页数据，主要是为了提前获取总行数
-        self._cacheRowData(0)
+        self._cache_row_data(0)
 
     # ==================== 重写方法 ====================
 
@@ -90,7 +90,7 @@ class CsvFilterTableModel(QAbstractTableModel):
         col = index.column()
 
         if not (self._cache_offset <= row < self._cache_offset + self._cache_limit):
-            self._cacheRowData(row)
+            self._cache_row_data(row)
 
         if role == Qt.ItemDataRole.DisplayRole:
             return str(self._cache_df.item(row - self._cache_offset, col))
@@ -124,7 +124,7 @@ class CsvFilterTableModel(QAbstractTableModel):
 
     # ==================== 私有方法 ====================
 
-    def _cacheRowData(self, row: int):
+    def _cache_row_data(self, row: int):
         """将目标行左右的数据缓存到本地"""
         self._cache_limit = self._PAGE_SIZE * self._WINDOW_PAGES
         self._cache_offset = max(0, row - self._PAGE_SIZE)
@@ -144,7 +144,7 @@ class CsvFilterTableModel(QAbstractTableModel):
 
     # ==================== 公共方法 ====================
 
-    def toggleCheckState(self, index: QModelIndex):
+    def toggle_check_state(self, index: QModelIndex):
         """切换指定行的复选框状态"""
         current_state = index.data(Qt.ItemDataRole.CheckStateRole)
 
@@ -155,12 +155,12 @@ class CsvFilterTableModel(QAbstractTableModel):
 
         self.setData(index, new_state, Qt.ItemDataRole.CheckStateRole)
 
-    def searchByKeyword(self, keyword: str):
+    def search_by_keyword(self, keyword: str):
         """按关键字搜索"""
         self._keyword = keyword.strip().lower()
         self.refresh()
 
-    def clearSearch(self):
+    def clear_search(self):
         """清除搜索"""
         self._keyword = str()
         self.refresh()
@@ -168,5 +168,5 @@ class CsvFilterTableModel(QAbstractTableModel):
     def refresh(self):
         """刷新模型数据"""
         self.beginResetModel()
-        self._cacheRowData(0)
+        self._cache_row_data(0)
         self.endResetModel()

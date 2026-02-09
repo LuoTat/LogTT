@@ -30,35 +30,35 @@ class ColumnFilterMessageBox(MessageBoxBase):
         self._all_filters = all_filters
 
         # 初始化模型
-        self._initModel()
+        self._init_model()
 
-        self._initTitle()
-        self._initSearchEdit()
-        self._initTableView()
+        self._init_title()
+        self._init_search_edit()
+        self._init_table_view()
         self.widget.setMinimumWidth(700)
         self.widget.setMinimumHeight(800)
 
     # ==================== 私有方法 ====================
 
-    def _initModel(self):
+    def _init_model(self):
         self._csv_filter_table_model = CsvFilterTableModel(self._table_name, self._column_name, self._all_filters, self)
-        self._csv_filter_table_model.filterChanged.connect(self._onfilterChanged)
+        self._csv_filter_table_model.filterChanged.connect(self._on_filter_changed)
 
-    def _initTitle(self):
+    def _init_title(self):
         """初始化标题"""
         self._title_label = SubtitleLabel(f"'{self._column_name}' 的本地筛选器", self)
         self.viewLayout.addWidget(self._title_label)
 
-    def _initSearchEdit(self):
+    def _init_search_edit(self):
         """初始化搜索框"""
         self._search_edit = SearchLineEdit(self)
         self._search_edit.setPlaceholderText("搜索值...")
         self._search_edit.setClearButtonEnabled(True)
-        self._search_edit.textChanged.connect(self._onSearchTextChanged)
-        self._search_edit.clearSignal.connect(self._onClearSearch)
+        self._search_edit.textChanged.connect(self._on_search_text_changed)
+        self._search_edit.clearSignal.connect(self._on_clear_search)
         self.viewLayout.addWidget(self._search_edit)
 
-    def _initTableView(self):
+    def _init_table_view(self):
         """初始化表格视图"""
         self._table_view = TableView(self)
         self._table_view.setBorderVisible(True)
@@ -74,31 +74,31 @@ class ColumnFilterMessageBox(MessageBoxBase):
         # 设置水平表头拉伸填充
         self._table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         # 连接点击信号，使点击整行都能触发复选框
-        self._table_view.clicked.connect(self._onTableViewClicked)
+        self._table_view.clicked.connect(self._on_table_view_clicked)
 
         self.viewLayout.addWidget(self._table_view)
 
     # =================== 槽函数 ====================
 
     @Slot(object)
-    def _onfilterChanged(self, current_filter: list[str]):
+    def _on_filter_changed(self, current_filter: list[str]):
         """选择过滤器变化"""
         self._current_filter = current_filter
 
     @Slot(str)
-    def _onSearchTextChanged(self, text: str):
+    def _on_search_text_changed(self, text: str):
         """搜索文本变化"""
-        self._csv_filter_table_model.searchByKeyword(text)
+        self._csv_filter_table_model.search_by_keyword(text)
 
     @Slot()
-    def _onClearSearch(self):
+    def _on_clear_search(self):
         """清除搜索"""
-        self._csv_filter_table_model.clearSearch()
+        self._csv_filter_table_model.clear_search()
 
     @Slot(QModelIndex)
-    def _onTableViewClicked(self, index):
+    def _on_table_view_clicked(self, index):
         """表格被点击时切换复选框状态"""
-        self._csv_filter_table_model.toggleCheckState(index)
+        self._csv_filter_table_model.toggle_check_state(index)
 
     # ==================== 公共方法 ====================
 

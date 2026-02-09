@@ -31,11 +31,11 @@ class CsvFileTableModel(QAbstractTableModel):
         self._cache_limit: int = 0
 
         # 过滤的状态
-        self._filters: dict[str, list[str]] = dict()
+        self._filters: dict[str, list[str]] = {}
         self._filtered_row_count: int
 
         # 预加载第一页数据，主要是为了提前获取总行数
-        self._cacheRowData(0)
+        self._cache_row_data(0)
 
     # ==================== 重写方法 ====================
 
@@ -63,7 +63,7 @@ class CsvFileTableModel(QAbstractTableModel):
         col = index.column()
 
         if not (self._cache_offset <= row < self._cache_offset + self._cache_limit):
-            self._cacheRowData(row)
+            self._cache_row_data(row)
 
         if role == Qt.ItemDataRole.DisplayRole:
             return str(self._cache_df.item(row - self._cache_offset, col))
@@ -79,7 +79,7 @@ class CsvFileTableModel(QAbstractTableModel):
 
     # ==================== 私有方法 ====================
 
-    def _cacheRowData(self, row: int):
+    def _cache_row_data(self, row: int):
         """将目标行左右的数据缓存到本地"""
         self._cache_limit = self._PAGE_SIZE * self._WINDOW_PAGES
         self._cache_offset = max(0, row - self._PAGE_SIZE)
@@ -92,41 +92,41 @@ class CsvFileTableModel(QAbstractTableModel):
             print(f"Error fetching data: {e}")
 
     # ==================== 公共方法 ====================
-    def tableName(self) -> str:
+    def table_name(self) -> str:
         """获取当前表名"""
         return self._table_name
 
-    def totalRowCount(self) -> int:
+    def total_row_count(self) -> int:
         """获取总行数"""
         return self._total_row_count
 
-    def filteredRowCount(self) -> int:
+    def filtered_row_count(self) -> int:
         """获取过滤后的行数"""
         return self._filtered_row_count
 
-    def isColumnFiltered(self, column_name: str) -> bool:
+    def is_column_filtered(self, column_name: str) -> bool:
         """检查列是否有过滤"""
         return column_name in self._filters
 
-    def getAllFilters(self) -> dict[str, list[str]]:
+    def get_all_filters(self) -> dict[str, list[str]]:
         """获取所有列的过滤值"""
         return self._filters.copy()
 
-    def getColumnFilter(self, column_name: str) -> list[str]:
+    def get_column_filter(self, column_name: str) -> list[str]:
         """获取列的过滤值"""
-        return self._filters.get(column_name, list())
+        return self._filters.get(column_name, [])
 
-    def setColumnFilter(self, column_name: str, values: list[str]):
+    def set_column_filter(self, column_name: str, values: list[str]):
         """设置列的过滤值"""
         self._filters[column_name] = values
         self.refresh()
 
-    def clearColumnFilter(self, column_name: str):
+    def clear_column_filter(self, column_name: str):
         """清除列的过滤"""
         self._filters.pop(column_name)
         self.refresh()
 
-    def clearAllFilters(self):
+    def clear_all_filters(self):
         """清除所有过滤"""
         self._filters.clear()
         self.refresh()
@@ -134,5 +134,5 @@ class CsvFileTableModel(QAbstractTableModel):
     def refresh(self):
         """刷新模型数据"""
         self.beginResetModel()
-        self._cacheRowData(0)
+        self._cache_row_data(0)
         self.endResetModel()

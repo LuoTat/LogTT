@@ -41,8 +41,8 @@ class LogViewPage(QWidget):
 
         # 初始化日志列表模型
         self._extracted_log_list_model = ExtractedLogListModel(self)
-        self._initToolbar()
-        self._initTableView()
+        self._init_toolbar()
+        self._init_table_view()
 
     # ==================== 重写方法 ====================
 
@@ -53,7 +53,7 @@ class LogViewPage(QWidget):
 
     # ==================== 私有方法 ====================
 
-    def _initToolbar(self):
+    def _init_toolbar(self):
         """初始化工具栏"""
         tool_bar_layout = QHBoxLayout()
         tool_bar_layout.setSpacing(16)
@@ -67,7 +67,7 @@ class LogViewPage(QWidget):
         self._log_combo_box.setModel(self._extracted_log_list_model)
         self._log_combo_box.setMinimumWidth(400)
         self._log_combo_box.setPlaceholderText("请选择已提取的日志文件")
-        self._log_combo_box.currentIndexChanged.connect(self._onLogSelected)
+        self._log_combo_box.currentIndexChanged.connect(self._on_log_selected)
         tool_bar_layout.addWidget(self._log_combo_box)
 
         tool_bar_layout.addStretch()
@@ -78,7 +78,7 @@ class LogViewPage(QWidget):
 
         self._main_layout.addLayout(tool_bar_layout)
 
-    def _initTableView(self):
+    def _init_table_view(self):
         """初始化表格视图"""
         # 初始化时不设置模型，等待用户选择日志
         self._table_view = TableView(self)
@@ -93,19 +93,19 @@ class LogViewPage(QWidget):
         self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
         # 设置表格单元格右键菜单
         self._table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self._table_view.customContextMenuRequested.connect(self._onContextMenuRequested)
+        self._table_view.customContextMenuRequested.connect(self._on_context_menu_requested)
         # 设置表头右键菜单
         header = self._table_view.horizontalHeader()
         header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        header.customContextMenuRequested.connect(self._onHeaderContextMenuRequested)
+        header.customContextMenuRequested.connect(self._on_header_context_menu_requested)
 
         self._main_layout.addWidget(self._table_view)
 
-    def _updateInfoLabel(self):
+    def _update_info_label(self):
         """更新行数统计标签"""
         if self._csv_file_table_model:
-            total = self._csv_file_table_model.totalRowCount()
-            filtered = self._csv_file_table_model.filteredRowCount()
+            total = self._csv_file_table_model.total_row_count()
+            filtered = self._csv_file_table_model.filtered_row_count()
 
             if total == filtered:
                 self._info_label.setText(f"共 {total:,} 行")
@@ -114,18 +114,18 @@ class LogViewPage(QWidget):
         else:
             self._info_label.setText("")
 
-    def setLog(self, log_id: int):
+    def set_log(self, log_id: int):
         """设置选择的日志"""
         # 先刷新一次日志列表
         self._extracted_log_list_model.refresh()
         # 查找对应的索引
-        if (index := self._extracted_log_list_model.getRow(log_id)) >= 0:
+        if (index := self._extracted_log_list_model.get_row(log_id)) >= 0:
             self._log_combo_box.setCurrentIndex(index)
 
     # ==================== 槽函数 ====================
 
     @Slot(int)
-    def _onLogSelected(self, index: int):
+    def _on_log_selected(self, index: int):
         # 从模型获取数据
         model_index = self._extracted_log_list_model.index(index)
         log_structured_path = model_index.data(ExtractedLogListModel.LOG_STRUCTURED_PATH_ROLE)
@@ -161,36 +161,36 @@ class LogViewPage(QWidget):
         # 创建新的模型实例
         self._csv_file_table_model = CsvFileTableModel(structured_table_name, self)
         self._table_view.setModel(self._csv_file_table_model)
-        self._updateInfoLabel()
+        self._update_info_label()
 
-    def _showColumnFilterMenu(self, column_name: str, global_pos: QPoint):
+    def _show_column_filter_menu(self, column_name: str, global_pos: QPoint):
         """显示列过滤菜单"""
         # 创建菜单
         menu = RoundMenu(parent=self._table_view)
 
         # 设置本地筛选器
         filter_action = Action(FluentIcon.FILTER, f"设置 '{column_name}' 的筛选器")
-        filter_action.triggered.connect(lambda: self._onSetColumnFilter(column_name))
+        filter_action.triggered.connect(lambda: self._on_set_column_filter(column_name))
         menu.addAction(filter_action)
 
         # 如果该列有过滤，添加清除选项
-        if self._csv_file_table_model.isColumnFiltered(column_name):
+        if self._csv_file_table_model.is_column_filtered(column_name):
             clear_action = Action(FluentIcon.DELETE, f"清除 '{column_name}' 的筛选器")
-            clear_action.triggered.connect(lambda: self._onClearColumnFilter(column_name))
+            clear_action.triggered.connect(lambda: self._on_clear_column_filter(column_name))
             menu.addAction(clear_action)
 
         menu.addSeparator()
 
         # 清除所有筛选器
         clear_all_action = Action(FluentIcon.CLOSE, "清除所有筛选器")
-        clear_all_action.triggered.connect(self._onClearAllFilters)
+        clear_all_action.triggered.connect(self._on_clear_all_filters)
         menu.addAction(clear_all_action)
 
         # 显示菜单
         menu.exec(global_pos)
 
     @Slot(QPoint)
-    def _onContextMenuRequested(self, pos: QPoint):
+    def _on_context_menu_requested(self, pos: QPoint):
         """处理表格单元格右键菜单请求"""
         index = self._table_view.indexAt(pos)
         if not index.isValid():
@@ -201,10 +201,10 @@ class LogViewPage(QWidget):
         )
 
         global_pos = self._table_view.viewport().mapToGlobal(pos)
-        self._showColumnFilterMenu(column_name, global_pos)
+        self._show_column_filter_menu(column_name, global_pos)
 
     @Slot(QPoint)
-    def _onHeaderContextMenuRequested(self, pos: QPoint):
+    def _on_header_context_menu_requested(self, pos: QPoint):
         """处理表头右键菜单请求"""
         header = self._table_view.horizontalHeader()
         column_index = header.logicalIndexAt(pos.x())
@@ -217,25 +217,27 @@ class LogViewPage(QWidget):
         )
 
         global_pos = header.mapToGlobal(pos)
-        self._showColumnFilterMenu(column_name, global_pos)
+        self._show_column_filter_menu(column_name, global_pos)
 
     @Slot(str)
-    def _onSetColumnFilter(self, column_name: str):
+    def _on_set_column_filter(self, column_name: str):
         """设置列过滤"""
-        all_filters = self._csv_file_table_model.getAllFilters()
-        dialog = ColumnFilterMessageBox(self._csv_file_table_model.tableName(), column_name, all_filters, self.window())
+        all_filters = self._csv_file_table_model.get_all_filters()
+        dialog = ColumnFilterMessageBox(
+            self._csv_file_table_model.table_name(), column_name, all_filters, self.window()
+        )
         if dialog.exec():
-            self._csv_file_table_model.setColumnFilter(column_name, dialog.current_filter)
-            self._updateInfoLabel()
+            self._csv_file_table_model.set_column_filter(column_name, dialog.current_filter)
+            self._update_info_label()
 
     @Slot(str)
-    def _onClearColumnFilter(self, column_name: str):
+    def _on_clear_column_filter(self, column_name: str):
         """清除列过滤"""
-        self._csv_file_table_model.clearColumnFilter(column_name)
-        self._updateInfoLabel()
+        self._csv_file_table_model.clear_column_filter(column_name)
+        self._update_info_label()
 
     @Slot()
-    def _onClearAllFilters(self):
+    def _on_clear_all_filters(self):
         """清除所有过滤"""
-        self._csv_file_table_model.clearAllFilters()
-        self._updateInfoLabel()
+        self._csv_file_table_model.clear_all_filters()
+        self._update_info_label()

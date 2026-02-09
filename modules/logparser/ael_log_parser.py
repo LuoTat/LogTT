@@ -27,10 +27,12 @@ from .utils import load_data, output_result
 
 
 class Event:
-    def __init__(self, logidx, event_str=""):
-        self.logs = [logidx]
-        self.Eventstr = event_str
-        self.EventToken = event_str.split()
+    __slots__ = ("logs", "event_str", "event_tokens", "merged")
+
+    def __init__(self, log_idx, event_str=""):
+        self.logs = [log_idx]
+        self.event_str = event_str
+        self.event_tokens = event_str.split()
         self.merged = False
 
 
@@ -53,21 +55,20 @@ class AELLogParser(BaseLogParser):
         ----------
             min_event_count : minimum number of events to trigger reconciliation
             merge_percent : maximum percentage of difference to merge two events
-            keep_para : whether to keep parameter list in structured log file
         """
         super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback, keep_para)
 
         self._min_event_count = min_event_count
         self._merge_percent = merge_percent
-        self._merged_events = list()
-        self._bins = dict()
+        self._merged_events = []
+        self._bins = {}
         self._df_log = None
 
     def _output_result(self):
-        log_templates = [0] * self._df_log.height
+        log_templates = [""] * self._df_log.height
         for event in self._merged_events:
-            for logidx in event.logs:
-                log_templates[logidx] = event.Eventstr
+            for log_idx in event.logs:
+                log_templates[log_idx] = event.event_str
 
         output_result(
             self._df_log,
@@ -80,12 +81,12 @@ class AELLogParser(BaseLogParser):
 
     @staticmethod
     def _merge_event(e1, e2):
-        for pos in range(len(e1.EventToken)):
-            if e1.EventToken[pos] != e2.EventToken[pos]:
-                e1.EventToken[pos] = "<*>"
+        for pos in range(len(e1.event_tokens)):
+            if e1.event_tokens[pos] != e2.event_tokens[pos]:
+                e1.event_tokens[pos] = "<*>"
 
         e1.logs.extend(e2.logs)
-        e1.Eventstr = " ".join(e1.EventToken)
+        e1.event_str = " ".join(e1.event_tokens)
 
         return e1
 
@@ -97,46 +98,44 @@ class AELLogParser(BaseLogParser):
     def _reconcile(self):
         """
         Merge events if a bin has too many events
-
         """
         for value in self._bins.values():
             if len(value["Events"]) > self._min_event_count:
-                tobeMerged = list()
+                to_be_merged = []
                 for e1 in value["Events"]:
                     if e1.merged:
                         continue
                     e1.merged = True
-                    tobeMerged.append([e1])
+                    to_be_merged.append([e1])
 
                     for e2 in value["Events"]:
                         if e2.merged:
                             continue
-                        if self._has_diff(e1.EventToken, e2.EventToken, self._merge_percent):
-                            tobeMerged[-1].append(e2)
+                        if self._has_diff(e1.event_tokens, e2.event_tokens, self._merge_percent):
+                            to_be_merged[-1].append(e2)
                             e2.merged = True
-                for Es in tobeMerged:
-                    merged_event = reduce(self._merge_event, Es)
+                for group in to_be_merged:
+                    merged_event = reduce(self._merge_event, group)
                     self._merged_events.append(merged_event)
             else:
-                for e in value["Events"]:
-                    self._merged_events.append(e)
+                self._merged_events.extend(value["Events"])
 
     def _categorize(self):
         """
         Abstract templates bin by bin
         使用 dict 做 O(1) 查找替代线性扫描，提前提取 Content 列避免逐次跨语言取值
         """
-        contents = self._df_log["Content"].to_list()
+        contents = self._df_log["Content"].to_[]
         for value in self._bins.values():
-            value["Events"] = list()
-            event_map: dict[str, Event] = dict()
+            value["Events"] = []
+            event_map: dict[str, Event] = {}
 
-            for logidx in value["Logs"]:
-                log = contents[logidx]
+            for log_idx in value["Logs"]:
+                log = contents[log_idx]
                 if log in event_map:
-                    event_map[log].logs.append(logidx)
+                    event_map[log].logs.append(log_idx)
                 else:
-                    event = Event(logidx, log)
+                    event = Event(log_idx, log)
                     event_map[log] = event
                     value["Events"].append(event)
 

@@ -27,13 +27,13 @@ class APPMainWindow(FluentWindow):
         # 模板查看界面
         self.template_view_page = TemplateViewPage(self)
 
-        self.log_manage_page.viewLogRequested.connect(self._onViewLogRequested)
-        self.log_manage_page.viewTemplateRequested.connect(self._onViewTemplateRequested)
+        self.log_manage_page.viewLogRequested.connect(self._on_view_log_requested)
+        self.log_manage_page.viewTemplateRequested.connect(self._on_view_template_requested)
 
-        self._initNavigation()
-        self._initWindow()
+        self._init_navigation()
+        self._init_window()
 
-    def _initNavigation(self):
+    def _init_navigation(self):
         self.addSubInterface(self.log_manage_page, FluentIcon.LIBRARY, "日志管理")
         self.addSubInterface(self.log_view_page, FluentIcon.DOCUMENT, "日志查看")
         self.addSubInterface(self.template_view_page, FluentIcon.PIE_SINGLE, "模板查看")
@@ -43,11 +43,11 @@ class APPMainWindow(FluentWindow):
         self.navigationInterface.addWidget(
             routeKey="avatar",
             widget=NavigationAvatarWidget("LuoTat", "ui/resource/LuoTat.jpg"),
-            onClick=self._onAvatar,
+            onClick=self._on_avatar,
             position=NavigationItemPosition.BOTTOM,
         )
 
-    def _initWindow(self):
+    def _init_window(self):
         self.resize(1600, 900)
         self.setWindowIcon(QIcon(":/qfluentwidgets/images/logo.png"))
         self.setWindowTitle("结构化日志分析与可视化系统")
@@ -64,19 +64,19 @@ class APPMainWindow(FluentWindow):
     # ==================== 槽函数 ====================
 
     @Slot(int)
-    def _onViewLogRequested(self, log_id: int):
+    def _on_view_log_requested(self, log_id: int):
         """处理查看日志请求，跳转到日志查看页面"""
-        self.log_view_page.setLog(log_id)
+        self.log_view_page.set_log(log_id)
         self.switchTo(self.log_view_page)
 
     @Slot(int)
-    def _onViewTemplateRequested(self, log_id: int):
+    def _on_view_template_requested(self, log_id: int):
         """处理查看模板请求，跳转到模板查看页面"""
-        self.template_view_page.setLog(log_id)
+        self.template_view_page.set_log(log_id)
         self.switchTo(self.template_view_page)
 
     @Slot()
-    def _onAvatar(self):
+    def _on_avatar(self):
         w = MessageBox(
             "支持作者🥰",
             "个人开发不易，如果这个项目帮助到了您，可以考虑请作者喝一瓶快乐水🥤。您的支持就是作者开发和维护项目的动力🚀",
@@ -90,14 +90,14 @@ class APPMainWindow(FluentWindow):
 
     def closeEvent(self, event):
         # 如果有正在提取的任务，弹窗确认
-        if self.log_manage_page.hasExtractingTasks():
+        if self.log_manage_page.has_extracting_tasks():
             confirm = MessageBox(
                 "有任务正在提取",
                 "仍有日志模板正在提取，确认要关闭并终止所有任务吗？",
                 self,
             )
             if confirm.exec():
-                self.log_manage_page.interruptAllExtractTasks()
+                self.log_manage_page.interrupt_all_extract_tasks()
                 event.accept()
                 return
 

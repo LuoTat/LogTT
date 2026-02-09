@@ -24,8 +24,8 @@ class AddLogMessageBox(MessageBoxBase):
         super().__init__(parent)
         self._selected_file_path: str = str()
 
-        self._initNetworkCard()
-        self._initLocalFileCard()
+        self._init_network_card()
+        self._init_local_file_card()
         self.widget.setMinimumWidth(700)
 
     # ==================== 重写方法 ====================
@@ -48,7 +48,7 @@ class AddLogMessageBox(MessageBoxBase):
 
     # ==================== 私有方法 ====================
 
-    def _initNetworkCard(self):
+    def _init_network_card(self):
         card = CardWidget(self)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(18, 16, 18, 16)
@@ -82,7 +82,7 @@ class AddLogMessageBox(MessageBoxBase):
 
         self.viewLayout.addWidget(card)
 
-    def _initLocalFileCard(self):
+    def _init_local_file_card(self):
         card = CardWidget(self)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(18, 16, 18, 16)
@@ -107,7 +107,7 @@ class AddLogMessageBox(MessageBoxBase):
 
         select_file_layout = QHBoxLayout()
         self._select_file_button = PushButton(FluentIcon.FOLDER_ADD, "选择文件", card)
-        self._select_file_button.clicked.connect(self._onSelectFile)
+        self._select_file_button.clicked.connect(self._on_select_file)
 
         self._file_path_label = BodyLabel("未选择文件", card)
         self._file_path_label.setStyleSheet("color: #888; padding-left: 8px;")
@@ -127,7 +127,7 @@ class AddLogMessageBox(MessageBoxBase):
     # ==================== 槽函数 ====================
 
     @Slot()
-    def _onSelectFile(self):
+    def _on_select_file(self):
         self._selected_file_path, _ = QFileDialog.getOpenFileName(
             self,
             "选择日志文件",

@@ -9,7 +9,7 @@ def _log_to_dataframe(
     log_file: Path, headers: list[str], format_regex: re.Pattern, should_stop: Callable[[], bool]
 ) -> pl.DataFrame:
     """Function to transform log file to dataframe"""
-    log_messages = {h: list() for h in headers}
+    log_messages = {h: [] for h in headers}
     linecount = 0
     with open(log_file, "r") as fin:
         for line in fin:
@@ -31,7 +31,7 @@ def _log_to_dataframe(
 
 def _generate_logformat_regex(log_format: str) -> tuple[list[str], re.Pattern]:
     """Function to generate regular expression to split log messages"""
-    headers = list()
+    headers = []
     splitters = re.split("(<[^<>]+>)", log_format)
     regex = ""
     for k in range(len(splitters)):
@@ -61,7 +61,7 @@ def _get_parameter_list(row: dict[str, str]) -> list[str]:
     """Extract parameter list from a log row based on its event template"""
     template_regex = re.sub("<.{1,5}>", "<*>", row["EventTemplate"])
     if "<*>" not in template_regex:
-        return list()
+        return []
     template_regex = re.sub("([^A-Za-z0-9])", r"\\\1", template_regex)
     template_regex = re.sub(r"\\ +", r"\\s+", template_regex)
     template_regex = "^" + template_regex.replace(r"\<\*\>", "(.*?)") + "$"

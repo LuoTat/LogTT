@@ -25,8 +25,8 @@ class ExtractLogMessageBox(MessageBoxBase):
         self._logparser_list_model = LogParserListModel(self)
         self._format_type_list_model = FormatTypeListModel(self)
 
-        self._initLogParserCard()
-        self._initFormatTypeCard()
+        self._init_log_parser_card()
+        self._init_format_type_card()
         self.widget.setMinimumWidth(700)
 
     # ==================== 重写方法 ====================
@@ -106,7 +106,7 @@ class ExtractLogMessageBox(MessageBoxBase):
 
     # ==================== 私有方法 ====================
 
-    def _initLogParserCard(self):
+    def _init_log_parser_card(self):
         card = CardWidget(self)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(18, 16, 18, 16)
@@ -132,7 +132,7 @@ class ExtractLogMessageBox(MessageBoxBase):
         self._logparser_combo_box = ModelComboBox(card)
         self._logparser_combo_box.setModel(self._logparser_list_model)
         self._logparser_combo_box.setPlaceholderText("请选择提取算法")
-        self._logparser_combo_box.currentIndexChanged.connect(self._onLogParserSelected)
+        self._logparser_combo_box.currentIndexChanged.connect(self._on_log_parser_selected)
         card_layout.addWidget(self._logparser_combo_box)
 
         self._hint_label = BodyLabel(card)
@@ -141,7 +141,7 @@ class ExtractLogMessageBox(MessageBoxBase):
 
         self.viewLayout.addWidget(card)
 
-    def _initFormatTypeCard(self):
+    def _init_format_type_card(self):
         card = CardWidget(self)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(18, 16, 18, 16)
@@ -167,7 +167,7 @@ class ExtractLogMessageBox(MessageBoxBase):
         self._format_type_combo_box = ModelComboBox(card)
         self._format_type_combo_box.setModel(self._format_type_list_model)
         self._format_type_combo_box.setPlaceholderText("请选择日志格式类型")
-        self._format_type_combo_box.currentIndexChanged.connect(self._onFormatTypeSelected)
+        self._format_type_combo_box.currentIndexChanged.connect(self._on_format_type_selected)
         card_layout.addWidget(self._format_type_combo_box)
 
         # log_format展示框
@@ -208,14 +208,14 @@ class ExtractLogMessageBox(MessageBoxBase):
     # ==================== 槽函数 ====================
 
     @Slot(int)
-    def _onLogParserSelected(self, index: int):
+    def _on_log_parser_selected(self, index: int):
         model_index = self._logparser_list_model.index(index)
         parser_discription = model_index.data(LogParserListModel.LOG_PARSER_DISCRIPTION_ROLE)
 
         self._hint_label.setText(parser_discription)
 
     @Slot(int)
-    def _onFormatTypeSelected(self, index: int):
+    def _on_format_type_selected(self, index: int):
         model_index = self._format_type_list_model.index(index)
         log_format = model_index.data(FormatTypeListModel.LOG_FORMAT_ROLE)
         regex_list = model_index.data(FormatTypeListModel.LOG_FORMAT_REGEX_ROLE)
