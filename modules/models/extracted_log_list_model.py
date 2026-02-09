@@ -1,5 +1,4 @@
 from enum import IntEnum
-from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
@@ -12,8 +11,10 @@ class SqlColumn(IntEnum):
 
     ID = 0  # id
     LOG_URI = 1  # log_uri
-    LOG_STRUCTURED = 2  # log_structured
-    LOG_TEMPLATES = 3  # log_templates
+    LOG_STRUCTURED_PATH = 2  # log_structured_path
+    LOG_TEMPLATES_PATH = 3  # log_templates_path
+    STRUCTURED_TABLE_NAME = 4  # structured_table_name
+    TEMPLATES_TABLE_NAME = 5  # templates_table_name
 
 
 class ExtractedLogListModel(QAbstractListModel):
@@ -53,16 +54,16 @@ class ExtractedLogListModel(QAbstractListModel):
             return int(self._df[row][SqlColumn.ID])
 
         elif role == self.LOG_STRUCTURED_PATH_ROLE:
-            return self._df[row][SqlColumn.LOG_STRUCTURED]
+            return self._df[row][SqlColumn.LOG_STRUCTURED_PATH]
 
         elif role == self.LOG_TEMPLATES_PATH_ROLE:
-            return self._df[row][SqlColumn.LOG_TEMPLATES]
+            return self._df[row][SqlColumn.LOG_TEMPLATES_PATH]
 
         elif role == self.STRUCTURED_TABLE_NAME_ROLE:
-            return Path(self._df[row][SqlColumn.LOG_STRUCTURED]).stem
+            return self._df[row][SqlColumn.STRUCTURED_TABLE_NAME]
 
         elif role == self.TEMPLATES_TABLE_NAME_ROLE:
-            return Path(self._df[row][SqlColumn.LOG_TEMPLATES]).stem
+            return self._df[row][SqlColumn.TEMPLATES_TABLE_NAME]
 
         return None
 

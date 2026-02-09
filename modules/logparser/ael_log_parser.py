@@ -44,6 +44,8 @@ class AELLogParser(BaseLogParser):
         log_file,
         log_format,
         regex,
+        structured_table_name,
+        templates_table_name,
         should_stop,
         progress_callback=None,
         keep_para=False,
@@ -56,7 +58,7 @@ class AELLogParser(BaseLogParser):
             min_event_count : minimum number of events to trigger reconciliation
             merge_percent : maximum percentage of difference to merge two events
         """
-        super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback, keep_para)
+        super().__init__(log_id, log_file, log_format, regex, structured_table_name, templates_table_name, should_stop, progress_callback, keep_para)
 
         self._min_event_count = min_event_count
         self._merge_percent = merge_percent

@@ -22,16 +22,18 @@ class DuckDBService:
                 CREATE SEQUENCE IF NOT EXISTS log_id_seq START 1;
                 CREATE TABLE IF NOT EXISTS log
                 (
-                    id             INTEGER PRIMARY KEY DEFAULT nextval('log_id_seq'),
-                    log_type       VARCHAR     NOT NULL,
-                    format_type    VARCHAR,
-                    log_uri        VARCHAR     NOT NULL UNIQUE,
-                    create_time    TIMESTAMP_S NOT NULL DEFAULT current_localtimestamp(),
-                    is_extracted   BOOLEAN     NOT NULL DEFAULT FALSE,
-                    extract_method VARCHAR,
-                    line_count     INTEGER,
-                    log_structured VARCHAR,
-                    log_templates  VARCHAR
+                    id                    INTEGER PRIMARY KEY DEFAULT nextval('log_id_seq'),
+                    log_type              VARCHAR     NOT NULL,
+                    format_type           VARCHAR,
+                    log_uri               VARCHAR     NOT NULL UNIQUE,
+                    create_time           TIMESTAMP_S NOT NULL DEFAULT current_localtimestamp(),
+                    is_extracted          BOOLEAN     NOT NULL DEFAULT FALSE,
+                    extract_method        VARCHAR,
+                    line_count            INTEGER,
+                    log_structured_path   VARCHAR,
+                    log_templates_path    VARCHAR,
+                    structured_table_name VARCHAR GENERATED ALWAYS AS (CAST(id AS VARCHAR) || '_S'),
+                    templates_table_name  VARCHAR GENERATED ALWAYS AS (CAST(id AS VARCHAR) || '_T')
                 );
                 """
                 # @formatter:on
@@ -47,7 +49,14 @@ class DuckDBService:
         with duckdb.connect(self._DB_PATH) as conn:
             rel = conn.table("log")
             rel = rel.filter(duckdb.ColumnExpression("is_extracted") == True)
-            rel = rel.select("id", "log_uri", "log_structured", "log_templates")
+            rel = rel.select(
+                "id",
+                "log_uri",
+                "log_structured_path",
+                "log_templates_path",
+                "structured_table_name",
+                "templates_table_name",
+            )
             return rel.fetchall()
 
     def insert_log(self, log_type: str, log_uri: str, extract_method: str):
@@ -113,7 +122,7 @@ class DuckDBService:
         """导入CSV文件到DuckDB表"""
         table_name = csv_file.stem
         with duckdb.connect(self._DB_PATH) as conn:
-            rel = conn.read_csv(csv_file, quotechar='"')
+            rel = conn.read_csv(csv_file, quotechar='"', all_varchar=True)
             rel.to_table(table_name)
 
     def fetch_csv_table(
@@ -218,10 +227,9 @@ class DuckDBService:
         if self.table_exists(table_name):
             with duckdb.connect(self._DB_PATH) as conn:
                 conn.sql(
+                    f"""
+                    DROP TABLE IF EXISTS "{table_name}";
                     """
-                    DROP TABLE ?
-                    """,
-                    params=[table_name],
                 )
 
     def get_table_row_count(self, table_name: str) -> int:

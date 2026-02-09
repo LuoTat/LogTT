@@ -50,6 +50,8 @@ class DrainLogParser(BaseLogParser):
         log_file,
         log_format,
         regex,
+        structured_table_name,
+        templates_table_name,
         should_stop,
         progress_callback=None,
         keep_para=False,
@@ -64,7 +66,7 @@ class DrainLogParser(BaseLogParser):
             st : similarity threshold
             max_child : max number of children of an internal node
         """
-        super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback, keep_para)
+        super().__init__(log_id, log_file, log_format, regex, structured_table_name, templates_table_name, should_stop, progress_callback, keep_para)
         self._depth = depth - 2
         self._st = st
         self._max_child = max_child

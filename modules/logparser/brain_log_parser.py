@@ -133,6 +133,8 @@ class BrainLogParser(BaseLogParser):
         log_file,
         log_format,
         regex,
+        structured_table_name,
+        templates_table_name,
         should_stop,
         progress_callback=None,
         keep_para=False,
@@ -145,7 +147,7 @@ class BrainLogParser(BaseLogParser):
             threshold : similarity threshold
             delimiter : list of delimiters to split log messages
         """
-        super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback, keep_para)
+        super().__init__(log_id, log_file, log_format, regex, structured_table_name, templates_table_name, should_stop, progress_callback, keep_para)
         self._threshold = threshold
         self._delimiter = delimiter if delimiter is not None else []
         self._df_log = None

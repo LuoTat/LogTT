@@ -52,6 +52,8 @@ class SpellLogParser(BaseLogParser):
         log_file,
         log_format,
         regex,
+        structured_table_name,
+        templates_table_name,
         should_stop,
         progress_callback=None,
         keep_para=False,
@@ -62,7 +64,7 @@ class SpellLogParser(BaseLogParser):
         ----------
         tau : how much percentage of tokens matched to merge a log message
         """
-        super().__init__(log_id, log_file, log_format, regex, should_stop, progress_callback, keep_para)
+        super().__init__(log_id, log_file, log_format, regex, structured_table_name, templates_table_name, should_stop, progress_callback, keep_para)
         self.tau = tau
         self._df_log = None
 

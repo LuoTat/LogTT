@@ -14,6 +14,8 @@ class BaseLogParser(ABC):
         log_file: Path,
         log_format: str,
         regex: list[str],
+        structured_table_name: str,
+        templates_table_name: str,
         should_stop: Callable[[], bool],
         progress_callback: Callable[[int], None] | None = None,
         keep_para: bool = False,
@@ -25,6 +27,8 @@ class BaseLogParser(ABC):
             log_file : path of the input log file
             log_format : log format string
             regex : regular expressions used in preprocessing (step1)
+            structured_table_name : table name for structured log (used for output file naming)
+            templates_table_name : table name for templates log (used for output file naming)
             should_stop : callback function to check if the process should stop
             progress_callback : callback function to report progress (0-100)
             keep_para : whether to keep parameter list in structured log file
@@ -37,8 +41,8 @@ class BaseLogParser(ABC):
         self._progress_callback = progress_callback
         self._keep_para = keep_para
         self._output_dir = Path(__file__).resolve().parent.parent.parent / "tmp"
-        self._log_structured_file = self._output_dir / f"{self._log_id}_{self._log_file.stem}_structured.csv"
-        self._log_templates_file = self._output_dir / f"{self._log_id}_{self._log_file.stem}_templates.csv"
+        self._log_structured_file = self._output_dir / f"{structured_table_name}.csv"
+        self._log_templates_file = self._output_dir / f"{templates_table_name}.csv"
 
     @abstractmethod
     def parse(self) -> ParseResult:
