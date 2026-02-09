@@ -125,7 +125,7 @@ class AELLogParser(BaseLogParser):
         Abstract templates bin by bin
         使用 dict 做 O(1) 查找替代线性扫描，提前提取 Content 列避免逐次跨语言取值
         """
-        contents = self._df_log["Content"].to_[]
+        contents = self._df_log["Content"].to_list()
         for value in self._bins.values():
             value["Events"] = []
             event_map: dict[str, Event] = {}
