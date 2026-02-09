@@ -174,14 +174,16 @@ class BrainLogParser(BaseLogParser):
             return False
         return len(digits) / len(string) >= 0.3
 
-    @staticmethod
-    def _extract_templates(parse_result):
+    def _extract_templates(self, parse_result):
         template_set = dict()
         for key in parse_result.keys():
             for pr in parse_result[key]:
                 sorted_pr = sorted(pr, key=lambda tup: tup[2])
                 template = list()
                 for item in sorted_pr[1:]:
+                    if self._should_stop():
+                        raise InterruptedError
+
                     word = item[1]
                     if "<*>" in word or BrainLogParser._exclude_digits(word):
                         template.append("<*>")
@@ -191,8 +193,7 @@ class BrainLogParser(BaseLogParser):
                 template_set.setdefault(template, list()).append(pr[-1][0])
         return template_set
 
-    @staticmethod
-    def _tuple_generate(group_len, tuple_vector, frequency_vector):
+    def _tuple_generate(self, group_len, tuple_vector, frequency_vector):
         """
         Generate word combinations
         Output:
@@ -208,9 +209,15 @@ class BrainLogParser(BaseLogParser):
         word_combinations_reverse = dict()
         for key in group_len.keys():
             for fre in tuple_vector[key]:
+                if self._should_stop():
+                    raise InterruptedError
+
                 sorted_fre_reverse = sorted(fre, key=lambda tup: tup[0], reverse=True)
                 sorted_tuple_vector.setdefault(key, list()).append(sorted_fre_reverse)
             for fc in frequency_vector[key]:
+                if self._should_stop():
+                    raise InterruptedError
+
                 number = Counter(fc)
                 result = number.most_common()
                 sorted_result = sorted(result, key=lambda tup: tup[1], reverse=True)
@@ -219,8 +226,7 @@ class BrainLogParser(BaseLogParser):
                 word_combinations_reverse.setdefault(key, list()).append(sorted_fre)
         return sorted_tuple_vector, word_combinations, word_combinations_reverse
 
-    @staticmethod
-    def _get_frequecy_vector(sentences, delimiter):
+    def _get_frequecy_vector(self, contents, delimiter):
         """
         Counting each word's frequency in the dataset and convert each log into frequency vector
         Output:
@@ -231,28 +237,37 @@ class BrainLogParser(BaseLogParser):
         """
         group_len = dict()
         word_set = dict()
-        for idx, s in enumerate(sentences):  # using delimiters to get split words
+        for idx, c in enumerate(contents):  # using delimiters to get split words
+            if self._should_stop():
+                raise InterruptedError
+
             for de in delimiter:
-                s = re.sub(de, "", s)
-            s = re.sub(",", ", ", s)
-            s = re.sub(" +", " ", s).split(" ")
-            s.insert(0, str(idx))
-            for pos, token in enumerate(s):
+                c = re.sub(de, "", c)
+            c = re.sub(",", ", ", c)
+            c = re.sub(" +", " ", c).split(" ")
+            c.insert(0, str(idx))
+            for pos, token in enumerate(c):
                 word_set.setdefault(str(pos), list()).append(token)
-            group_len.setdefault(len(s), list()).append(s)  # first grouping: logs with the same length
+            group_len.setdefault(len(c), list()).append(c)  # first grouping: logs with the same length
         tuple_vector = dict()
         frequency_vector = dict()
         max_len = max(group_len.keys())  # the biggest length of the log in this dataset
         fre_set = dict()  # saving each word's frequency
         for i in range(max_len):
             for word in word_set[str(i)]:  # counting each word's frequency
+                if self._should_stop():
+                    raise InterruptedError
+
                 word = str(i) + " " + word
                 fre_set[word] = fre_set.get(word, 0) + 1
         for key in group_len.keys():  # using fre_set to generate frequency vector for the log
-            for s in group_len[key]:  # in each log group with the same length
+            for c in group_len[key]:  # in each log group with the same length
                 fre = list()
                 fre_common = list()
-                for position, word_character in enumerate(s[1:]):
+                for position, word_character in enumerate(c[1:]):
+                    if self._should_stop():
+                        raise InterruptedError
+
                     frequency_word = fre_set[str(position + 1) + " " + word_character]
                     fre.append((frequency_word, word_character, position))
                     fre_common.append(frequency_word)
@@ -266,9 +281,9 @@ class BrainLogParser(BaseLogParser):
 
         self._df_log = load_data(self._log_file, self._log_format, self._regex, self._should_stop)
 
-        sentences = self._df_log["Content"].to_list()
+        contents = self._df_log["Content"].to_list()
 
-        group_len, tuple_vector, frequency_vector = self._get_frequecy_vector(sentences, self._delimeter)
+        group_len, tuple_vector, frequency_vector = self._get_frequecy_vector(contents, self._delimeter)
 
         (
             sorted_tuple_vector,
@@ -278,6 +293,9 @@ class BrainLogParser(BaseLogParser):
 
         template_set = dict()
         for key in group_len.keys():
+            if self._should_stop():
+                raise InterruptedError
+
             Tree = TupleTree(
                 sorted_tuple_vector[key],
                 word_combinations[key],
