@@ -58,7 +58,17 @@ class AELLogParser(BaseLogParser):
             min_event_count : minimum number of events to trigger reconciliation
             merge_percent : maximum percentage of difference to merge two events
         """
-        super().__init__(log_id, log_file, log_format, regex, structured_table_name, templates_table_name, should_stop, progress_callback, keep_para)
+        super().__init__(
+            log_id,
+            log_file,
+            log_format,
+            regex,
+            structured_table_name,
+            templates_table_name,
+            should_stop,
+            progress_callback,
+            keep_para,
+        )
 
         self._min_event_count = min_event_count
         self._merge_percent = merge_percent
@@ -73,12 +83,7 @@ class AELLogParser(BaseLogParser):
                 log_templates[log_idx] = event.event_str
 
         output_result(
-            self._df_log,
-            log_templates,
-            self._output_dir,
-            self._log_structured_file,
-            self._log_templates_file,
-            self._keep_para,
+            self._df_log, log_templates, self._structured_table_name, self._templates_table_name, self._keep_para
         )
 
     @staticmethod
@@ -173,7 +178,7 @@ class AELLogParser(BaseLogParser):
         self._output_result()
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
-        return ParseResult(self._log_file, self._df_log.height, self._log_structured_file, self._log_templates_file)
+        return ParseResult(self._log_file, self._df_log.height, self._structured_table_name, self._templates_table_name)
 
     @staticmethod
     def name() -> str:

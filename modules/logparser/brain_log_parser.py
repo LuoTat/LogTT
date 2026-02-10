@@ -147,7 +147,17 @@ class BrainLogParser(BaseLogParser):
             threshold : similarity threshold
             delimiter : list of delimiters to split log messages
         """
-        super().__init__(log_id, log_file, log_format, regex, structured_table_name, templates_table_name, should_stop, progress_callback, keep_para)
+        super().__init__(
+            log_id,
+            log_file,
+            log_format,
+            regex,
+            structured_table_name,
+            templates_table_name,
+            should_stop,
+            progress_callback,
+            keep_para,
+        )
         self._threshold = threshold
         self._delimiter = delimiter if delimiter is not None else []
         self._df_log = None
@@ -160,12 +170,7 @@ class BrainLogParser(BaseLogParser):
                 log_templates[i] = template_str
 
         output_result(
-            self._df_log,
-            log_templates,
-            self._output_dir,
-            self._log_structured_file,
-            self._log_templates_file,
-            self._keep_para,
+            self._df_log, log_templates, self._structured_table_name, self._templates_table_name, self._keep_para
         )
 
     @staticmethod
@@ -312,7 +317,7 @@ class BrainLogParser(BaseLogParser):
         self._output_result(template_set)
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
-        return ParseResult(self._log_file, self._df_log.height, self._log_structured_file, self._log_templates_file)
+        return ParseResult(self._log_file, self._df_log.height, self._structured_table_name, self._templates_table_name)
 
     @staticmethod
     def name() -> str:

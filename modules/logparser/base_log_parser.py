@@ -40,9 +40,8 @@ class BaseLogParser(ABC):
         self._should_stop = should_stop
         self._progress_callback = progress_callback
         self._keep_para = keep_para
-        self._output_dir = Path(__file__).resolve().parent.parent.parent / "tmp"
-        self._log_structured_file = self._output_dir / f"{structured_table_name}.csv"
-        self._log_templates_file = self._output_dir / f"{templates_table_name}.csv"
+        self._structured_table_name = structured_table_name
+        self._templates_table_name = templates_table_name
 
     @abstractmethod
     def parse(self) -> ParseResult:

@@ -44,10 +44,8 @@ class SqlColumn(IntEnum):
     IS_EXTRACTED = 5  # is_extracted
     EXTRACT_METHOD = 6  # extract_method
     LINE_COUNT = 7  # line_count
-    LOG_STRUCTURED_PATH = 8  # log_structured_path
-    LOG_TEMPLATES_PATH = 9  # log_templates_path
-    STRUCTURED_TABLE_NAME = 10  # structured_table_name
-    TEMPLATES_TABLE_NAME = 11  # templates_table_name
+    STRUCTURED_TABLE_NAME = 8  # structured_table_name
+    TEMPLATES_TABLE_NAME = 9  # templates_table_name
 
 
 class LogStatus(IntEnum):
@@ -61,7 +59,7 @@ class LogStatus(IntEnum):
 class LogExtractTask(QObject):
     """日志提取工作线程"""
 
-    finished = Signal(int, int, Path, Path)  # (log_id, line_count, log_structured_path, log_templates_path)
+    finished = Signal(int, int)  # (log_id, line_count)
     interrupted = Signal(int)  # (log_id)
     error = Signal(int, str)  # (log_id, error_message)
     progress = Signal(int, int)  # (log_id, progress)
@@ -101,12 +99,10 @@ class LogExtractTask(QObject):
                 lambda progress: self.progress.emit(self._log_id, progress),
             ).parse()
 
-            # 提取完成，传递文件路径
+            # 提取完成
             self.finished.emit(
                 self._log_id,
                 result.line_count,
-                result.log_structured_file,
-                result.log_templates_file,
             )
         except InterruptedError:
             self.interrupted.emit(self._log_id)
@@ -147,8 +143,6 @@ class LogTableModel(QAbstractTableModel):
         "is_extracted",
         "extract_method",
         "line_count",
-        "log_structured_path",
-        "log_templates_path",
         "structured_table_name",
         "templates_table_name",
     ]
@@ -365,13 +359,11 @@ class LogTableModel(QAbstractTableModel):
 
     # ==================== 槽函数 ====================
 
-    @Slot(int, int, Path, Path)
+    @Slot(int, int)
     def _on_extract_finished(
         self,
         log_id: int,
         line_count: int,
-        log_structured_path: Path,
-        log_templates_path: Path,
     ):
         """处理提取完成"""
         # 清理任务信息
@@ -380,8 +372,6 @@ class LogTableModel(QAbstractTableModel):
         # 更新数据库和ui状态
         self._set_sql_data(log_id, SqlColumn.IS_EXTRACTED, True)
         self._set_sql_data(log_id, SqlColumn.LINE_COUNT, line_count)
-        self._set_sql_data(log_id, SqlColumn.LOG_STRUCTURED_PATH, str(log_structured_path))
-        self._set_sql_data(log_id, SqlColumn.LOG_TEMPLATES_PATH, str(log_templates_path))
         if (row := self._get_row(log_id)) >= 0:
             self._set_df_data(row, SqlColumn.IS_EXTRACTED, True)
             self._set_df_data(row, SqlColumn.LINE_COUNT, line_count)

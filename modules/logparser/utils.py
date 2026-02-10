@@ -4,6 +4,8 @@ from pathlib import Path
 import polars as pl
 import regex as re
 
+from modules.duckdb_service import DuckDBService
+
 
 def _get_parameter_list(row: dict[str, str]) -> list[str]:
     """Extract parameter list from a log row based on its event template"""
@@ -74,13 +76,11 @@ def load_data(log_file: Path, log_format: str, regex: list[str], should_stop: Ca
 def output_result(
     df_log: pl.DataFrame,
     log_templates: list[str],
-    output_dir: Path,
-    log_structured_file: Path,
-    log_templates_file: Path,
+    structured_table_name: str,
+    templates_table_name: str,
     keep_para: bool,
 ) -> None:
-    """Output structured log file and log templates file"""
-    output_dir.mkdir(parents=True, exist_ok=True)
+    """Output structured log data and templates to DuckDB tables"""
 
     df_log = df_log.with_columns(
         pl.Series("EventTemplate", log_templates),
@@ -91,8 +91,14 @@ def output_result(
             .map_elements(_get_parameter_list, return_dtype=pl.List(pl.String))
             .alias("ParameterList")
         )
-    df_log.write_csv(log_structured_file)
+    df_templates = (
+        df_log["EventTemplate"]
+        .value_counts()
+        .rename({"count": "Occurrences"})
+        .select(["EventTemplate", "Occurrences"])
+        .sort("Occurrences", descending=True)
+    )
 
-    df_log["EventTemplate"].value_counts().rename({"count": "Occurrences"}).select(
-        ["EventTemplate", "Occurrences"]
-    ).sort("Occurrences", descending=True).write_csv(log_templates_file)
+    duckdb_service = DuckDBService()
+    duckdb_service.create_table_from_polars(df_log, structured_table_name)
+    duckdb_service.create_table_from_polars(df_templates, templates_table_name)

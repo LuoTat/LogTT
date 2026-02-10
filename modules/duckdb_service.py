@@ -30,8 +30,6 @@ class DuckDBService:
                     is_extracted          BOOLEAN     NOT NULL DEFAULT FALSE,
                     extract_method        VARCHAR,
                     line_count            INTEGER,
-                    log_structured_path   VARCHAR,
-                    log_templates_path    VARCHAR,
                     structured_table_name VARCHAR GENERATED ALWAYS AS (CAST(id AS VARCHAR) || '_S'),
                     templates_table_name  VARCHAR GENERATED ALWAYS AS (CAST(id AS VARCHAR) || '_T')
                 );
@@ -52,8 +50,6 @@ class DuckDBService:
             rel = rel.select(
                 "id",
                 "log_uri",
-                "log_structured_path",
-                "log_templates_path",
                 "structured_table_name",
                 "templates_table_name",
             )
@@ -118,11 +114,10 @@ class DuckDBService:
         else:
             return col_expr.desc()
 
-    def create_table_from_csv(self, csv_file: Path):
-        """导入CSV文件到DuckDB表"""
-        table_name = csv_file.stem
+    def create_table_from_polars(self, df: polars.DataFrame, table_name: str):
+        """导入Polars DataFrame到DuckDB表"""
         with duckdb.connect(self._DB_PATH) as conn:
-            rel = conn.read_csv(csv_file, quotechar='"', all_varchar=True)
+            rel = conn.from_arrow(df.to_arrow())
             rel.to_table(table_name)
 
     def fetch_csv_table(

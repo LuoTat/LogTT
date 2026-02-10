@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from PySide6.QtCore import (
     QPoint,
     Qt,
@@ -131,35 +129,21 @@ class TemplateViewPage(QWidget):
     def _on_log_selected(self, index: int):
         # 从模型获取数据
         model_index = self._extracted_log_list_model.index(index)
-        log_templates_path = model_index.data(ExtractedLogListModel.LOG_TEMPLATES_PATH_ROLE)
         templates_table_name = model_index.data(ExtractedLogListModel.TEMPLATES_TABLE_NAME_ROLE)
 
-        # 检查表是否存在，不存在则导入
+        # 检查表是否存在
         duckdb_service = DuckDBService()
         if not duckdb_service.table_exists(templates_table_name):
-            try:
-                # 导入CSV文件
-                duckdb_service.create_table_from_csv(Path(log_templates_path))
-            except Exception as e:
-                InfoBar.error(
-                    title="导入失败",
-                    content=str(e),
-                    orient=Qt.Orientation.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.TOP,
-                    duration=5000,
-                    parent=self,
-                )
-                return
-            InfoBar.success(
-                title="导入完成",
-                content="数据导入完成，可以开始浏览。",
+            InfoBar.error(
+                title="数据未找到",
+                content=f"未找到模板表: {templates_table_name}",
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
-                duration=3000,
+                duration=5000,
                 parent=self,
             )
+            return
 
         # 创建新的模型实例
         self._csv_file_table_model = CsvFileTableModel(templates_table_name, self)

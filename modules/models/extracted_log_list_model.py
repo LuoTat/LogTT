@@ -11,10 +11,8 @@ class SqlColumn(IntEnum):
 
     ID = 0  # id
     LOG_URI = 1  # log_uri
-    LOG_STRUCTURED_PATH = 2  # log_structured_path
-    LOG_TEMPLATES_PATH = 3  # log_templates_path
-    STRUCTURED_TABLE_NAME = 4  # structured_table_name
-    TEMPLATES_TABLE_NAME = 5  # templates_table_name
+    STRUCTURED_TABLE_NAME = 2  # structured_table_name
+    TEMPLATES_TABLE_NAME = 3  # templates_table_name
 
 
 class ExtractedLogListModel(QAbstractListModel):
@@ -22,10 +20,8 @@ class ExtractedLogListModel(QAbstractListModel):
 
     # 用户自定义角色
     LOG_ID_ROLE = Qt.ItemDataRole.UserRole + 1  # 日志ID
-    LOG_STRUCTURED_PATH_ROLE = Qt.ItemDataRole.UserRole + 2  # 结构化日志路径
-    LOG_TEMPLATES_PATH_ROLE = Qt.ItemDataRole.UserRole + 3  # 模板日志路径
-    STRUCTURED_TABLE_NAME_ROLE = Qt.ItemDataRole.UserRole + 4  # 结构化表名
-    TEMPLATES_TABLE_NAME_ROLE = Qt.ItemDataRole.UserRole + 5  # 模板表名
+    STRUCTURED_TABLE_NAME_ROLE = Qt.ItemDataRole.UserRole + 2  # 结构化表名
+    TEMPLATES_TABLE_NAME_ROLE = Qt.ItemDataRole.UserRole + 3  # 模板表名
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -52,12 +48,6 @@ class ExtractedLogListModel(QAbstractListModel):
         # 自定义角色：返回各种数据
         elif role == self.LOG_ID_ROLE:
             return int(self._df[row][SqlColumn.ID])
-
-        elif role == self.LOG_STRUCTURED_PATH_ROLE:
-            return self._df[row][SqlColumn.LOG_STRUCTURED_PATH]
-
-        elif role == self.LOG_TEMPLATES_PATH_ROLE:
-            return self._df[row][SqlColumn.LOG_TEMPLATES_PATH]
 
         elif role == self.STRUCTURED_TABLE_NAME_ROLE:
             return self._df[row][SqlColumn.STRUCTURED_TABLE_NAME]
