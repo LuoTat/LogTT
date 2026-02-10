@@ -5,6 +5,20 @@ import polars as pl
 import regex as re
 
 
+def _get_parameter_list(row: dict[str, str]) -> list[str]:
+    """Extract parameter list from a log row based on its event template"""
+    template_regex = re.sub("<.{1,5}>", "<*>", row["EventTemplate"])
+    if "<*>" not in template_regex:
+        return []
+    template_regex = re.sub("([^A-Za-z0-9])", r"\\\1", template_regex)
+    template_regex = re.sub(r"\\ +", r"\\s+", template_regex)
+    template_regex = "^" + template_regex.replace(r"\<\*\>", "(.*?)") + "$"
+    parameter_list = re.findall(template_regex, row["Content"])
+    parameter_list = parameter_list[0] if parameter_list else ()
+    parameter_list = list(parameter_list) if isinstance(parameter_list, tuple) else [parameter_list]
+    return parameter_list
+
+
 def _log_to_dataframe(
     log_file: Path, headers: list[str], format_regex: re.Pattern, should_stop: Callable[[], bool]
 ) -> pl.DataFrame:
@@ -55,20 +69,6 @@ def load_data(log_file: Path, log_format: str, regex: list[str], should_stop: Ca
     for rex in regex:
         content_col = content_col.str.replace_all(rex, "<*>")
     return df_log.with_columns(content_col)
-
-
-def _get_parameter_list(row: dict[str, str]) -> list[str]:
-    """Extract parameter list from a log row based on its event template"""
-    template_regex = re.sub("<.{1,5}>", "<*>", row["EventTemplate"])
-    if "<*>" not in template_regex:
-        return []
-    template_regex = re.sub("([^A-Za-z0-9])", r"\\\1", template_regex)
-    template_regex = re.sub(r"\\ +", r"\\s+", template_regex)
-    template_regex = "^" + template_regex.replace(r"\<\*\>", "(.*?)") + "$"
-    parameter_list = re.findall(template_regex, row["Content"])
-    parameter_list = parameter_list[0] if parameter_list else ()
-    parameter_list = list(parameter_list) if isinstance(parameter_list, tuple) else [parameter_list]
-    return parameter_list
 
 
 def output_result(
