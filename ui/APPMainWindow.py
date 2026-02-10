@@ -7,10 +7,15 @@ from qfluentwidgets import (
     MessageBox,
     NavigationAvatarWidget,
     NavigationItemPosition,
+    NavigationPushButton,
+    Theme,
+    isDarkTheme,
+    setTheme,
 )
 
 from .LogManagePage import LogManagePage
 from .LogViewPage import LogViewPage
+from .SettingPage import SettingPage
 from .TemplateViewPage import TemplateViewPage
 
 
@@ -26,12 +31,45 @@ class APPMainWindow(FluentWindow):
         self.log_view_page = LogViewPage(self)
         # 模板查看界面
         self.template_view_page = TemplateViewPage(self)
+        # 设置界面
+        self.setting_page = SettingPage(self)
+        self.setting_page.enableTransparentBackground()
 
         self.log_manage_page.viewLogRequested.connect(self._on_view_log_requested)
         self.log_manage_page.viewTemplateRequested.connect(self._on_view_template_requested)
 
-        self._init_navigation()
         self._init_window()
+        self._init_navigation()
+
+    # ==================== 重写方法 ====================
+
+    def closeEvent(self, event):
+        # 如果有正在提取的任务，弹窗确认
+        if self.log_manage_page.has_extracting_tasks():
+            confirm = MessageBox(
+                "有任务正在提取",
+                "仍有日志模板正在提取，确认要关闭并终止所有任务吗？",
+                self,
+            )
+            if confirm.exec():
+                self.log_manage_page.interrupt_all_extract_tasks()
+                event.accept()
+                return
+
+            event.ignore()
+
+    # ==================== 私有方法 ====================
+
+    def _init_window(self):
+        self.resize(1600, 900)
+        self.setWindowIcon(QIcon(":/qfluentwidgets/images/logo.png"))
+        self.setWindowTitle(self.tr("结构化日志分析与可视化系统"))
+
+        # 把主界面居中
+        screen = QApplication.primaryScreen()
+        if screen:
+            geo = screen.availableGeometry()
+            self.move(geo.width() // 2 - self.width() // 2, geo.height() // 2 - self.height() // 2)
 
     def _init_navigation(self):
         self.addSubInterface(self.log_manage_page, FluentIcon.LIBRARY, "日志管理")
@@ -39,27 +77,27 @@ class APPMainWindow(FluentWindow):
         self.addSubInterface(self.template_view_page, FluentIcon.PIE_SINGLE, "模板查看")
         # self.navigationInterface.addSeparator()
 
+        # 主题切换按钮
+        self.navigationInterface.addWidget(
+            routeKey="theme_navigation_button",
+            widget=NavigationPushButton(FluentIcon.CONSTRACT, "主题切换", False),
+            onClick=self._on_toggle_theme,
+            position=NavigationItemPosition.BOTTOM,
+        )
         # 底部头像按钮
         self.navigationInterface.addWidget(
             routeKey="avatar",
-            widget=NavigationAvatarWidget("LuoTat", "ui/resource/LuoTat.jpg"),
+            widget=NavigationAvatarWidget("LuoTat", "resource/images/LuoTat.jpg"),
             onClick=self._on_avatar,
             position=NavigationItemPosition.BOTTOM,
         )
+        self.addSubInterface(self.setting_page, FluentIcon.SETTING, "设置", NavigationItemPosition.BOTTOM)
 
-    def _init_window(self):
-        self.resize(1600, 900)
-        self.setWindowIcon(QIcon(":/qfluentwidgets/images/logo.png"))
-        self.setWindowTitle("结构化日志分析与可视化系统")
-
-        # 把主界面居中
-        screen = QApplication.primaryScreen()
-        if screen:
-            geo = screen.availableGeometry()
-            self.move(
-                geo.width() // 2 - self.width() // 2,
-                geo.height() // 2 - self.height() // 2,
-            )
+    def _on_toggle_theme(self):
+        if not isDarkTheme():
+            setTheme(Theme.DARK, save=True)
+        else:
+            setTheme(Theme.LIGHT, save=True)
 
     # ==================== 槽函数 ====================
 
@@ -87,18 +125,3 @@ class APPMainWindow(FluentWindow):
 
         if w.exec():
             QDesktopServices.openUrl(QUrl("https://github.com/LuoTat"))
-
-    def closeEvent(self, event):
-        # 如果有正在提取的任务，弹窗确认
-        if self.log_manage_page.has_extracting_tasks():
-            confirm = MessageBox(
-                "有任务正在提取",
-                "仍有日志模板正在提取，确认要关闭并终止所有任务吗？",
-                self,
-            )
-            if confirm.exec():
-                self.log_manage_page.interrupt_all_extract_tasks()
-                event.accept()
-                return
-
-            event.ignore()
