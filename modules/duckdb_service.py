@@ -1,21 +1,20 @@
 from functools import reduce
 from operator import and_
-from pathlib import Path
 
 import duckdb
 import polars
+
+from .constants import DB_PATH
 
 
 class DuckDBService:
     """DuckDB数据库服务类"""
 
-    _DB_PATH: Path = Path(__file__).resolve().parent.parent / "logtt.duckdb"
-
     # ==================== 日志管理用 ====================
 
     def create_log_table_if_not_exists(self):
         """创建日志表(如果不存在)"""
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             conn.sql(
                 # @formatter:off
                 """
@@ -39,12 +38,12 @@ class DuckDBService:
 
     def get_log_table(self) -> list[tuple]:
         """获取日志列表"""
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             return conn.table("log").fetchall()
 
     def get_extracted_log_table(self) -> list[tuple]:
         """获取已提取的日志列表"""
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             rel = conn.table("log")
             rel = rel.filter(duckdb.ColumnExpression("is_extracted") == True)
             rel = rel.select(
@@ -57,7 +56,7 @@ class DuckDBService:
 
     def insert_log(self, log_type: str, log_uri: str, extract_method: str):
         """插入日志记录"""
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             conn.sql(
                 # @formatter:off
                 """
@@ -69,7 +68,7 @@ class DuckDBService:
             )
 
     def update_log(self, log_id: int, column_name: str, value: object):
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             rel = conn.table("log")
             rel.update(
                 {column_name: duckdb.ConstantExpression(value)},
@@ -78,7 +77,7 @@ class DuckDBService:
 
     def delete_log(self, log_id: int):
         """删除日志记录"""
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             conn.sql(
                 """
                 DELETE
@@ -116,7 +115,7 @@ class DuckDBService:
 
     def create_table_from_polars(self, df: polars.DataFrame, table_name: str):
         """导入Polars DataFrame到DuckDB表"""
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             rel = conn.from_arrow(df.to_arrow())
             rel.to_table(table_name)
 
@@ -139,7 +138,7 @@ class DuckDBService:
             返回查询到的DataFrame和过滤后的总行数
         """
 
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             rel = conn.table(table_name)
             total_count = rel.shape[0]
             if filters:
@@ -182,7 +181,7 @@ class DuckDBService:
             other_filters: 其他列的过滤条件字典, key为列名, value为允许的值列表
         """
 
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             rel = conn.table(table_name)
             if other_filters:
                 rel = rel.filter(self._build_filter_expr(other_filters))
@@ -206,7 +205,7 @@ class DuckDBService:
 
     def table_exists(self, table_name: str) -> bool:
         """检查表是否存在"""
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             result = conn.sql(
                 """
                 SELECT table_name
@@ -220,7 +219,7 @@ class DuckDBService:
     def drop_table(self, table_name: str):
         """删除表"""
         if self.table_exists(table_name):
-            with duckdb.connect(self._DB_PATH) as conn:
+            with duckdb.connect(DB_PATH) as conn:
                 conn.sql(
                     f"""
                     DROP TABLE IF EXISTS "{table_name}";
@@ -229,12 +228,12 @@ class DuckDBService:
 
     def get_table_row_count(self, table_name: str) -> int:
         """获取表的总行数"""
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             rel = conn.table(table_name)
             return rel.shape[0]
 
     def get_table_columns(self, table_name: str) -> list[str]:
         """获取表的所有列名"""
-        with duckdb.connect(self._DB_PATH) as conn:
+        with duckdb.connect(DB_PATH) as conn:
             rel = conn.table(table_name)
             return rel.columns

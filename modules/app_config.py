@@ -1,5 +1,7 @@
 from qfluentwidgets import ConfigItem, QConfig, qconfig
 
+from .constants import CONFIG_PATH
+
 
 class AppConfig(QConfig):
     """应用配置类"""
@@ -19,4 +21,4 @@ class AppConfig(QConfig):
 appcfg = AppConfig()
 
 # 加载配置文件
-qconfig.load("config.json", appcfg)
+qconfig.load(CONFIG_PATH, appcfg)
