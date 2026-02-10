@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
-import struct
 from typing import Any
 
 import duckdb
