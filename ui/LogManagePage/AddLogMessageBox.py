@@ -34,8 +34,8 @@ class AddLogMessageBox(MessageBoxBase):
         """验证用是否输入合法"""
         if not self._selected_file_path and not self._url_edit.text().strip():
             InfoBar.warning(
-                title="未选择文件",
-                content="请选择UDP/TCP日志源或本地日志文件",
+                title=self.tr("未选择文件"),
+                content=self.tr("请选择UDP/TCP日志源或本地日志文件"),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -57,7 +57,7 @@ class AddLogMessageBox(MessageBoxBase):
         title_layout = QHBoxLayout()
         icon_label = QLabel(self)
         icon_label.setPixmap(FluentIcon.GLOBE.icon().pixmap(20, 20))
-        title_label = SubtitleLabel("网络日志源", card)
+        title_label = SubtitleLabel(self.tr("网络日志源"), card)
         title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
 
         title_layout.addWidget(icon_label)
@@ -67,16 +67,16 @@ class AddLogMessageBox(MessageBoxBase):
 
         card_layout.addLayout(title_layout)
 
-        url_label = BodyLabel("Syslog 服务器地址：", card)
+        url_label = BodyLabel(self.tr("Syslog 服务器地址："), card)
         url_label.setStyleSheet("font-weight: 500;")
         card_layout.addWidget(url_label)
 
         self._url_edit = LineEdit(card)
-        self._url_edit.setPlaceholderText("例如：syslog://192.168.1.100:514")
+        self._url_edit.setPlaceholderText(self.tr("例如：syslog://192.168.1.100:514"))
         self._url_edit.setClearButtonEnabled(True)
         card_layout.addWidget(self._url_edit)
 
-        hint_label = BodyLabel("支持 UDP/TCP，默认端口 514", card)
+        hint_label = BodyLabel(self.tr("支持 UDP/TCP，默认端口 514"), card)
         hint_label.setStyleSheet("color: #888; font-size: 12px;")
         card_layout.addWidget(hint_label)
 
@@ -91,7 +91,7 @@ class AddLogMessageBox(MessageBoxBase):
         title_layout = QHBoxLayout()
         icon_label = QLabel(self)
         icon_label.setPixmap(FluentIcon.FOLDER.icon().pixmap(20, 20))
-        title_label = SubtitleLabel("本地文件源", card)
+        title_label = SubtitleLabel(self.tr("本地文件源"), card)
         title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
 
         title_layout.addWidget(icon_label)
@@ -101,15 +101,15 @@ class AddLogMessageBox(MessageBoxBase):
 
         card_layout.addLayout(title_layout)
 
-        file_label = BodyLabel("选择日志文件：", card)
+        file_label = BodyLabel(self.tr("选择日志文件："), card)
         file_label.setStyleSheet("font-weight: 500;")
         card_layout.addWidget(file_label)
 
         select_file_layout = QHBoxLayout()
-        self._select_file_button = PushButton(FluentIcon.FOLDER_ADD, "选择文件", card)
+        self._select_file_button = PushButton(FluentIcon.FOLDER_ADD, self.tr("选择文件"), card)
         self._select_file_button.clicked.connect(self._on_select_file)
 
-        self._file_path_label = BodyLabel("未选择文件", card)
+        self._file_path_label = BodyLabel(self.tr("未选择文件"), card)
         self._file_path_label.setStyleSheet("color: #888; padding-left: 8px;")
 
         select_file_layout.addWidget(self._select_file_button)
@@ -118,7 +118,7 @@ class AddLogMessageBox(MessageBoxBase):
 
         card_layout.addLayout(select_file_layout)
 
-        hint_label = BodyLabel("支持 .log, .txt 等文本格式", card)
+        hint_label = BodyLabel(self.tr("支持 .log, .txt 等文本格式"), card)
         hint_label.setStyleSheet("color: #888; font-size: 12px;")
         card_layout.addWidget(hint_label)
 
@@ -130,9 +130,9 @@ class AddLogMessageBox(MessageBoxBase):
     def _on_select_file(self):
         self._selected_file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "选择日志文件",
+            self.tr("选择日志文件"),
             "",
-            "日志文件 (*.log *.txt);;所有文件 (*.*)",
+            self.tr("日志文件 (*.log *.txt);;所有文件 (*.*)"),
         )
 
         if self._selected_file_path:

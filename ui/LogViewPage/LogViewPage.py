@@ -57,14 +57,14 @@ class LogViewPage(QWidget):
         tool_bar_layout.setSpacing(16)
 
         # 日志选择标签
-        label = BodyLabel("选择日志：", self)
+        label = BodyLabel(self.tr("选择日志："), self)
         tool_bar_layout.addWidget(label)
 
         # 日志选择下拉框
         self._log_combo_box = ModelComboBox(self)
         self._log_combo_box.setModel(self._extracted_log_list_model)
         self._log_combo_box.setMinimumWidth(400)
-        self._log_combo_box.setPlaceholderText("请选择已提取的日志文件")
+        self._log_combo_box.setPlaceholderText(self.tr("请选择已提取的日志文件"))
         self._log_combo_box.currentIndexChanged.connect(self._on_log_selected)
         tool_bar_layout.addWidget(self._log_combo_box)
 
@@ -106,9 +106,9 @@ class LogViewPage(QWidget):
             filtered = self._csv_file_table_model.filtered_row_count()
 
             if total == filtered:
-                self._info_label.setText(f"共 {total:,} 行")
+                self._info_label.setText(self.tr("共 {0} 行").format(f"{total:,}"))
             else:
-                self._info_label.setText(f"显示 {filtered:,} / {total:,} 行")
+                self._info_label.setText(self.tr("显示 {0} / {1} 行").format(f"{filtered:,}", f"{total:,}"))
         else:
             self._info_label.setText("")
 
@@ -132,8 +132,8 @@ class LogViewPage(QWidget):
         duckdb_service = DuckDBService()
         if not duckdb_service.table_exists(structured_table_name):
             InfoBar.error(
-                title="数据未找到",
-                content=f"未找到结构化表: {structured_table_name}",
+                title=self.tr("数据未找到"),
+                content=self.tr("未找到结构化表: {0}").format(structured_table_name),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -153,20 +153,20 @@ class LogViewPage(QWidget):
         menu = RoundMenu(parent=self._table_view)
 
         # 设置本地筛选器
-        filter_action = Action(FluentIcon.FILTER, f"设置 '{column_name}' 的筛选器")
+        filter_action = Action(FluentIcon.FILTER, self.tr("设置 '{0}' 的筛选器").format(column_name))
         filter_action.triggered.connect(lambda: self._on_set_column_filter(column_name))
         menu.addAction(filter_action)
 
         # 如果该列有过滤，添加清除选项
         if self._csv_file_table_model.is_column_filtered(column_name):
-            clear_action = Action(FluentIcon.DELETE, f"清除 '{column_name}' 的筛选器")
+            clear_action = Action(FluentIcon.DELETE, self.tr("清除 '{0}' 的筛选器").format(column_name))
             clear_action.triggered.connect(lambda: self._on_clear_column_filter(column_name))
             menu.addAction(clear_action)
 
         menu.addSeparator()
 
         # 清除所有筛选器
-        clear_all_action = Action(FluentIcon.CLOSE, "清除所有筛选器")
+        clear_all_action = Action(FluentIcon.CLOSE, self.tr("清除所有筛选器"))
         clear_all_action.triggered.connect(self._on_clear_all_filters)
         menu.addAction(clear_all_action)
 

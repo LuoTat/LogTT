@@ -68,16 +68,16 @@ class LogManagePage(QWidget):
         tool_bar_layout.setSpacing(16)
 
         self._search_edit = SearchLineEdit(self)
-        self._search_edit.setPlaceholderText("按名称搜索")
+        self._search_edit.setPlaceholderText(self.tr("按名称搜索"))
         self._search_edit.setClearButtonEnabled(True)
         self._search_edit.returnPressed.connect(lambda: self._log_table_model.search_by_name(self._search_edit.text()))
         self._search_edit.searchSignal.connect(lambda keyword: self._log_table_model.search_by_name(keyword))
         self._search_edit.clearSignal.connect(self._log_table_model.clear_search)
 
-        self._refresh_button = PushButton(FluentIcon.SYNC, "刷新", self)
+        self._refresh_button = PushButton(FluentIcon.SYNC, self.tr("刷新"), self)
         self._refresh_button.clicked.connect(self._log_table_model.refresh)
 
-        self._add_button = PrimaryPushButton(FluentIcon.ADD, "新增日志", self)
+        self._add_button = PrimaryPushButton(FluentIcon.ADD, self.tr("新增日志"), self)
         self._add_button.clicked.connect(self._on_add_log)
 
         tool_bar_layout.addWidget(self._search_edit, 1)
@@ -153,28 +153,28 @@ class LogManagePage(QWidget):
 
         if status == LogStatus.EXTRACTED:
             # 已提取的日志
-            view_log_action = Action(FluentIcon.DOCUMENT, "查看日志")
+            view_log_action = Action(FluentIcon.DOCUMENT, self.tr("查看日志"))
             view_log_action.triggered.connect(lambda: self._on_view_log(index))
             menu.addAction(view_log_action)
 
-            view_template_action = Action(FluentIcon.BOOK_SHELF, "查看模板")
+            view_template_action = Action(FluentIcon.BOOK_SHELF, self.tr("查看模板"))
             view_template_action.triggered.connect(lambda: self._on_view_template(index))
             menu.addAction(view_template_action)
         elif status == LogStatus.NOT_EXTRACTED:
             # 未提取的日志
-            extract_action = Action(FluentIcon.PLAY, "开始提取")
+            extract_action = Action(FluentIcon.PLAY, self.tr("开始提取"))
             extract_action.triggered.connect(lambda: self._on_extract_log(index))
             menu.addAction(extract_action)
         else:
             # 正在提取的日志
-            stop_action = Action(FluentIcon.CANCEL, "终止提取")
+            stop_action = Action(FluentIcon.CANCEL, self.tr("终止提取"))
             stop_action.triggered.connect(lambda: self._log_table_model.request_interrupt_task(index))
             menu.addAction(stop_action)
 
         menu.addSeparator()
 
         # 删除操作
-        delete_action = Action(FluentIcon.DELETE, "删除")
+        delete_action = Action(FluentIcon.DELETE, self.tr("删除"))
         delete_action.triggered.connect(lambda: self._on_delete_log(index))
         menu.addAction(delete_action)
 
@@ -218,7 +218,7 @@ class LogManagePage(QWidget):
     @Slot(QModelIndex)
     def _on_delete_log(self, index: QModelIndex):
         """处理删除日志请求"""
-        confirm = MessageBox("确认删除", "确定删除该日志吗？", self)
+        confirm = MessageBox(self.tr("确认删除"), self.tr("确定删除该日志吗？"), self)
         if confirm.exec():
             self._log_table_model.request_delete(index)
 
@@ -226,8 +226,8 @@ class LogManagePage(QWidget):
     def _on_extract_finished(self, _: int, line_count: int):
         """处理提取完成"""
         InfoBar.success(
-            title="提取成功",
-            content=f"日志模板提取完成，共 {line_count:,} 行",
+            title=self.tr("提取成功"),
+            content=self.tr("日志模板提取完成，共 {0} 行").format(f"{line_count:,}"),
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -239,8 +239,8 @@ class LogManagePage(QWidget):
     def _on_extract_interrupted(self, _: int):
         """处理提取中断"""
         InfoBar.info(
-            title="提取中断",
-            content="日志提取已终止",
+            title=self.tr("提取中断"),
+            content=self.tr("日志提取已终止"),
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -252,7 +252,7 @@ class LogManagePage(QWidget):
     def _on_extract_error(self, _: int, msg: str):
         """处理提取错误"""
         InfoBar.error(
-            title="提取失败",
+            title=self.tr("提取失败"),
             content=msg,
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
@@ -265,8 +265,8 @@ class LogManagePage(QWidget):
     def _on_add_success(self):
         """处理添加成功"""
         InfoBar.success(
-            title="导入成功",
-            content="日志已导入",
+            title=self.tr("导入成功"),
+            content=self.tr("日志已导入"),
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -278,8 +278,8 @@ class LogManagePage(QWidget):
     def _on_add_duplicate(self):
         """处理添加重复"""
         InfoBar.warning(
-            title="导入失败",
-            content="该日志已存在",
+            title=self.tr("导入失败"),
+            content=self.tr("该日志已存在"),
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -291,7 +291,7 @@ class LogManagePage(QWidget):
     def _on_add_error(self, msg: str):
         """处理添加失败"""
         InfoBar.error(
-            title="导入失败",
+            title=self.tr("导入失败"),
             content=msg,
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
@@ -304,8 +304,8 @@ class LogManagePage(QWidget):
     def _on_delete_success(self):
         """处理删除成功"""
         InfoBar.success(
-            title="删除成功",
-            content="日志已删除",
+            title=self.tr("删除成功"),
+            content=self.tr("日志已删除"),
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -317,7 +317,7 @@ class LogManagePage(QWidget):
     def _on_delete_error(self, msg: str):
         """处理删除失败"""
         InfoBar.error(
-            title="删除失败",
+            title=self.tr("删除失败"),
             content=msg,
             orient=Qt.Orientation.Horizontal,
             isClosable=True,

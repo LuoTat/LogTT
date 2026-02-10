@@ -5,6 +5,7 @@ from typing import Any
 
 import duckdb
 from PySide6.QtCore import (
+    QT_TRANSLATE_NOOP,
     QAbstractTableModel,
     QModelIndex,
     QObject,
@@ -123,14 +124,14 @@ class LogTableModel(QAbstractTableModel):
 
     # 显示的表头
     _TABLE_HEADERS = [
-        "名称",
-        "日志行数",
-        "日志类型",
-        "日志格式",
-        "创建时间",
-        "进度",
-        "状态",
-        "提取方法",
+        QT_TRANSLATE_NOOP("LogTableModel", "名称"),
+        QT_TRANSLATE_NOOP("LogTableModel", "日志行数"),
+        QT_TRANSLATE_NOOP("LogTableModel", "日志类型"),
+        QT_TRANSLATE_NOOP("LogTableModel", "日志格式"),
+        QT_TRANSLATE_NOOP("LogTableModel", "创建时间"),
+        QT_TRANSLATE_NOOP("LogTableModel", "进度"),
+        QT_TRANSLATE_NOOP("LogTableModel", "状态"),
+        QT_TRANSLATE_NOOP("LogTableModel", "提取方法"),
     ]
     # 数据库表头
     _SQL_HEADERS = [
@@ -157,7 +158,11 @@ class LogTableModel(QAbstractTableModel):
         SqlColumn.EXTRACT_METHOD,
     ]
     # 状态显示文本
-    _STATUS_TO_TEXT = ["已提取", "未提取", "提取中"]
+    _STATUS_TO_TEXT = [
+        QT_TRANSLATE_NOOP("LogTableModel", "已提取"),
+        QT_TRANSLATE_NOOP("LogTableModel", "未提取"),
+        QT_TRANSLATE_NOOP("LogTableModel", "提取中"),
+    ]
 
     # 用户自定义角色
     LOG_ID_ROLE = Qt.ItemDataRole.UserRole + 1
@@ -199,7 +204,7 @@ class LogTableModel(QAbstractTableModel):
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
-            return self._TABLE_HEADERS[section]
+            return self.tr(self._TABLE_HEADERS[section])
         return None
 
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
@@ -299,7 +304,7 @@ class LogTableModel(QAbstractTableModel):
         # 状态列
         elif col == LogColumn.STATUS:
             status = self._get_status(index)
-            return self._STATUS_TO_TEXT[status]
+            return self.tr(self._STATUS_TO_TEXT[status])
 
         # 名称列
         elif col == LogColumn.NAME:

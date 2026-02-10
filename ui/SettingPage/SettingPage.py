@@ -36,7 +36,11 @@ class SettingPage(ScrollArea):
 
     def _init_theme_color_card(self):
         self._theme_color_card = CustomColorSettingCard(
-            appcfg.themeColor, FluentIcon.PALETTE, "主题色", "调整你的应用的主题色", self._scroll_widget
+            appcfg.themeColor,
+            FluentIcon.PALETTE,
+            self.tr("主题色"),
+            self.tr("调整你的应用的主题色"),
+            self._scroll_widget,
         )
         self._theme_color_card.colorChanged.connect(lambda c: setThemeColor(c))
         self._main_layout.addWidget(self._theme_color_card)
@@ -45,9 +49,9 @@ class SettingPage(ScrollArea):
         self.languageCard = ComboBoxSettingCard(
             appcfg.language,
             FluentIcon.LANGUAGE,
-            "语言",
-            "选择界面所使用的语言",
-            ["简体中文", "English", "跟随系统设置"],
+            self.tr("语言"),
+            self.tr("选择界面所使用的语言"),
+            ["简体中文", "English", self.tr("跟随系统设置")],
             self._scroll_widget,
         )
         self._main_layout.addWidget(self.languageCard)
@@ -58,8 +62,8 @@ class SettingPage(ScrollArea):
     def _on_need_restart(self):
         """显示重启提示"""
         InfoBar.success(
-            title="更新成功",
-            content="配置在重启软件后生效",
+            title=self.tr("更新成功"),
+            content=self.tr("配置在重启软件后生效"),
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,

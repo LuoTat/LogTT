@@ -46,13 +46,13 @@ class ColumnFilterMessageBox(MessageBoxBase):
 
     def _init_title(self):
         """初始化标题"""
-        self._title_label = SubtitleLabel(f"'{self._column_name}' 的本地筛选器", self)
+        self._title_label = SubtitleLabel(self.tr("'{0}' 的本地筛选器").format(self._column_name), self)
         self.viewLayout.addWidget(self._title_label)
 
     def _init_search_edit(self):
         """初始化搜索框"""
         self._search_edit = SearchLineEdit(self)
-        self._search_edit.setPlaceholderText("搜索值...")
+        self._search_edit.setPlaceholderText(self.tr("搜索值..."))
         self._search_edit.setClearButtonEnabled(True)
         self._search_edit.textChanged.connect(self._on_search_text_changed)
         self._search_edit.clearSignal.connect(self._on_clear_search)

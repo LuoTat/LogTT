@@ -1,7 +1,7 @@
 from typing import Any
 
 import polars
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt, Signal
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QAbstractTableModel, QModelIndex, Qt, Signal
 
 from modules.duckdb_service import DuckDBService
 
@@ -15,7 +15,7 @@ class CsvFilterTableModel(QAbstractTableModel):
     _PAGE_SIZE = 20
 
     # 显示的表头：值列同时显示复选框和值
-    _TABLE_HEADERS = ["值", "计数"]
+    _TABLE_HEADERS = [QT_TRANSLATE_NOOP("值"), QT_TRANSLATE_NOOP("CsvFilterTableModel", "计数")]
 
     # UI 控制信号
     filterChanged = Signal(object)  # 传递当前选中的值列表
@@ -69,7 +69,7 @@ class CsvFilterTableModel(QAbstractTableModel):
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
-            return self._TABLE_HEADERS[section]
+            return self.tr(self._TABLE_HEADERS[section])
         return None
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlag:

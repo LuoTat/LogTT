@@ -115,7 +115,7 @@ class ExtractLogMessageBox(MessageBoxBase):
         title_layout = QHBoxLayout()
         icon_label = QLabel(self)
         icon_label.setPixmap(FluentIcon.DEVELOPER_TOOLS.icon().pixmap(20, 20))
-        title_label = SubtitleLabel("选择提取算法", card)
+        title_label = SubtitleLabel(self.tr("选择提取算法"), card)
         title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
 
         title_layout.addWidget(icon_label)
@@ -125,13 +125,13 @@ class ExtractLogMessageBox(MessageBoxBase):
 
         card_layout.addLayout(title_layout)
 
-        logparser_label = BodyLabel("提取算法：", card)
+        logparser_label = BodyLabel(self.tr("提取算法："), card)
         logparser_label.setStyleSheet("font-weight: 500;")
         card_layout.addWidget(logparser_label)
 
         self._logparser_combo_box = ModelComboBox(card)
         self._logparser_combo_box.setModel(self._logparser_list_model)
-        self._logparser_combo_box.setPlaceholderText("请选择提取算法")
+        self._logparser_combo_box.setPlaceholderText(self.tr("请选择提取算法"))
         self._logparser_combo_box.currentIndexChanged.connect(self._on_log_parser_selected)
         card_layout.addWidget(self._logparser_combo_box)
 
@@ -150,7 +150,7 @@ class ExtractLogMessageBox(MessageBoxBase):
         title_layout = QHBoxLayout()
         icon_label = QLabel(self)
         icon_label.setPixmap(FluentIcon.DOCUMENT.icon().pixmap(20, 20))
-        title_label = SubtitleLabel("日志格式配置", card)
+        title_label = SubtitleLabel(self.tr("日志格式配置"), card)
         title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
 
         title_layout.addWidget(icon_label)
@@ -160,18 +160,18 @@ class ExtractLogMessageBox(MessageBoxBase):
 
         card_layout.addLayout(title_layout)
 
-        format_type_label = BodyLabel("选择格式：", card)
+        format_type_label = BodyLabel(self.tr("选择格式："), card)
         format_type_label.setStyleSheet("font-weight: 500;")
         card_layout.addWidget(format_type_label)
 
         self._format_type_combo_box = ModelComboBox(card)
         self._format_type_combo_box.setModel(self._format_type_list_model)
-        self._format_type_combo_box.setPlaceholderText("请选择日志格式类型")
+        self._format_type_combo_box.setPlaceholderText(self.tr("请选择日志格式类型"))
         self._format_type_combo_box.currentIndexChanged.connect(self._on_format_type_selected)
         card_layout.addWidget(self._format_type_combo_box)
 
         # log_format展示框
-        log_format_label = BodyLabel("日志格式：", card)
+        log_format_label = BodyLabel(self.tr("日志格式："), card)
         log_format_label.setStyleSheet("font-weight: 500;")
         card_layout.addWidget(log_format_label)
 
@@ -185,7 +185,7 @@ class ExtractLogMessageBox(MessageBoxBase):
         # card_layout.addWidget(log_format_hint)
 
         # regex展示框
-        regex_label = BodyLabel("正则表达式（每行一个）：", card)
+        regex_label = BodyLabel(self.tr("正则表达式（每行一个）："), card)
         regex_label.setStyleSheet("font-weight: 500;")
         card_layout.addWidget(regex_label)
 
