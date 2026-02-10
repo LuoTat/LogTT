@@ -15,7 +15,7 @@ class CsvFilterTableModel(QAbstractTableModel):
     _PAGE_SIZE = 20
 
     # 显示的表头：值列同时显示复选框和值
-    _TABLE_HEADERS = [QT_TRANSLATE_NOOP("值"), QT_TRANSLATE_NOOP("CsvFilterTableModel", "计数")]
+    _TABLE_HEADERS = [QT_TRANSLATE_NOOP("CsvFilterTableModel", "值"), QT_TRANSLATE_NOOP("CsvFilterTableModel", "计数")]
 
     # UI 控制信号
     filterChanged = Signal(object)  # 传递当前选中的值列表
