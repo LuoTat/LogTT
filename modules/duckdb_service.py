@@ -251,3 +251,22 @@ class DuckDBService:
         with duckdb.connect(DB_PATH) as conn:
             rel = conn.table(table_name)
             return rel.columns
+
+    @staticmethod
+    def compact_database() -> tuple[int, int]:
+        """压缩优化数据库，返回 (优化前字节数, 优化后字节数)"""
+        original_size = DB_PATH.stat().st_size
+        tmp_path = DB_PATH.with_suffix(".tmp")
+        DB_PATH.rename(tmp_path)
+
+        # 直接从原库复制到新文件
+        with duckdb.connect() as conn:
+            conn.execute(f"ATTACH '{tmp_path}' AS db")
+            conn.execute(f"ATTACH '{DB_PATH}' AS tmp")
+            conn.execute("COPY FROM DATABASE db TO tmp")
+
+        # 删除临时文件
+        tmp_path.unlink()
+
+        new_size = DB_PATH.stat().st_size
+        return original_size, new_size

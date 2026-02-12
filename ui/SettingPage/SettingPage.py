@@ -7,11 +7,14 @@ from qfluentwidgets import (
     FluentIcon,
     InfoBar,
     InfoBarPosition,
+    PrimaryPushSettingCard,
     ScrollArea,
     setThemeColor,
 )
 
 from modules.app_config import appcfg
+from modules.duckdb_service import DuckDBService
+from humanize import naturalsize
 
 
 class SettingPage(ScrollArea):
@@ -29,6 +32,7 @@ class SettingPage(ScrollArea):
 
         self._init_theme_color_card()
         self._init_language_card()
+        self._init_compact_db_card()
 
         appcfg.appRestartSig.connect(self._on_need_restart)
 
@@ -56,6 +60,17 @@ class SettingPage(ScrollArea):
         )
         self._main_layout.addWidget(self.languageCard)
 
+    def _init_compact_db_card(self):
+        self._compact_db_card = PrimaryPushSettingCard(
+            self.tr("立即优化"),
+            FluentIcon.SPEED_HIGH,
+            self.tr("优化数据库"),
+            self.tr("压缩数据库文件，释放已删除数据占用的磁盘空间"),
+            self._scroll_widget,
+        )
+        self._compact_db_card.clicked.connect(self._on_compact_database)
+        self._main_layout.addWidget(self._compact_db_card)
+
     # ==================== 槽函数 ====================
 
     @Slot()
@@ -70,3 +85,33 @@ class SettingPage(ScrollArea):
             duration=3000,
             parent=self,
         )
+
+    @Slot()
+    def _on_compact_database(self):
+        """压缩优化数据库"""
+        try:
+            original_size, new_size = DuckDBService.compact_database()
+            saved = original_size - new_size
+            InfoBar.success(
+                title=self.tr("优化完成"),
+                content=self.tr("数据库已压缩：{0} → {1}，释放了 {2}").format(
+                    naturalsize(original_size, True),
+                    naturalsize(new_size, True),
+                    naturalsize(saved, True),
+                ),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self,
+            )
+        except Exception as e:
+            InfoBar.error(
+                title=self.tr("优化失败"),
+                content=str(e),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=5000,
+                parent=self,
+            )
