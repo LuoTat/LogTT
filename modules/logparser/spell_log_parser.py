@@ -15,7 +15,11 @@
 # =========================================================================
 
 
+from collections.abc import Callable
 from datetime import datetime
+from pathlib import Path
+
+import polars as pl
 
 from .base_log_parser import BaseLogParser
 from .parse_result import ParseResult
@@ -50,13 +54,6 @@ class SpellLogParser(BaseLogParser):
         self,
         log_id,
         log_file,
-        log_format,
-        regex,
-        structured_table_name,
-        templates_table_name,
-        should_stop,
-        progress_callback=None,
-        keep_para=False,
         tau=0.5,
     ):
         """
@@ -67,30 +64,33 @@ class SpellLogParser(BaseLogParser):
         super().__init__(
             log_id,
             log_file,
-            log_format,
-            regex,
-            structured_table_name,
-            templates_table_name,
-            should_stop,
-            progress_callback,
-            keep_para,
         )
         self.tau = tau
-        self._df_log = None
 
-    def _output_result(self, log_clusters):
-        log_templates = [""] * self._df_log.height
+    @staticmethod
+    def _output_result(
+        log_df: pl.DataFrame,
+        structured_table_name: str,
+        templates_table_name: str,
+        keep_para: bool,
+        log_clusters,
+    ):
+        log_templates = [""] * log_df.height
         for cluster in log_clusters:
             template_str = " ".join(cluster.log_template)
             for log_id in cluster.log_id_list:
                 log_templates[log_id - 1] = template_str
 
         output_result(
-            self._df_log, log_templates, self._structured_table_name, self._templates_table_name, self._keep_para
+            log_df,
+            log_templates,
+            structured_table_name,
+            templates_table_name,
+            keep_para,
         )
 
     @staticmethod
-    def add_seq_to_prefix_tree(root, new_cluster):
+    def _add_seq_to_prefix_tree(root, new_cluster):
         parent = root
         seq = [w for w in new_cluster.log_template if w != "<*>"]
 
@@ -105,7 +105,7 @@ class SpellLogParser(BaseLogParser):
             parent.log_cluster = new_cluster
 
     @staticmethod
-    def remove_seq_from_prefix_tree(root, cluster):
+    def _remove_seq_from_prefix_tree(root, cluster):
         parent = root
         seq = [w for w in cluster.log_template if w != "<*>"]
 
@@ -120,7 +120,7 @@ class SpellLogParser(BaseLogParser):
                     parent = matched_node
 
     @staticmethod
-    def lcs(seq1, seq2):
+    def _lcs(seq1, seq2):
         lengths = [[0] * (len(seq2) + 1) for _ in range(len(seq1) + 1)]
         # row 0 and column 0 are initialized to 0 already
         for i in range(len(seq1)):
@@ -134,9 +134,15 @@ class SpellLogParser(BaseLogParser):
         result = []
         len_of_seq1, len_of_seq2 = len(seq1), len(seq2)
         while len_of_seq1 != 0 and len_of_seq2 != 0:
-            if lengths[len_of_seq1][len_of_seq2] == lengths[len_of_seq1 - 1][len_of_seq2]:
+            if (
+                lengths[len_of_seq1][len_of_seq2]
+                == lengths[len_of_seq1 - 1][len_of_seq2]
+            ):
                 len_of_seq1 -= 1
-            elif lengths[len_of_seq1][len_of_seq2] == lengths[len_of_seq1][len_of_seq2 - 1]:
+            elif (
+                lengths[len_of_seq1][len_of_seq2]
+                == lengths[len_of_seq1][len_of_seq2 - 1]
+            ):
                 len_of_seq2 -= 1
             else:
                 assert seq1[len_of_seq1 - 1] == seq2[len_of_seq2 - 1]
@@ -147,7 +153,7 @@ class SpellLogParser(BaseLogParser):
         return result
 
     @staticmethod
-    def get_template(lcs, seq):
+    def _get_template(lcs, seq):
         ret_val = []
         if not lcs:
             return ret_val
@@ -165,7 +171,7 @@ class SpellLogParser(BaseLogParser):
                 break
         return ret_val
 
-    def lcs_match(self, log_clusters, seq):
+    def _lcs_match(self, log_clusters, seq):
         max_len = -1
         max_clust = None
         set_seq = set(seq)
@@ -174,8 +180,11 @@ class SpellLogParser(BaseLogParser):
             set_template = set(cluster.log_template)
             if len(set_seq & set_template) < 0.5 * size_seq:
                 continue
-            lcs = self.lcs(seq, cluster.log_template)
-            if len(lcs) > max_len or (len(lcs) == max_len and len(cluster.log_template) < len(max_clust.log_template)):
+            lcs = self._lcs(seq, cluster.log_template)
+            if len(lcs) > max_len or (
+                len(lcs) == max_len
+                and len(cluster.log_template) < len(max_clust.log_template)
+            ):
                 max_len = len(lcs)
                 max_clust = cluster
 
@@ -186,18 +195,20 @@ class SpellLogParser(BaseLogParser):
         return None
 
     @staticmethod
-    def simple_loop_match(log_clusters, seq):
+    def _simple_loop_match(log_clusters, seq):
         for cluster in log_clusters:
             if len(cluster.log_template) < 0.5 * len(seq):
                 continue
             # Check the template is a subsequence of seq (we use set checking as a proxy here for speedup since
             # incorrect-ordering bad cases rarely occur in logs)
             token_set = set(seq)
-            if all(token in token_set or token == "<*>" for token in cluster.log_template):
+            if all(
+                token in token_set or token == "<*>" for token in cluster.log_template
+            ):
                 return cluster
         return None
 
-    def prefix_tree_match(self, parent, seq, idx):
+    def _prefix_tree_match(self, parent, seq, idx):
         length = len(seq)
         for i in range(idx, length):
             if seq[i] in parent.children:
@@ -207,60 +218,74 @@ class SpellLogParser(BaseLogParser):
                     if len(const_lm) >= self.tau * length:
                         return child.log_cluster
                 else:
-                    return self.prefix_tree_match(child, seq, i + 1)
+                    return self._prefix_tree_match(child, seq, i + 1)
 
         return None
 
-    def parse(self) -> ParseResult:
-        print(f"Parsing file: {self._log_file}")
+    def parse(
+        self,
+        log_file: Path,
+        structured_table_name: str,
+        templates_table_name: str,
+        should_stop: Callable[[], bool],
+        keep_para: bool = False,
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> ParseResult:
+        print(f"Parsing file: {log_file}")
         start_time = datetime.now()
         root_node = Node()
         log_clusters = []
 
-        self._df_log = load_data(self._log_file, self._log_format, self._regex, self._should_stop)
+        log_df = load_data(log_file, self._log_format, self._regex, should_stop)
 
-        for idx, line in enumerate(self._df_log.iter_rows(named=True)):
+        for idx, line in enumerate(log_df.iter_rows(named=True)):
             log_id = line["LineId"]
             log_message_tokens = line["Content"].split()
             const_log_tokens = [w for w in log_message_tokens if w != "<*>"]
 
             # Find an existing matched log cluster
-            match_cluster = self.prefix_tree_match(root_node, const_log_tokens, 0)
+            match_cluster = self._prefix_tree_match(root_node, const_log_tokens, 0)
 
             if match_cluster is None:
-                match_cluster = self.simple_loop_match(log_clusters, const_log_tokens)
+                match_cluster = self._simple_loop_match(log_clusters, const_log_tokens)
 
                 if match_cluster is None:
-                    match_cluster = self.lcs_match(log_clusters, log_message_tokens)
+                    match_cluster = self._lcs_match(log_clusters, log_message_tokens)
 
                     # Match no existing log cluster
                     if match_cluster is None:
                         new_cluster = LogCluster(log_message_tokens, [log_id])
                         log_clusters.append(new_cluster)
-                        self.add_seq_to_prefix_tree(root_node, new_cluster)
+                        self._add_seq_to_prefix_tree(root_node, new_cluster)
                     # Add the new log message to the existing cluster
                     else:
-                        new_template = self.get_template(
-                            self.lcs(log_message_tokens, match_cluster.log_template),
+                        new_template = self._get_template(
+                            self._lcs(log_message_tokens, match_cluster.log_template),
                             match_cluster.log_template,
                         )
-                        if " ".join(new_template) != " ".join(match_cluster.log_template):
-                            self.remove_seq_from_prefix_tree(root_node, match_cluster)
+                        if " ".join(new_template) != " ".join(
+                            match_cluster.log_template
+                        ):
+                            self._remove_seq_from_prefix_tree(root_node, match_cluster)
                             match_cluster.log_template = new_template
-                            self.add_seq_to_prefix_tree(root_node, match_cluster)
+                            self._add_seq_to_prefix_tree(root_node, match_cluster)
             if match_cluster:
                 match_cluster.log_id_list.append(log_id)
 
-            if idx % 10000 == 0 or idx == self._df_log.height - 1:
-                progress = idx * 100.0 / self._df_log.height
+            if idx % 10000 == 0 or idx == log_df.height - 1:
+                progress = idx * 100.0 / log_df.height
                 print(f"Processed {progress:.1f}% of log lines.")
-                if self._progress_callback:
-                    self._progress_callback(int(progress))
+                if progress_callback:
+                    progress_callback(int(progress))
 
-        self._output_result(log_clusters)
+        self._output_result(
+            log_df, structured_table_name, templates_table_name, keep_para, log_clusters
+        )
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
-        return ParseResult(self._log_file, self._df_log.height, self._structured_table_name, self._templates_table_name)
+        return ParseResult(
+            log_file, log_df.height, structured_table_name, templates_table_name
+        )
 
     @staticmethod
     def name() -> str:

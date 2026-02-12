@@ -17,8 +17,11 @@
 
 
 from collections import Counter
+from collections.abc import Callable
 from datetime import datetime
+from pathlib import Path
 
+import polars as pl
 import regex as re
 
 from .base_log_parser import BaseLogParser
@@ -62,8 +65,12 @@ class TupleTree:
             for fc_w in fc:
                 if fc_w[0] >= threshold:
                     self._sorted_tuple_vector[idx].append((int(count[0]), -1, -1))
-                    root_set_detail_id.setdefault(fc_w, []).append(self._sorted_tuple_vector[idx])
-                    root_set.setdefault(fc_w, []).append(self._word_combinations_reverse[idx])
+                    root_set_detail_id.setdefault(fc_w, []).append(
+                        self._sorted_tuple_vector[idx]
+                    )
+                    root_set.setdefault(fc_w, []).append(
+                        self._word_combinations_reverse[idx]
+                    )
                     root_set_detail.setdefault(fc_w, []).append(self._tuple_vector[idx])
                     break
                 if fc_w[0] >= m:
@@ -71,8 +78,12 @@ class TupleTree:
                     m = fc_w[0]
                 if fc_w == fc[-1]:
                     self._sorted_tuple_vector[idx].append((int(count[0]), -1, -1))
-                    root_set_detail_id.setdefault(candidate, []).append(self._sorted_tuple_vector[idx])
-                    root_set.setdefault(candidate, []).append(self._word_combinations_reverse[idx])
+                    root_set_detail_id.setdefault(candidate, []).append(
+                        self._sorted_tuple_vector[idx]
+                    )
+                    root_set.setdefault(candidate, []).append(
+                        self._word_combinations_reverse[idx]
+                    )
                     root_set_detail.setdefault(fc_w, []).append(self._tuple_vector[idx])
         return root_set_detail_id, root_set, root_set_detail
 
@@ -129,17 +140,10 @@ class TupleTree:
 class BrainLogParser(BaseLogParser):
     def __init__(
         self,
-        log_id,
-        log_file,
         log_format,
         regex,
-        structured_table_name,
-        templates_table_name,
-        should_stop,
-        progress_callback=None,
-        keep_para=False,
         threshold=5,
-        delimiter=None,
+        delimiter: list[str] | None = None,
     ):
         """
         Attributes
@@ -147,30 +151,30 @@ class BrainLogParser(BaseLogParser):
             threshold : similarity threshold
             delimiter : list of delimiters to split log messages
         """
-        super().__init__(
-            log_id,
-            log_file,
-            log_format,
-            regex,
-            structured_table_name,
-            templates_table_name,
-            should_stop,
-            progress_callback,
-            keep_para,
-        )
+        super().__init__(log_format, regex)
         self._threshold = threshold
         self._delimiter = delimiter if delimiter is not None else []
-        self._df_log = None
 
-    def _output_result(self, template_set):
-        log_templates = [""] * self._df_log.height
+    @staticmethod
+    def _output_result(
+        log_df: pl.DataFrame,
+        structured_table_name: str,
+        templates_table_name: str,
+        keep_para: bool,
+        template_set,
+    ):
+        log_templates = [""] * log_df.height
         for template, indices in template_set.items():
             template_str = " ".join(template)
             for i in indices:
                 log_templates[i] = template_str
 
         output_result(
-            self._df_log, log_templates, self._structured_table_name, self._templates_table_name, self._keep_para
+            log_df,
+            log_templates,
+            structured_table_name,
+            templates_table_name,
+            keep_para,
         )
 
     @staticmethod
@@ -181,16 +185,14 @@ class BrainLogParser(BaseLogParser):
             return False
         return len(digits) / len(string) >= 0.3
 
-    def _extract_templates(self, parse_result):
+    @staticmethod
+    def _extract_templates(parse_result):
         template_set = {}
         for key in parse_result:
             for pr in parse_result[key]:
                 sorted_pr = sorted(pr, key=lambda tup: tup[2])
                 template = []
                 for item in sorted_pr[1:]:
-                    if self._should_stop():
-                        raise InterruptedError
-
                     word = item[1]
                     if "<*>" in word or BrainLogParser._exclude_digits(word):
                         template.append("<*>")
@@ -200,7 +202,8 @@ class BrainLogParser(BaseLogParser):
                 template_set.setdefault(template, []).append(pr[-1][0])
         return template_set
 
-    def _tuple_generate(self, group_len, tuple_vector, frequency_vector):
+    @staticmethod
+    def _tuple_generate(group_len, tuple_vector, frequency_vector):
         """Generate word combinations.
 
         Output:
@@ -215,15 +218,9 @@ class BrainLogParser(BaseLogParser):
         word_combinations_reverse = {}
         for key in group_len.keys():
             for fre in tuple_vector[key]:
-                if self._should_stop():
-                    raise InterruptedError
-
                 sorted_fre_reverse = sorted(fre, key=lambda tup: tup[0], reverse=True)
                 sorted_tuple_vector.setdefault(key, []).append(sorted_fre_reverse)
             for fc in frequency_vector[key]:
-                if self._should_stop():
-                    raise InterruptedError
-
                 number = Counter(fc)
                 result = number.most_common()
                 sorted_result = sorted(result, key=lambda tup: tup[1], reverse=True)
@@ -232,7 +229,8 @@ class BrainLogParser(BaseLogParser):
                 word_combinations_reverse.setdefault(key, []).append(sorted_fre)
         return sorted_tuple_vector, word_combinations, word_combinations_reverse
 
-    def _get_frequency_vector(self, contents, delimiter):
+    @staticmethod
+    def _get_frequency_vector(contents, delimiter):
         """Count each word's frequency in the dataset and convert each log into frequency vector.
 
         Output:
@@ -243,9 +241,6 @@ class BrainLogParser(BaseLogParser):
         group_len = {}
         word_set = {}
         for idx, c in enumerate(contents):  # using delimiters to get split words
-            if self._should_stop():
-                raise InterruptedError
-
             for de in delimiter:
                 c = re.sub(de, "", c)
             c = re.sub(",", ", ", c)
@@ -253,26 +248,24 @@ class BrainLogParser(BaseLogParser):
             c.insert(0, str(idx))
             for pos, token in enumerate(c):
                 word_set.setdefault(str(pos), []).append(token)
-            group_len.setdefault(len(c), []).append(c)  # first grouping: logs with the same length
+            group_len.setdefault(len(c), []).append(
+                c
+            )  # first grouping: logs with the same length
         tuple_vector = {}
         frequency_vector = {}
         max_len = max(group_len.keys())  # the biggest length of the log in this dataset
         fre_set = {}  # saving each word's frequency
         for i in range(max_len):
             for word in word_set[str(i)]:  # counting each word's frequency
-                if self._should_stop():
-                    raise InterruptedError
-
                 word = str(i) + " " + word
                 fre_set[word] = fre_set.get(word, 0) + 1
-        for key in group_len.keys():  # using fre_set to generate frequency vector for the log
+        for (
+            key
+        ) in group_len.keys():  # using fre_set to generate frequency vector for the log
             for c in group_len[key]:  # in each log group with the same length
                 fre = []
                 fre_common = []
                 for position, word_character in enumerate(c[1:]):
-                    if self._should_stop():
-                        raise InterruptedError
-
                     frequency_word = fre_set[str(position + 1) + " " + word_character]
                     fre.append((frequency_word, word_character, position))
                     fre_common.append(frequency_word)
@@ -280,15 +273,25 @@ class BrainLogParser(BaseLogParser):
                 frequency_vector.setdefault(key, []).append(fre_common)
         return group_len, tuple_vector, frequency_vector
 
-    def parse(self) -> ParseResult:
-        print(f"Parsing file: {self._log_file}")
+    def parse(
+        self,
+        log_file: Path,
+        structured_table_name: str,
+        templates_table_name: str,
+        should_stop: Callable[[], bool],
+        keep_para: bool = False,
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> ParseResult:
+        print(f"Parsing file: {log_file}")
         start_time = datetime.now()
 
-        self._df_log = load_data(self._log_file, self._log_format, self._regex, self._should_stop)
+        log_df = load_data(log_file, self._log_format, self._regex, should_stop)
 
-        contents = self._df_log["Content"].to_list()
+        contents = log_df["Content"].to_list()
 
-        group_len, tuple_vector, frequency_vector = self._get_frequency_vector(contents, self._delimiter)
+        group_len, tuple_vector, frequency_vector = self._get_frequency_vector(
+            contents, self._delimiter
+        )
 
         (
             sorted_tuple_vector,
@@ -298,7 +301,7 @@ class BrainLogParser(BaseLogParser):
 
         template_set = {}
         for key in group_len:
-            if self._should_stop():
+            if should_stop():
                 raise InterruptedError
 
             tree = TupleTree(
@@ -311,13 +314,19 @@ class BrainLogParser(BaseLogParser):
             root_set_detail_id, root_set, root_set_detail = tree.find_root(0)
 
             root_set_detail_id = tree.up_split(root_set_detail_id, root_set)
-            parse_result = tree.down_split(root_set_detail_id, self._threshold, root_set_detail)
+            parse_result = tree.down_split(
+                root_set_detail_id, self._threshold, root_set_detail
+            )
             template_set.update(self._extract_templates(parse_result))
 
-        self._output_result(template_set)
+        self._output_result(
+            log_df, structured_table_name, templates_table_name, keep_para, template_set
+        )
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
-        return ParseResult(self._log_file, self._df_log.height, self._structured_table_name, self._templates_table_name)
+        return ParseResult(
+            log_file, log_df.height, structured_table_name, templates_table_name
+        )
 
     @staticmethod
     def name() -> str:

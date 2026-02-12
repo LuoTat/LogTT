@@ -15,8 +15,10 @@
 # =========================================================================
 
 
+from collections.abc import Callable
 from datetime import datetime
 from functools import reduce
+from pathlib import Path
 
 import polars as pl
 
@@ -38,52 +40,38 @@ class Event:
 
 @parser_register
 class AELLogParser(BaseLogParser):
-    def __init__(
-        self,
-        log_id,
-        log_file,
-        log_format,
-        regex,
-        structured_table_name,
-        templates_table_name,
-        should_stop,
-        progress_callback=None,
-        keep_para=False,
-        min_event_count=2,
-        merge_percent=0.5,
-    ):
+    def __init__(self, log_format, regex, min_event_count=2, merge_percent=0.5):
         """
         Attributes
         ----------
             min_event_count : minimum number of events to trigger reconciliation
             merge_percent : maximum percentage of difference to merge two events
         """
-        super().__init__(
-            log_id,
-            log_file,
-            log_format,
-            regex,
-            structured_table_name,
-            templates_table_name,
-            should_stop,
-            progress_callback,
-            keep_para,
-        )
+        super().__init__(log_format, regex)
 
         self._min_event_count = min_event_count
         self._merge_percent = merge_percent
         self._merged_events = []
         self._bins = {}
-        self._df_log = None
 
-    def _output_result(self):
-        log_templates = [""] * self._df_log.height
+    def _output_result(
+        self,
+        log_df: pl.DataFrame,
+        structured_table_name: str,
+        templates_table_name: str,
+        keep_para: bool,
+    ):
+        log_templates = [""] * log_df.height
         for event in self._merged_events:
             for log_idx in event.logs:
                 log_templates[log_idx] = event.event_str
 
         output_result(
-            self._df_log, log_templates, self._structured_table_name, self._templates_table_name, self._keep_para
+            log_df,
+            log_templates,
+            structured_table_name,
+            templates_table_name,
+            keep_para,
         )
 
     @staticmethod
@@ -118,7 +106,9 @@ class AELLogParser(BaseLogParser):
                     for e2 in value["Events"]:
                         if e2.merged:
                             continue
-                        if self._has_diff(e1.event_tokens, e2.event_tokens, self._merge_percent):
+                        if self._has_diff(
+                            e1.event_tokens, e2.event_tokens, self._merge_percent
+                        ):
                             to_be_merged[-1].append(e2)
                             e2.merged = True
                 for group in to_be_merged:
@@ -127,12 +117,12 @@ class AELLogParser(BaseLogParser):
             else:
                 self._merged_events.extend(value["Events"])
 
-    def _categorize(self):
+    def _categorize(self, log_df: pl.DataFrame):
         """
         Abstract templates bin by bin
         使用 dict 做 O(1) 查找替代线性扫描，提前提取 Content 列避免逐次跨语言取值
         """
-        contents = self._df_log["Content"].to_list()
+        contents = log_df["Content"].to_list()
         for value in self._bins.values():
             value["Events"] = []
             event_map: dict[str, Event] = {}
@@ -146,7 +136,7 @@ class AELLogParser(BaseLogParser):
                     event_map[log] = event
                     value["Events"].append(event)
 
-    def _tokenize(self):
+    def _tokenize(self, log_df: pl.DataFrame):
         """
         Put logs into bins according to (# of '<*>', # of token)
         使用 Polars 向量化操作替代 Python 循环
@@ -154,8 +144,8 @@ class AELLogParser(BaseLogParser):
         groups = (
             pl.DataFrame(
                 {
-                    "token_count": self._df_log["Content"].str.count_matches(r"\S+"),
-                    "para_count": self._df_log["Content"].str.count_matches(r"<\*>"),
+                    "token_count": log_df["Content"].str.count_matches(r"\S+"),
+                    "para_count": log_df["Content"].str.count_matches(r"<\*>"),
                 }
             )
             .with_row_index("idx")
@@ -165,20 +155,32 @@ class AELLogParser(BaseLogParser):
         for row in groups.iter_rows():
             self._bins[(row[0], row[1])] = {"Logs": row[2]}
 
-    def parse(self) -> ParseResult:
-        print(f"Parsing file: {self._log_file}")
+    def parse(
+        self,
+        log_file: Path,
+        structured_table_name: str,
+        templates_table_name: str,
+        should_stop: Callable[[], bool],
+        keep_para: bool = False,
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> ParseResult:
+        print(f"Parsing file: {log_file}")
         start_time = datetime.now()
 
-        self._df_log = load_data(self._log_file, self._log_format, self._regex, self._should_stop)
+        log_df = load_data(log_file, self._log_format, self._regex, should_stop)
 
-        self._tokenize()
-        self._categorize()
+        self._tokenize(log_df)
+        self._categorize(log_df)
         self._reconcile()
 
-        self._output_result()
+        self._output_result(
+            log_df, structured_table_name, templates_table_name, keep_para
+        )
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
-        return ParseResult(self._log_file, self._df_log.height, self._structured_table_name, self._templates_table_name)
+        return ParseResult(
+            log_file, log_df.height, structured_table_name, templates_table_name
+        )
 
     @staticmethod
     def name() -> str:

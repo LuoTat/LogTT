@@ -88,16 +88,14 @@ class LogExtractTask(QObject):
     @Slot()
     def run(self):
         try:
-            result = self._logparser_type(
-                self._log_id,
+            result = self._logparser_type(self._log_format, self._regex).parse(
                 self._log_file,
-                self._log_format,
-                self._regex,
                 self._structured_table_name,
                 self._templates_table_name,
                 lambda: QThread.currentThread().isInterruptionRequested(),
+                False,
                 lambda progress: self.progress.emit(self._log_id, progress),
-            ).parse()
+            )
 
             # 提取完成
             self.finished.emit(
@@ -203,7 +201,10 @@ class LogTableModel(QAbstractTableModel):
         orientation: Qt.Orientation,
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
-        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
+        if (
+            orientation == Qt.Orientation.Horizontal
+            and role == Qt.ItemDataRole.DisplayRole
+        ):
             return self.tr(self._TABLE_HEADERS[section])
         return None
 
@@ -232,7 +233,9 @@ class LogTableModel(QAbstractTableModel):
 
         return None
 
-    def sort(self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder) -> None:
+    def sort(
+        self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder
+    ) -> None:
         # 无效列索引
         if column < 0:
             return
@@ -379,7 +382,9 @@ class LogTableModel(QAbstractTableModel):
         if (row := self._get_row(log_id)) >= 0:
             self._set_df_data(row, SqlColumn.IS_EXTRACTED, True)
             self._set_df_data(row, SqlColumn.LINE_COUNT, line_count)
-            self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
+            self.dataChanged.emit(
+                self.index(row, 0), self.index(row, self.columnCount() - 1)
+            )
 
         # 发出完成信号
         self.extractFinished.emit(log_id, line_count)
@@ -392,7 +397,9 @@ class LogTableModel(QAbstractTableModel):
 
         # 更新ui状态
         if (row := self._get_row(log_id)) >= 0:
-            self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
+            self.dataChanged.emit(
+                self.index(row, 0), self.index(row, self.columnCount() - 1)
+            )
         # 发出中断信号
         self.extractInterrupted.emit(log_id)
 
@@ -404,7 +411,9 @@ class LogTableModel(QAbstractTableModel):
 
         # 更新ui状态
         if (row := self._get_row(log_id)) >= 0:
-            self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
+            self.dataChanged.emit(
+                self.index(row, 0), self.index(row, self.columnCount() - 1)
+            )
         # 发出错误信号
         self.extractError.emit(log_id, error_msg)
 
@@ -414,7 +423,9 @@ class LogTableModel(QAbstractTableModel):
         self._extract_tasks[log_id].progress = progress
         # 更新ui状态
         if (row := self._get_row(log_id)) >= 0:
-            self.dataChanged.emit(self.index(row, LogColumn.PROGRESS), self.index(row, LogColumn.PROGRESS))
+            self.dataChanged.emit(
+                self.index(row, LogColumn.PROGRESS), self.index(row, LogColumn.PROGRESS)
+            )
 
     # ==================== 公共方法 ====================
 
@@ -531,7 +542,9 @@ class LogTableModel(QAbstractTableModel):
             return
 
         self.beginResetModel()
-        self._df = [row for row in self._df if kw in Path(row[SqlColumn.LOG_URI]).stem.lower()]
+        self._df = [
+            row for row in self._df if kw in Path(row[SqlColumn.LOG_URI]).stem.lower()
+        ]
         self.endResetModel()
 
     def clear_search(self):

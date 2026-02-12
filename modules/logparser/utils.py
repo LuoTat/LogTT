@@ -17,12 +17,17 @@ def _get_parameter_list(row: dict[str, str]) -> list[str]:
     template_regex = "^" + template_regex.replace(r"\<\*\>", "(.*?)") + "$"
     parameter_list = re.findall(template_regex, row["Content"])
     parameter_list = parameter_list[0] if parameter_list else ()
-    parameter_list = list(parameter_list) if isinstance(parameter_list, tuple) else [parameter_list]
+    parameter_list = (
+        list(parameter_list) if isinstance(parameter_list, tuple) else [parameter_list]
+    )
     return parameter_list
 
 
 def _log_to_dataframe(
-    log_file: Path, headers: list[str], format_regex: re.Pattern, should_stop: Callable[[], bool]
+    log_file: Path,
+    headers: list[str],
+    format_regex: re.Pattern,
+    should_stop: Callable[[], bool],
 ) -> pl.DataFrame:
     """Function to transform log file to dataframe"""
     log_messages = {h: [] for h in headers}
@@ -62,19 +67,21 @@ def _generate_logformat_regex(log_format: str) -> tuple[list[str], re.Pattern]:
     return headers, regex
 
 
-def load_data(log_file: Path, log_format: str, regex: list[str], should_stop: Callable[[], bool]) -> pl.DataFrame:
+def load_data(
+    log_file: Path, log_format: str, regex: list[str], should_stop: Callable[[], bool]
+) -> pl.DataFrame:
     """Load and preprocess log data into a Polars DataFrame"""
     headers, format_regex = _generate_logformat_regex(log_format)
-    df_log = _log_to_dataframe(log_file, headers, format_regex, should_stop)
+    log_df = _log_to_dataframe(log_file, headers, format_regex, should_stop)
     # 使用 Polars 原生字符串操作批量预处理，利用 Rust 多核并行加速
     content_col = pl.col("Content")
     for rex in regex:
         content_col = content_col.str.replace_all(rex, "<*>")
-    return df_log.with_columns(content_col)
+    return log_df.with_columns(content_col)
 
 
 def output_result(
-    df_log: pl.DataFrame,
+    log_df: pl.DataFrame,
     log_templates: list[str],
     structured_table_name: str,
     templates_table_name: str,
@@ -82,17 +89,17 @@ def output_result(
 ) -> None:
     """Output structured log data and templates to DuckDB tables"""
 
-    df_log = df_log.with_columns(
+    log_df = log_df.with_columns(
         pl.Series("EventTemplate", log_templates),
     )
     if keep_para:
-        df_log = df_log.with_columns(
+        log_df = log_df.with_columns(
             pl.struct(["EventTemplate", "Content"])
             .map_elements(_get_parameter_list, return_dtype=pl.List(pl.String))
             .alias("ParameterList")
         )
     df_templates = (
-        df_log["EventTemplate"]
+        log_df["EventTemplate"]
         .value_counts()
         .rename({"count": "Occurrences"})
         .select(["EventTemplate", "Occurrences"])
@@ -100,5 +107,5 @@ def output_result(
     )
 
     duckdb_service = DuckDBService()
-    duckdb_service.create_table_from_polars(df_log, structured_table_name)
+    duckdb_service.create_table_from_polars(log_df, structured_table_name)
     duckdb_service.create_table_from_polars(df_templates, templates_table_name)
