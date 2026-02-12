@@ -70,8 +70,12 @@ class LogManagePage(QWidget):
         self._search_edit = SearchLineEdit(self)
         self._search_edit.setPlaceholderText(self.tr("按名称搜索"))
         self._search_edit.setClearButtonEnabled(True)
-        self._search_edit.returnPressed.connect(lambda: self._log_table_model.search_by_name(self._search_edit.text()))
-        self._search_edit.searchSignal.connect(lambda keyword: self._log_table_model.search_by_name(keyword))
+        self._search_edit.returnPressed.connect(
+            lambda: self._log_table_model.search_by_name(self._search_edit.text())
+        )
+        self._search_edit.searchSignal.connect(
+            lambda keyword: self._log_table_model.search_by_name(keyword)
+        )
         self._search_edit.clearSignal.connect(self._log_table_model.clear_search)
 
         self._refresh_button = PushButton(FluentIcon.SYNC, self.tr("刷新"), self)
@@ -96,7 +100,9 @@ class LogManagePage(QWidget):
         # 启用排序，为了不默认排序任何列必须在setModel之前设置
         self._table_view.setSortingEnabled(True)
         # 消除显示的排序指示器
-        self._table_view.horizontalHeader().setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
+        self._table_view.horizontalHeader().setSortIndicator(
+            -1, Qt.SortOrder.AscendingOrder
+        )
 
         self._table_view.setModel(self._log_table_model)
 
@@ -108,12 +114,18 @@ class LogManagePage(QWidget):
         self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
         # 设置进度条委托
         self._progress_delegate = ProgressBarDelegate(self._table_view)
-        self._table_view.setItemDelegateForColumn(LogColumn.PROGRESS, self._progress_delegate)
+        self._table_view.setItemDelegateForColumn(
+            LogColumn.PROGRESS, self._progress_delegate
+        )
         # 设置右键菜单
         self._table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self._table_view.customContextMenuRequested.connect(self._on_context_menu_requested)
+        self._table_view.customContextMenuRequested.connect(
+            self._on_context_menu_requested
+        )
         # 连接列宽变化信号，保存列宽
-        self._table_view.horizontalHeader().sectionResized.connect(self._on_column_resized)
+        self._table_view.horizontalHeader().sectionResized.connect(
+            self._on_column_resized
+        )
 
         # 恢复列宽
         self._restore_column_widths()
@@ -132,7 +144,10 @@ class LogManagePage(QWidget):
     def _on_column_resized(self):
         """保存列宽到配置"""
         header = self._table_view.horizontalHeader()
-        widths = [header.sectionSize(col) for col in range(self._log_table_model.columnCount())]
+        widths = [
+            header.sectionSize(col)
+            for col in range(self._log_table_model.columnCount())
+        ]
         appcfg.set(appcfg.logTableColumnWidths, widths)
 
     @Slot(QPoint)
@@ -158,7 +173,9 @@ class LogManagePage(QWidget):
             menu.addAction(view_log_action)
 
             view_template_action = Action(FluentIcon.BOOK_SHELF, self.tr("查看模板"))
-            view_template_action.triggered.connect(lambda: self._on_view_template(index))
+            view_template_action.triggered.connect(
+                lambda: self._on_view_template(index)
+            )
             menu.addAction(view_template_action)
         elif status == LogStatus.NOT_EXTRACTED:
             # 未提取的日志
@@ -168,7 +185,9 @@ class LogManagePage(QWidget):
         else:
             # 正在提取的日志
             stop_action = Action(FluentIcon.CANCEL, self.tr("终止提取"))
-            stop_action.triggered.connect(lambda: self._log_table_model.request_interrupt_task(index))
+            stop_action.triggered.connect(
+                lambda: self._log_table_model.request_interrupt_task(index)
+            )
             menu.addAction(stop_action)
 
         menu.addSeparator()
@@ -200,7 +219,11 @@ class LogManagePage(QWidget):
         if dialog.exec():
             # 请求模型执行提取
             self._log_table_model.request_extract(
-                index, dialog.logparser_type, dialog.format_type, dialog.log_format, dialog.log_regex
+                index,
+                dialog.logparser_type,
+                dialog.format_type,
+                dialog.log_format,
+                dialog.log_regex,
             )
 
     @Slot(QModelIndex)

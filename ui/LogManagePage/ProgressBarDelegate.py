@@ -28,7 +28,9 @@ class ProgressBarDelegate(QStyledItemDelegate):
         progress_bar.textVisible = True
 
         # 绘制进度条
-        QApplication.style().drawControl(QStyle.ControlElement.CE_ProgressBar, progress_bar, painter)
+        QApplication.style().drawControl(
+            QStyle.ControlElement.CE_ProgressBar, progress_bar, painter
+        )
 
     def sizeHint(self, option, index):
         return QSize(256, 16)

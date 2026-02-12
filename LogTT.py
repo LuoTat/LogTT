@@ -7,7 +7,9 @@ from modules.app_config import appcfg
 from ui import APPMainWindow
 
 if __name__ == "__main__":
-    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_DontCreateNativeWidgetSiblings)
 
     app = QApplication(sys.argv)
@@ -15,7 +17,7 @@ if __name__ == "__main__":
 
     locale = appcfg.get(appcfg.language).value
     translator = QTranslator()
-    a = translator.load(f"./resource/i18n/{locale.name()}.qm")
+    a = translator.load(f"resource/i18n/{locale.name()}.qm")
     app.installTranslator(translator)
 
     w = APPMainWindow()

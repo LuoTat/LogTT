@@ -41,12 +41,16 @@ class ColumnFilterMessageBox(MessageBoxBase):
     # ==================== 私有方法 ====================
 
     def _init_model(self):
-        self._csv_filter_table_model = CsvFilterTableModel(self._table_name, self._column_name, self._all_filters, self)
+        self._csv_filter_table_model = CsvFilterTableModel(
+            self._table_name, self._column_name, self._all_filters, self
+        )
         self._csv_filter_table_model.filterChanged.connect(self._on_filter_changed)
 
     def _init_title(self):
         """初始化标题"""
-        self._title_label = SubtitleLabel(self.tr("'{0}' 的本地筛选器").format(self._column_name), self)
+        self._title_label = SubtitleLabel(
+            self.tr("'{0}' 的本地筛选器").format(self._column_name), self
+        )
         self.viewLayout.addWidget(self._title_label)
 
     def _init_search_edit(self):
@@ -72,7 +76,9 @@ class ColumnFilterMessageBox(MessageBoxBase):
         # 设置每次只选择一行
         self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
         # 设置水平表头拉伸填充
-        self._table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self._table_view.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         # 连接点击信号，使点击整行都能触发复选框
         self._table_view.clicked.connect(self._on_table_view_clicked)
 

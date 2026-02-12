@@ -91,11 +91,15 @@ class LogViewPage(QWidget):
         self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
         # 设置表格单元格右键菜单
         self._table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self._table_view.customContextMenuRequested.connect(self._on_context_menu_requested)
+        self._table_view.customContextMenuRequested.connect(
+            self._on_context_menu_requested
+        )
         # 设置表头右键菜单
         header = self._table_view.horizontalHeader()
         header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        header.customContextMenuRequested.connect(self._on_header_context_menu_requested)
+        header.customContextMenuRequested.connect(
+            self._on_header_context_menu_requested
+        )
 
         self._main_layout.addWidget(self._table_view)
 
@@ -108,7 +112,9 @@ class LogViewPage(QWidget):
             if total == filtered:
                 self._info_label.setText(self.tr("共 {0} 行").format(f"{total:,}"))
             else:
-                self._info_label.setText(self.tr("显示 {0} / {1} 行").format(f"{filtered:,}", f"{total:,}"))
+                self._info_label.setText(
+                    self.tr("显示 {0} / {1} 行").format(f"{filtered:,}", f"{total:,}")
+                )
         else:
             self._info_label.setText("")
 
@@ -126,7 +132,9 @@ class LogViewPage(QWidget):
     def _on_log_selected(self, index: int):
         # 从模型获取数据
         model_index = self._extracted_log_list_model.index(index)
-        structured_table_name = model_index.data(ExtractedLogListModel.STRUCTURED_TABLE_NAME_ROLE)
+        structured_table_name = model_index.data(
+            ExtractedLogListModel.STRUCTURED_TABLE_NAME_ROLE
+        )
 
         # 检查表是否存在
         duckdb_service = DuckDBService()
@@ -153,14 +161,20 @@ class LogViewPage(QWidget):
         menu = RoundMenu(parent=self._table_view)
 
         # 设置本地筛选器
-        filter_action = Action(FluentIcon.FILTER, self.tr("设置 '{0}' 的筛选器").format(column_name))
+        filter_action = Action(
+            FluentIcon.FILTER, self.tr("设置 '{0}' 的筛选器").format(column_name)
+        )
         filter_action.triggered.connect(lambda: self._on_set_column_filter(column_name))
         menu.addAction(filter_action)
 
         # 如果该列有过滤，添加清除选项
         if self._csv_file_table_model.is_column_filtered(column_name):
-            clear_action = Action(FluentIcon.DELETE, self.tr("清除 '{0}' 的筛选器").format(column_name))
-            clear_action.triggered.connect(lambda: self._on_clear_column_filter(column_name))
+            clear_action = Action(
+                FluentIcon.DELETE, self.tr("清除 '{0}' 的筛选器").format(column_name)
+            )
+            clear_action.triggered.connect(
+                lambda: self._on_clear_column_filter(column_name)
+            )
             menu.addAction(clear_action)
 
         menu.addSeparator()
@@ -208,10 +222,15 @@ class LogViewPage(QWidget):
         """设置列过滤"""
         all_filters = self._csv_file_table_model.get_all_filters()
         dialog = ColumnFilterMessageBox(
-            self._csv_file_table_model.table_name(), column_name, all_filters, self.window()
+            self._csv_file_table_model.table_name(),
+            column_name,
+            all_filters,
+            self.window(),
         )
         if dialog.exec():
-            self._csv_file_table_model.set_column_filter(column_name, dialog.current_filter)
+            self._csv_file_table_model.set_column_filter(
+                column_name, dialog.current_filter
+            )
             self._update_info_label()
 
     @Slot(str)

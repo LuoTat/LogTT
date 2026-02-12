@@ -1,7 +1,13 @@
 from typing import Any
 
 import polars
-from PySide6.QtCore import QT_TRANSLATE_NOOP, QAbstractTableModel, QModelIndex, Qt, Signal
+from PySide6.QtCore import (
+    QT_TRANSLATE_NOOP,
+    QAbstractTableModel,
+    QModelIndex,
+    Qt,
+    Signal,
+)
 
 from modules.duckdb_service import DuckDBService
 
@@ -15,7 +21,10 @@ class CsvFilterTableModel(QAbstractTableModel):
     _PAGE_SIZE = 20
 
     # 显示的表头：值列同时显示复选框和值
-    _TABLE_HEADERS = [QT_TRANSLATE_NOOP("CsvFilterTableModel", "值"), QT_TRANSLATE_NOOP("CsvFilterTableModel", "计数")]
+    _TABLE_HEADERS = [
+        QT_TRANSLATE_NOOP("CsvFilterTableModel", "值"),
+        QT_TRANSLATE_NOOP("CsvFilterTableModel", "计数"),
+    ]
 
     # UI 控制信号
     filterChanged = Signal(object)  # 传递当前选中的值列表
@@ -68,7 +77,10 @@ class CsvFilterTableModel(QAbstractTableModel):
         orientation: Qt.Orientation,
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
-        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
+        if (
+            orientation == Qt.Orientation.Horizontal
+            and role == Qt.ItemDataRole.DisplayRole
+        ):
             return self.tr(self._TABLE_HEADERS[section])
         return None
 
@@ -99,11 +111,17 @@ class CsvFilterTableModel(QAbstractTableModel):
             if col != 0:
                 return None
             row_value = str(self._cache_df.item(row - self._cache_offset, 0))
-            return Qt.CheckState.Checked if row_value in self._current_filter else Qt.CheckState.Unchecked
+            return (
+                Qt.CheckState.Checked
+                if row_value in self._current_filter
+                else Qt.CheckState.Unchecked
+            )
 
         return None
 
-    def setData(self, index: QModelIndex, value: Any, role: int = Qt.ItemDataRole.EditRole) -> bool:
+    def setData(
+        self, index: QModelIndex, value: Any, role: int = Qt.ItemDataRole.EditRole
+    ) -> bool:
         if not index.isValid():
             return False
 
@@ -130,13 +148,15 @@ class CsvFilterTableModel(QAbstractTableModel):
         self._cache_offset = max(0, row - self._PAGE_SIZE)
 
         try:
-            self._cache_df, self._total_row_count = self._duckdb_service.fetch_filter_table(
-                self._table_name,
-                self._column_name,
-                self._cache_offset,
-                self._cache_limit,
-                self._keyword,
-                self._other_filters,
+            self._cache_df, self._total_row_count = (
+                self._duckdb_service.fetch_filter_table(
+                    self._table_name,
+                    self._column_name,
+                    self._cache_offset,
+                    self._cache_limit,
+                    self._keyword,
+                    self._other_filters,
+                )
             )
 
         except Exception as e:

@@ -51,7 +51,10 @@ class CsvFileTableModel(QAbstractTableModel):
         orientation: Qt.Orientation,
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
-        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
+        if (
+            orientation == Qt.Orientation.Horizontal
+            and role == Qt.ItemDataRole.DisplayRole
+        ):
             return self._columns[section]
         return None
 
@@ -85,8 +88,13 @@ class CsvFileTableModel(QAbstractTableModel):
         self._cache_offset = max(0, row - self._PAGE_SIZE)
 
         try:
-            self._cache_df, self._filtered_row_count = self._duckdb_service.fetch_csv_table(
-                self._table_name, self._cache_offset, self._cache_limit, self._filters
+            self._cache_df, self._filtered_row_count = (
+                self._duckdb_service.fetch_csv_table(
+                    self._table_name,
+                    self._cache_offset,
+                    self._cache_limit,
+                    self._filters,
+                )
             )
         except Exception as e:
             print(f"Error fetching data: {e}")

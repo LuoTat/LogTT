@@ -106,7 +106,9 @@ class AddLogMessageBox(MessageBoxBase):
         card_layout.addWidget(file_label)
 
         select_file_layout = QHBoxLayout()
-        self._select_file_button = PushButton(FluentIcon.FOLDER_ADD, self.tr("选择文件"), card)
+        self._select_file_button = PushButton(
+            FluentIcon.FOLDER_ADD, self.tr("选择文件"), card
+        )
         self._select_file_button.clicked.connect(self._on_select_file)
 
         self._file_path_label = BodyLabel(self.tr("未选择文件"), card)
@@ -137,10 +139,14 @@ class AddLogMessageBox(MessageBoxBase):
 
         if self._selected_file_path:
             self._file_path_label.setText(Path(self._selected_file_path).name)
-            self._file_path_label.setStyleSheet("color: #0078d4; padding-left: 8px; font-weight: 500;")
+            self._file_path_label.setStyleSheet(
+                "color: #0078d4; padding-left: 8px; font-weight: 500;"
+            )
             self._file_path_label.setToolTip(self._selected_file_path)
             self._file_path_label.installEventFilter(
-                ToolTipFilter(self._file_path_label, showDelay=300, position=ToolTipPosition.RIGHT)
+                ToolTipFilter(
+                    self._file_path_label, showDelay=300, position=ToolTipPosition.RIGHT
+                )
             )
 
     # ==================== 公共方法 ====================

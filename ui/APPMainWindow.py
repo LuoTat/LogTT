@@ -36,7 +36,9 @@ class APPMainWindow(FluentWindow):
         self.setting_page.enableTransparentBackground()
 
         self.log_manage_page.viewLogRequested.connect(self._on_view_log_requested)
-        self.log_manage_page.viewTemplateRequested.connect(self._on_view_template_requested)
+        self.log_manage_page.viewTemplateRequested.connect(
+            self._on_view_template_requested
+        )
 
         self._init_window()
         self._init_navigation()
@@ -69,18 +71,29 @@ class APPMainWindow(FluentWindow):
         screen = QApplication.primaryScreen()
         if screen:
             geo = screen.availableGeometry()
-            self.move(geo.width() // 2 - self.width() // 2, geo.height() // 2 - self.height() // 2)
+            self.move(
+                geo.width() // 2 - self.width() // 2,
+                geo.height() // 2 - self.height() // 2,
+            )
 
     def _init_navigation(self):
-        self.addSubInterface(self.log_manage_page, FluentIcon.LIBRARY, self.tr("日志管理"))
-        self.addSubInterface(self.log_view_page, FluentIcon.DOCUMENT, self.tr("日志查看"))
-        self.addSubInterface(self.template_view_page, FluentIcon.PIE_SINGLE, self.tr("模板查看"))
+        self.addSubInterface(
+            self.log_manage_page, FluentIcon.LIBRARY, self.tr("日志管理")
+        )
+        self.addSubInterface(
+            self.log_view_page, FluentIcon.DOCUMENT, self.tr("日志查看")
+        )
+        self.addSubInterface(
+            self.template_view_page, FluentIcon.PIE_SINGLE, self.tr("模板查看")
+        )
         # self.navigationInterface.addSeparator()
 
         # 主题切换按钮
         self.navigationInterface.addWidget(
             routeKey="theme_navigation_button",
-            widget=NavigationPushButton(FluentIcon.CONSTRACT, self.tr("主题切换"), False),
+            widget=NavigationPushButton(
+                FluentIcon.CONSTRACT, self.tr("主题切换"), False
+            ),
             onClick=self._on_toggle_theme,
             position=NavigationItemPosition.BOTTOM,
         )
@@ -91,9 +104,15 @@ class APPMainWindow(FluentWindow):
             onClick=self._on_avatar,
             position=NavigationItemPosition.BOTTOM,
         )
-        self.addSubInterface(self.setting_page, FluentIcon.SETTING, self.tr("设置"), NavigationItemPosition.BOTTOM)
+        self.addSubInterface(
+            self.setting_page,
+            FluentIcon.SETTING,
+            self.tr("设置"),
+            NavigationItemPosition.BOTTOM,
+        )
 
-    def _on_toggle_theme(self):
+    @staticmethod
+    def _on_toggle_theme():
         if not isDarkTheme():
             setTheme(Theme.DARK, save=True)
         else:

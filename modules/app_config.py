@@ -16,8 +16,8 @@ from .constants import CONFIG_PATH
 class Language(Enum):
     """Language enumeration"""
 
-    CHINESE_SIMPLIFIED = QLocale(QLocale.Chinese, QLocale.China)
-    ENGLISH = QLocale(QLocale.English, QLocale.UnitedStates)
+    CHINESE_SIMPLIFIED = QLocale(QLocale.Language.Chinese, QLocale.Country.China)
+    ENGLISH = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
     AUTO = QLocale()
 
 
@@ -35,7 +35,12 @@ class AppConfig(QConfig):
     """应用配置类"""
 
     language = OptionsConfigItem(
-        "MainWindow", "Language", Language.AUTO, OptionsValidator(Language), LanguageSerializer(), restart=True
+        "MainWindow",
+        "Language",
+        Language.AUTO,
+        OptionsValidator(Language),
+        LanguageSerializer(),
+        restart=True,
     )
 
     # LogManagePage 表格列宽

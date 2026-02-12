@@ -132,7 +132,9 @@ class ExtractLogMessageBox(MessageBoxBase):
         self._logparser_combo_box = ModelComboBox(card)
         self._logparser_combo_box.setModel(self._logparser_list_model)
         self._logparser_combo_box.setPlaceholderText(self.tr("请选择提取算法"))
-        self._logparser_combo_box.currentIndexChanged.connect(self._on_log_parser_selected)
+        self._logparser_combo_box.currentIndexChanged.connect(
+            self._on_log_parser_selected
+        )
         card_layout.addWidget(self._logparser_combo_box)
 
         self._hint_label = BodyLabel(card)
@@ -167,7 +169,9 @@ class ExtractLogMessageBox(MessageBoxBase):
         self._format_type_combo_box = ModelComboBox(card)
         self._format_type_combo_box.setModel(self._format_type_list_model)
         self._format_type_combo_box.setPlaceholderText(self.tr("请选择日志格式类型"))
-        self._format_type_combo_box.currentIndexChanged.connect(self._on_format_type_selected)
+        self._format_type_combo_box.currentIndexChanged.connect(
+            self._on_format_type_selected
+        )
         card_layout.addWidget(self._format_type_combo_box)
 
         # log_format展示框
@@ -210,7 +214,9 @@ class ExtractLogMessageBox(MessageBoxBase):
     @Slot(int)
     def _on_log_parser_selected(self, index: int):
         model_index = self._logparser_list_model.index(index)
-        parser_discription = model_index.data(LogParserListModel.LOG_PARSER_DISCRIPTION_ROLE)
+        parser_discription = model_index.data(
+            LogParserListModel.LOG_PARSER_DISCRIPTION_ROLE
+        )
 
         self._hint_label.setText(parser_discription)
 
@@ -228,23 +234,31 @@ class ExtractLogMessageBox(MessageBoxBase):
     @property
     def logparser_type(self) -> type[BaseLogParser]:
         """获取用户选择的提取算法类型"""
-        model_index = self._logparser_list_model.index(self._logparser_combo_box.currentIndex())
+        model_index = self._logparser_list_model.index(
+            self._logparser_combo_box.currentIndex()
+        )
         return model_index.data(LogParserListModel.LOG_PARSER_TYPE_ROLE)
 
     @property
     def format_type(self) -> str:
         """获取用户选择的格式类型名称"""
-        model_index = self._format_type_list_model.index(self._format_type_combo_box.currentIndex())
+        model_index = self._format_type_list_model.index(
+            self._format_type_combo_box.currentIndex()
+        )
         return model_index.data()
 
     @property
     def log_format(self) -> str:
         """获取用户选择的日志格式"""
-        model_index = self._format_type_list_model.index(self._format_type_combo_box.currentIndex())
+        model_index = self._format_type_list_model.index(
+            self._format_type_combo_box.currentIndex()
+        )
         return model_index.data(FormatTypeListModel.LOG_FORMAT_ROLE)
 
     @property
     def log_regex(self) -> list[str]:
         """获取用户选择的正则表达式列表"""
-        model_index = self._format_type_list_model.index(self._format_type_combo_box.currentIndex())
+        model_index = self._format_type_list_model.index(
+            self._format_type_combo_box.currentIndex()
+        )
         return model_index.data(FormatTypeListModel.LOG_FORMAT_REGEX_ROLE)

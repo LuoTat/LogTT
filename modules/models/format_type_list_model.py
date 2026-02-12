@@ -5,7 +5,11 @@ from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
 from modules.app_config import appcfg
 
 buildin_log_formats = [
-    ("HDFS", "<Date> <Time> <Pid> <Level> <Component>: <Content>", [r"blk_-?\d+", r"(\d+\.){3}\d+(:\d+)?"]),
+    (
+        "HDFS",
+        "<Date> <Time> <Pid> <Level> <Component>: <Content>",
+        [r"blk_-?\d+", r"(\d+\.){3}\d+(:\d+)?"],
+    ),
     (
         "Hadoop",
         r"<Date> <Time> <Level> \[<Process>\] <Component>: <Content>",
@@ -49,7 +53,11 @@ buildin_log_formats = [
     (
         "Android",
         "<Date> <Time>  <Pid>  <Tid> <Level> <Component>: <Content>",
-        [r"(/[\w-]+)+", r"([\w-]+\.){2,}[\w-]+", r"\b(\-?\+?\d+)\b|\b0[Xx][a-fA-F\d]+\b|\b[a-fA-F\d]{4,}\b"],
+        [
+            r"(/[\w-]+)+",
+            r"([\w-]+\.){2,}[\w-]+",
+            r"\b(\-?\+?\d+)\b|\b0[Xx][a-fA-F\d]+\b|\b[a-fA-F\d]{4,}\b",
+        ],
     ),
     (
         "HealthApp",
@@ -64,7 +72,12 @@ buildin_log_formats = [
     (
         "Proxifier",
         r"\[<Time>\] <Program> - <Content>",
-        [r"<\d+\ssec", r"([\w-]+\.)+[\w-]+(:\d+)?", r"\d{2}:\d{2}(:\d{2})*", r"[KGTM]B"],
+        [
+            r"<\d+\ssec",
+            r"([\w-]+\.)+[\w-]+(:\d+)?",
+            r"\d{2}:\d{2}(:\d{2})*",
+            r"[KGTM]B",
+        ],
     ),
     (
         "OpenSSH",
