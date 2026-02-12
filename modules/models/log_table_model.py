@@ -180,10 +180,9 @@ class LogTableModel(QAbstractTableModel):
         super().__init__(parent)
 
         # 创建log表
-        self._duckdb_service = DuckDBService()
-        self._duckdb_service.create_log_table_if_not_exists()
+        DuckDBService.create_log_table_if_not_exists()
         # 一次性获取整个表的数据到内存中
-        self._df: list[tuple] = self._duckdb_service.get_log_table()
+        self._df: list[tuple] = DuckDBService.get_log_table()
         # 存储正在提取的任务信息: log_id -> LogExtractTaskInfo
         self._extract_tasks: dict[int, LogExtractTaskInfo] = {}
 
@@ -344,7 +343,7 @@ class LogTableModel(QAbstractTableModel):
 
     def _set_sql_data(self, log_id: int, column: SqlColumn, value: object):
         """同步数据库"""
-        self._duckdb_service.update_log(log_id, self._SQL_HEADERS[column], value)
+        DuckDBService.update_log(log_id, self._SQL_HEADERS[column], value)
 
     def _interrupt_task(self, index: QModelIndex):
         """中断提取任务"""
@@ -433,7 +432,7 @@ class LogTableModel(QAbstractTableModel):
         """请求添加日志记录"""
         # 更新数据库和ui状态
         try:
-            self._duckdb_service.insert_log(log_type, log_uri, extract_method)
+            DuckDBService.insert_log(log_type, log_uri, extract_method)
             self.refresh()
             self.addSuccess.emit()
         except duckdb.ConstraintException as e:
@@ -456,10 +455,10 @@ class LogTableModel(QAbstractTableModel):
             templates_table_name = self._df[row][SqlColumn.TEMPLATES_TABLE_NAME]
 
             # 删除关联的结构化表和模板表
-            self._duckdb_service.drop_table(structured_table_name)
-            self._duckdb_service.drop_table(templates_table_name)
+            DuckDBService.drop_table(structured_table_name)
+            DuckDBService.drop_table(templates_table_name)
             # 删除日志记录
-            self._duckdb_service.delete_log(log_id)
+            DuckDBService.delete_log(log_id)
 
             self.beginRemoveRows(QModelIndex(), row, row)
             self._df.pop(row)
@@ -555,5 +554,5 @@ class LogTableModel(QAbstractTableModel):
     def refresh(self):
         """刷新模型数据"""
         self.beginResetModel()
-        self._df = self._duckdb_service.get_log_table()
+        self._df = DuckDBService.get_log_table()
         self.endResetModel()

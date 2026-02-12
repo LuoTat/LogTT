@@ -106,13 +106,13 @@ class AELLogParser(BaseLogParser):
                     for e2 in value["Events"]:
                         if e2.merged:
                             continue
-                        if self._has_diff(
+                        if AELLogParser._has_diff(
                             e1.event_tokens, e2.event_tokens, self._merge_percent
                         ):
                             to_be_merged[-1].append(e2)
                             e2.merged = True
                 for group in to_be_merged:
-                    merged_event = reduce(self._merge_event, group)
+                    merged_event = reduce(AELLogParser._merge_event, group)
                     self._merged_events.append(merged_event)
             else:
                 self._merged_events.extend(value["Events"])

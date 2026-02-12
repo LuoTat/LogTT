@@ -26,9 +26,8 @@ class ExtractedLogListModel(QAbstractListModel):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._duckdb_service = DuckDBService()
         # 一次性获取整个表的数据到内存中
-        self._df: list[tuple] = self._duckdb_service.get_extracted_log_table()
+        self._df: list[tuple] = DuckDBService.get_extracted_log_table()
 
     # ==================== 重写方法 ====================
 
@@ -69,5 +68,5 @@ class ExtractedLogListModel(QAbstractListModel):
     def refresh(self):
         """刷新数据"""
         self.beginResetModel()
-        self._df = self._duckdb_service.get_extracted_log_table()
+        self._df = DuckDBService.get_extracted_log_table()
         self.endResetModel()

@@ -180,7 +180,7 @@ class SpellLogParser(BaseLogParser):
             set_template = set(cluster.log_template)
             if len(set_seq & set_template) < 0.5 * size_seq:
                 continue
-            lcs = self._lcs(seq, cluster.log_template)
+            lcs = SpellLogParser._lcs(seq, cluster.log_template)
             if len(lcs) > max_len or (
                 len(lcs) == max_len
                 and len(cluster.log_template) < len(max_clust.log_template)
@@ -247,7 +247,9 @@ class SpellLogParser(BaseLogParser):
             match_cluster = self._prefix_tree_match(root_node, const_log_tokens, 0)
 
             if match_cluster is None:
-                match_cluster = self._simple_loop_match(log_clusters, const_log_tokens)
+                match_cluster = SpellLogParser._simple_loop_match(
+                    log_clusters, const_log_tokens
+                )
 
                 if match_cluster is None:
                     match_cluster = self._lcs_match(log_clusters, log_message_tokens)
@@ -256,19 +258,25 @@ class SpellLogParser(BaseLogParser):
                     if match_cluster is None:
                         new_cluster = LogCluster(log_message_tokens, [log_id])
                         log_clusters.append(new_cluster)
-                        self._add_seq_to_prefix_tree(root_node, new_cluster)
+                        SpellLogParser._add_seq_to_prefix_tree(root_node, new_cluster)
                     # Add the new log message to the existing cluster
                     else:
-                        new_template = self._get_template(
-                            self._lcs(log_message_tokens, match_cluster.log_template),
+                        new_template = SpellLogParser._get_template(
+                            SpellLogParser._lcs(
+                                log_message_tokens, match_cluster.log_template
+                            ),
                             match_cluster.log_template,
                         )
                         if " ".join(new_template) != " ".join(
                             match_cluster.log_template
                         ):
-                            self._remove_seq_from_prefix_tree(root_node, match_cluster)
+                            SpellLogParser._remove_seq_from_prefix_tree(
+                                root_node, match_cluster
+                            )
                             match_cluster.log_template = new_template
-                            self._add_seq_to_prefix_tree(root_node, match_cluster)
+                            SpellLogParser._add_seq_to_prefix_tree(
+                                root_node, match_cluster
+                            )
             if match_cluster:
                 match_cluster.log_id_list.append(log_id)
 
@@ -278,7 +286,7 @@ class SpellLogParser(BaseLogParser):
                 if progress_callback:
                     progress_callback(int(progress))
 
-        self._output_result(
+        SpellLogParser._output_result(
             log_df, structured_table_name, templates_table_name, keep_para, log_clusters
         )
 

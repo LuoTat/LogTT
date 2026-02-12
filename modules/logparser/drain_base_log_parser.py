@@ -74,10 +74,10 @@ class DrainBaseLogParser(BaseLogParser, ABC):
         self._id_to_cluster: dict[int, LogCluster] = {}
 
     @staticmethod
-    def has_numbers(s: str) -> bool:
+    def _has_numbers(s: str) -> bool:
         return any(char.isdigit() for char in s)
 
-    def fast_match(
+    def _fast_match(
         self, cluster_ids: list[int], tokens: list[str], include_params: bool
     ) -> LogCluster | None:
         max_sim: float = -1.0
@@ -86,7 +86,7 @@ class DrainBaseLogParser(BaseLogParser, ABC):
 
         for cluster_id in cluster_ids:
             cluster = self._id_to_cluster[cluster_id]
-            cur_sim, param_count = self._get_seq_distance(
+            cur_sim, param_count = DrainBaseLogParser._get_seq_distance(
                 cluster.log_template_tokens, tokens, include_params
             )
             if cur_sim > max_sim or (
@@ -137,7 +137,7 @@ class DrainBaseLogParser(BaseLogParser, ABC):
             return new_cluster
 
         # Add the new log message to the existing cluster
-        new_template_tokens = self._create_template(
+        new_template_tokens = DrainBaseLogParser._create_template(
             content_tokens, match_cluster.log_template_tokens
         )
         if new_template_tokens != match_cluster.log_template_tokens:
@@ -174,7 +174,7 @@ class DrainBaseLogParser(BaseLogParser, ABC):
                 if progress_callback:
                     progress_callback(int(progress))
 
-        self._output_result(
+        DrainBaseLogParser._output_result(
             log_df,
             structured_table_name,
             templates_table_name,

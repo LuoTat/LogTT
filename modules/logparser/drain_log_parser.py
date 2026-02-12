@@ -42,7 +42,9 @@ class DrainLogParser(DrainBaseLogParser):
 
             # if token not matched in this layer of existing tree.
             if token not in cur_node.children_node:
-                if self._parametrize_numeric_tokens and self.has_numbers(token):
+                if self._parametrize_numeric_tokens and DrainBaseLogParser._has_numbers(
+                    token
+                ):
                     if "<*>" not in cur_node.children_node:
                         new_node = Node()
                         cur_node.children_node["<*>"] = new_node
@@ -130,7 +132,7 @@ class DrainLogParser(DrainBaseLogParser):
                 return None
 
         # get best match among all clusters with same prefix, or None if no match is above sim_th
-        return self.fast_match(cur_node.cluster_ids, tokens, include_params)
+        return self._fast_match(cur_node.cluster_ids, tokens, include_params)
 
     @staticmethod
     def name() -> str:

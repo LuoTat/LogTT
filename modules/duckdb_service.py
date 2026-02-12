@@ -151,7 +151,7 @@ class DuckDBService:
             rel = conn.table(table_name)
             total_count = rel.shape[0]
             if filters:
-                rel = rel.filter(self._build_filter_expr(filters))
+                rel = rel.filter(DuckDBService._build_filter_expr(filters))
                 total_count = rel.shape[0]
             rel = rel.limit(limit, offset)
             return rel.pl(), total_count
@@ -193,7 +193,7 @@ class DuckDBService:
         with duckdb.connect(DB_PATH) as conn:
             rel = conn.table(table_name)
             if other_filters:
-                rel = rel.filter(self._build_filter_expr(other_filters))
+                rel = rel.filter(DuckDBService._build_filter_expr(other_filters))
             rel = rel.aggregate(
                 [
                     duckdb.ColumnExpression(column_name),
@@ -203,10 +203,12 @@ class DuckDBService:
             )
             total_count = rel.shape[0]
             if keyword:
-                rel = rel.filter(self._build_like_filter_expr(column_name, keyword))
+                rel = rel.filter(
+                    DuckDBService._build_like_filter_expr(column_name, keyword)
+                )
                 total_count = rel.shape[0]
 
-            rel = rel.sort(self._build_sort_expr(("count", False)))
+            rel = rel.sort(DuckDBService._build_sort_expr(("count", False)))
             rel = rel.limit(limit, offset)
             return rel.pl(), total_count
 

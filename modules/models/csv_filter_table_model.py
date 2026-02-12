@@ -38,8 +38,6 @@ class CsvFilterTableModel(QAbstractTableModel):
     ):
         super().__init__(parent)
 
-        self._duckdb_service = DuckDBService()
-
         # 表的元信息
         self._table_name = table_name
         self._column_name = column_name
@@ -148,15 +146,13 @@ class CsvFilterTableModel(QAbstractTableModel):
         self._cache_offset = max(0, row - self._PAGE_SIZE)
 
         try:
-            self._cache_df, self._total_row_count = (
-                self._duckdb_service.fetch_filter_table(
-                    self._table_name,
-                    self._column_name,
-                    self._cache_offset,
-                    self._cache_limit,
-                    self._keyword,
-                    self._other_filters,
-                )
+            self._cache_df, self._total_row_count = DuckDBService.fetch_filter_table(
+                self._table_name,
+                self._column_name,
+                self._cache_offset,
+                self._cache_limit,
+                self._keyword,
+                self._other_filters,
             )
 
         except Exception as e:

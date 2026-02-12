@@ -289,15 +289,15 @@ class BrainLogParser(BaseLogParser):
 
         contents = log_df["Content"].to_list()
 
-        group_len, tuple_vector, frequency_vector = self._get_frequency_vector(
-            contents, self._delimiter
+        group_len, tuple_vector, frequency_vector = (
+            BrainLogParser._get_frequency_vector(contents, self._delimiter)
         )
 
         (
             sorted_tuple_vector,
             word_combinations,
             word_combinations_reverse,
-        ) = self._tuple_generate(group_len, tuple_vector, frequency_vector)
+        ) = BrainLogParser._tuple_generate(group_len, tuple_vector, frequency_vector)
 
         template_set = {}
         for key in group_len:
@@ -313,13 +313,13 @@ class BrainLogParser(BaseLogParser):
             )
             root_set_detail_id, root_set, root_set_detail = tree.find_root(0)
 
-            root_set_detail_id = tree.up_split(root_set_detail_id, root_set)
-            parse_result = tree.down_split(
+            root_set_detail_id = BrainLogParser.up_split(root_set_detail_id, root_set)
+            parse_result = BrainLogParser.down_split(
                 root_set_detail_id, self._threshold, root_set_detail
             )
-            template_set.update(self._extract_templates(parse_result))
+            template_set.update(BrainLogParser._extract_templates(parse_result))
 
-        self._output_result(
+        BrainLogParser._output_result(
             log_df, structured_table_name, templates_table_name, keep_para, template_set
         )
 

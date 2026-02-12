@@ -137,8 +137,7 @@ class LogViewPage(QWidget):
         )
 
         # 检查表是否存在
-        duckdb_service = DuckDBService()
-        if not duckdb_service.table_exists(structured_table_name):
+        if not DuckDBService.table_exists(structured_table_name):
             InfoBar.error(
                 title=self.tr("数据未找到"),
                 content=self.tr("未找到结构化表: {0}").format(structured_table_name),

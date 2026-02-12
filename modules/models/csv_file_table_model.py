@@ -18,12 +18,10 @@ class CsvFileTableModel(QAbstractTableModel):
     def __init__(self, table_name: str, parent=None):
         super().__init__(parent)
 
-        self._duckdb_service = DuckDBService()
-
         # 表的元信息
         self._table_name = table_name
-        self._columns = self._duckdb_service.get_table_columns(table_name)
-        self._total_row_count = self._duckdb_service.get_table_row_count(table_name)
+        self._columns = DuckDBService.get_table_columns(table_name)
+        self._total_row_count = DuckDBService.get_table_row_count(table_name)
 
         # 缓存的DataFrame
         self._cache_df: polars.DataFrame = polars.DataFrame()
@@ -88,13 +86,11 @@ class CsvFileTableModel(QAbstractTableModel):
         self._cache_offset = max(0, row - self._PAGE_SIZE)
 
         try:
-            self._cache_df, self._filtered_row_count = (
-                self._duckdb_service.fetch_csv_table(
-                    self._table_name,
-                    self._cache_offset,
-                    self._cache_limit,
-                    self._filters,
-                )
+            self._cache_df, self._filtered_row_count = DuckDBService.fetch_csv_table(
+                self._table_name,
+                self._cache_offset,
+                self._cache_limit,
+                self._filters,
             )
         except Exception as e:
             print(f"Error fetching data: {e}")

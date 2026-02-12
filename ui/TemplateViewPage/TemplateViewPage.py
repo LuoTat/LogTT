@@ -142,8 +142,7 @@ class TemplateViewPage(QWidget):
         )
 
         # 检查表是否存在
-        duckdb_service = DuckDBService()
-        if not duckdb_service.table_exists(templates_table_name):
+        if not DuckDBService.table_exists(templates_table_name):
             InfoBar.error(
                 title=self.tr("数据未找到"),
                 content=self.tr("未找到模板表: {0}").format(templates_table_name),

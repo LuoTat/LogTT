@@ -106,6 +106,5 @@ def output_result(
         .sort("Occurrences", descending=True)
     )
 
-    duckdb_service = DuckDBService()
-    duckdb_service.create_table_from_polars(log_df, structured_table_name)
-    duckdb_service.create_table_from_polars(df_templates, templates_table_name)
+    DuckDBService.create_table_from_polars(log_df, structured_table_name)
+    DuckDBService.create_table_from_polars(df_templates, templates_table_name)
