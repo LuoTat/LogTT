@@ -313,8 +313,8 @@ class BrainLogParser(BaseLogParser):
             )
             root_set_detail_id, root_set, root_set_detail = tree.find_root(0)
 
-            root_set_detail_id = BrainLogParser.up_split(root_set_detail_id, root_set)
-            parse_result = BrainLogParser.down_split(
+            root_set_detail_id = TupleTree.up_split(root_set_detail_id, root_set)
+            parse_result = TupleTree.down_split(
                 root_set_detail_id, self._threshold, root_set_detail
             )
             template_set.update(BrainLogParser._extract_templates(parse_result))

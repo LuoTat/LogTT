@@ -128,8 +128,8 @@ class DuckDBService:
             rel = conn.from_arrow(df.to_arrow())
             rel.to_table(table_name)
 
+    @staticmethod
     def fetch_csv_table(
-        self,
         table_name: str,
         offset: int,
         limit: int,
@@ -170,8 +170,8 @@ class DuckDBService:
             duckdb.ConstantExpression(f"(?i){keyword}"),  # (?i) = 不区分大小写标志
         )
 
+    @staticmethod
     def fetch_filter_table(
-        self,
         table_name: str,
         column_name: str,
         offset: int,

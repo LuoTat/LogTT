@@ -86,7 +86,7 @@ class DrainBaseLogParser(BaseLogParser, ABC):
 
         for cluster_id in cluster_ids:
             cluster = self._id_to_cluster[cluster_id]
-            cur_sim, param_count = DrainBaseLogParser._get_seq_distance(
+            cur_sim, param_count = type(self)._get_seq_distance(
                 cluster.log_template_tokens, tokens, include_params
             )
             if cur_sim > max_sim or (
@@ -137,7 +137,7 @@ class DrainBaseLogParser(BaseLogParser, ABC):
             return new_cluster
 
         # Add the new log message to the existing cluster
-        new_template_tokens = DrainBaseLogParser._create_template(
+        new_template_tokens = type(self)._create_template(
             content_tokens, match_cluster.log_template_tokens
         )
         if new_template_tokens != match_cluster.log_template_tokens:

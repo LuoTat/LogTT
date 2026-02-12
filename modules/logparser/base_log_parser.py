@@ -28,7 +28,7 @@ class BaseLogParser(ABC):
         keep_para: bool = False,
         progress_callback: Callable[[int], None] | None = None,
     ) -> ParseResult:
-        """parse the log file into sql tables.
+        """parse the log file into SQL tables.
 
         Args:
             log_file : path of the input log file
