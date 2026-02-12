@@ -40,6 +40,8 @@ class TemplateViewPage(QWidget):
 
         # 初始化日志列表模型
         self._extracted_log_list_model = ExtractedLogListModel(self)
+        self._csv_file_table_model = None
+        self._select_log_id = -1
         self._init_toolbar()
         self._init_table_view()
 
@@ -49,6 +51,16 @@ class TemplateViewPage(QWidget):
         """页面显示时自动刷新日志列表"""
         super().showEvent(event)
         self._extracted_log_list_model.refresh()
+        # 查找对应的索引
+        if (index := self._extracted_log_list_model.get_row(self._select_log_id)) >= 0:
+            self._log_combo_box.setCurrentIndex(index)
+        else:
+            # 日志已被删除，重置为初始状态
+            self._select_log_id = -1
+            self._csv_file_table_model = None
+            self._table_view.setModel(None)
+            self._log_combo_box.setCurrentIndex(-1)
+            self._update_info_label()
 
     # ==================== 私有方法 ====================
 
@@ -123,14 +135,6 @@ class TemplateViewPage(QWidget):
         else:
             self._info_label.setText("")
 
-    def set_log(self, log_id: int):
-        """设置选择的日志"""
-        # 先刷新一次日志列表
-        self._extracted_log_list_model.refresh()
-        # 查找对应的索引
-        if (index := self._extracted_log_list_model.get_row(log_id)) >= 0:
-            self._log_combo_box.setCurrentIndex(index)
-
     # ==================== 槽函数 ====================
 
     @Slot(int)
@@ -140,6 +144,7 @@ class TemplateViewPage(QWidget):
         templates_table_name = model_index.data(
             ExtractedLogListModel.TEMPLATES_TABLE_NAME_ROLE
         )
+        log_id = model_index.data(ExtractedLogListModel.LOG_ID_ROLE)
 
         # 检查表是否存在
         if not DuckDBService.table_exists(templates_table_name):
@@ -155,6 +160,7 @@ class TemplateViewPage(QWidget):
             return
 
         # 创建新的模型实例
+        self._select_log_id = log_id
         self._csv_file_table_model = CsvFileTableModel(templates_table_name, self)
         self._table_view.setModel(self._csv_file_table_model)
         self._update_info_label()
@@ -248,3 +254,9 @@ class TemplateViewPage(QWidget):
         """清除所有过滤"""
         self._csv_file_table_model.clear_all_filters()
         self._update_info_label()
+
+    # ==================== 公共方法 ====================
+
+    def set_log(self, log_id: int):
+        """设置选择的日志"""
+        self._select_log_id = log_id
