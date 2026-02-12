@@ -16,7 +16,7 @@ class DuckDBService:
     def create_log_table_if_not_exists():
         """创建日志表(如果不存在)"""
         with duckdb.connect(DB_PATH) as conn:
-            conn.sql(
+            conn.execute(
                 # @formatter:off
                 """
                 CREATE SEQUENCE IF NOT EXISTS log_id_seq START 1;
@@ -61,14 +61,14 @@ class DuckDBService:
     def insert_log(log_type: str, log_uri: str, extract_method: str):
         """插入日志记录"""
         with duckdb.connect(DB_PATH) as conn:
-            conn.sql(
+            conn.execute(
                 # @formatter:off
                 """
                 INSERT INTO log (log_type, log_uri, extract_method)
                 VALUES (?, ?, ?)
                 """,
                 # @formatter:on
-                params=[log_type, log_uri, extract_method],
+                [log_type, log_uri, extract_method],
             )
 
     @staticmethod
@@ -84,13 +84,13 @@ class DuckDBService:
     def delete_log(log_id: int):
         """删除日志记录"""
         with duckdb.connect(DB_PATH) as conn:
-            conn.sql(
+            conn.execute(
                 """
                 DELETE
                 FROM log
                 WHERE id = ?;
                 """,
-                params=[int(log_id)],
+                [log_id],
             )
 
     # ==================== CSV表格显示用 ====================
@@ -218,13 +218,13 @@ class DuckDBService:
     def table_exists(table_name: str) -> bool:
         """检查表是否存在"""
         with duckdb.connect(DB_PATH) as conn:
-            result = conn.sql(
+            result = conn.execute(
                 """
                 SELECT table_name
                 FROM information_schema.tables
                 WHERE table_name = ?
                 """,
-                params=[table_name],
+                [table_name],
             ).fetchone()
             return result is not None
 
@@ -232,7 +232,7 @@ class DuckDBService:
     def drop_table(table_name: str):
         """删除表"""
         with duckdb.connect(DB_PATH) as conn:
-            conn.sql(
+            conn.execute(
                 f"""
                 DROP TABLE IF EXISTS "{table_name}";
                 """
