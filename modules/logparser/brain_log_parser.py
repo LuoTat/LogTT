@@ -146,8 +146,8 @@ class BrainLogParser(BaseLogParser):
         delimiter: list[str] | None = None,
     ):
         """
-        Attributes
-        ----------
+
+        Args:
             threshold : similarity threshold
             delimiter : list of delimiters to split log messages
         """
@@ -204,9 +204,10 @@ class BrainLogParser(BaseLogParser):
 
     @staticmethod
     def _tuple_generate(group_len, tuple_vector, frequency_vector):
-        """Generate word combinations.
+        """
+        Generate word combinations.
 
-        Output:
+        Returns:
             sorted_tuple_vector: each tuple in the tuple_vector will be sorted according their frequencies.
             word_combinations:  words in the log with the same frequency will be grouped as word combinations and will
                                 be arranged in descending order according to their frequencies.
@@ -231,9 +232,10 @@ class BrainLogParser(BaseLogParser):
 
     @staticmethod
     def _get_frequency_vector(contents, delimiter):
-        """Count each word's frequency in the dataset and convert each log into frequency vector.
+        """
+        Count each word's frequency in the dataset and convert each log into frequency vector.
 
-        Output:
+        Returns:
             group_len: log groups based on length
             tuple_vector: the word in the log will be converted into a tuple (word_frequency, word_character, word_position)
             frequency_vector: the word in the log will be converted into its frequency

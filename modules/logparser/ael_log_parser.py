@@ -42,8 +42,8 @@ class Event:
 class AELLogParser(BaseLogParser):
     def __init__(self, log_format, regex, min_event_count=2, merge_percent=0.5):
         """
-        Attributes
-        ----------
+
+        Args:
             min_event_count : minimum number of events to trigger reconciliation
             merge_percent : maximum percentage of difference to merge two events
         """

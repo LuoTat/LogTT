@@ -9,7 +9,8 @@ class BaseLogParser(ABC):
     """日志模板解析器基类"""
 
     def __init__(self, log_format: str, regex: list[str]):
-        """Initialize Base log parser.
+        """
+        Initialize Base log parser.
 
         Args:
             log_format : log format string
@@ -28,7 +29,8 @@ class BaseLogParser(ABC):
         keep_para: bool = False,
         progress_callback: Callable[[int], None] | None = None,
     ) -> ParseResult:
-        """parse the log file into SQL tables.
+        """
+        parse the log file into SQL tables.
 
         Args:
             log_file : path of the input log file

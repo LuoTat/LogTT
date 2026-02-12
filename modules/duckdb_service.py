@@ -137,6 +137,7 @@ class DuckDBService:
     ) -> tuple[polars.DataFrame, int]:
         """
         分页查询csv数据(支持过滤和排序)
+
         Args:
             table_name: 表名
             offset: 偏移量
@@ -181,6 +182,7 @@ class DuckDBService:
     ) -> tuple[polars.DataFrame, int]:
         """
         获取列的值和计数(用于构建过滤器)
+
         Args:
             table_name: 表名
             column_name: 列名
@@ -188,6 +190,9 @@ class DuckDBService:
             limit: 返回行数
             keyword: 搜索关键字
             other_filters: 其他列的过滤条件字典, key为列名, value为允许的值列表
+
+        Returns:
+            返回查询到的DataFrame和过滤后的总行数
         """
 
         with duckdb.connect(DB_PATH) as conn:

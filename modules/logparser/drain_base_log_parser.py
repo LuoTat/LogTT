@@ -50,7 +50,8 @@ class DrainBaseLogParser(BaseLogParser, ABC):
         delimiters: list[str] | None = None,
         parametrize_numeric_tokens=True,
     ) -> None:
-        """Initialize Drain base parser.
+        """
+        Initialize Drain base parser.
 
         Args:
             depth: Depth of prefix tree (minimum 3).

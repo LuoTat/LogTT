@@ -57,9 +57,9 @@ class SpellLogParser(BaseLogParser):
         tau=0.5,
     ):
         """
-        Attributes
-        ----------
-        tau : how much percentage of tokens matched to merge a log message
+
+        Args:
+            tau : how much percentage of tokens matched to merge a log message
         """
         super().__init__(
             log_id,
