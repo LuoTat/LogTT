@@ -5,7 +5,8 @@
 
 from itertools import chain
 
-from .drain_base_log_parser import DrainBaseLogParser, LogCluster, Node, Content, Token
+from .base_log_parser import Token
+from .drain_base_log_parser import Content, DrainBaseLogParser, LogCluster, Node
 from .parser_factory import parser_register
 
 
@@ -33,36 +34,20 @@ class DrainLogParser(DrainBaseLogParser):
 
             # if token not matched in this layer of existing tree.
             if token not in cur_node.children_node:
-                if (
-                    cur_node_depth != 1
-                    and self._parametrize_numeric_tokens
-                    and DrainBaseLogParser._has_numbers(token)
-                ):
-                    if "<*>" not in cur_node.children_node:
-                        new_node = Node()
-                        cur_node.children_node["<*>"] = new_node
-                        cur_node = new_node
-                    else:
-                        cur_node = cur_node.children_node["<*>"]
-
+                if len(cur_node.children_node) + 1 < self._children_thr:
+                    # 如果当前节点不是最后一个节点，就添加一个新的节点
+                    new_node = Node()
+                    cur_node.children_node[token] = new_node
+                    cur_node = new_node
+                elif len(cur_node.children_node) + 1 == self._children_thr:
+                    # 如果当前节点是最后一个节点，就添加一个新的通配符节点
+                    # 注意由于 _parametrize_numeric_tokens 的存在，可能已经存在一个通配符节点了，所以需要先检查一下
+                    new_node = Node()
+                    cur_node.children_node["<*>"] = new_node
+                    cur_node = new_node
                 else:
-                    if len(cur_node.children_node) + 1 < self._max_children:
-                        # 如果当前节点不是最后一个节点，就添加一个新的节点
-                        new_node = Node()
-                        cur_node.children_node[token] = new_node
-                        cur_node = new_node
-                    elif len(cur_node.children_node) + 1 == self._max_children:
-                        # 如果当前节点是最后一个节点，就添加一个新的通配符节点
-                        # 注意由于 _parametrize_numeric_tokens 的存在，可能已经存在一个通配符节点了，所以需要先检查一下
-                        if "<*>" not in cur_node.children_node:
-                            new_node = Node()
-                            cur_node.children_node["<*>"] = new_node
-                            cur_node = new_node
-                        else:
-                            cur_node = cur_node.children_node["<*>"]
-                    else:
-                        # 如果当前节点已满，就直接使用通配符节点
-                        cur_node = cur_node.children_node["<*>"]
+                    # 如果当前节点已满，就直接使用通配符节点
+                    cur_node = cur_node.children_node["<*>"]
 
             # if the token is matched
             else:

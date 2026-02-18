@@ -10,7 +10,7 @@ from pathlib import Path
 
 import polars as pl
 
-from .base_log_parser import BaseLogParser, Content, Token
+from .base_log_parser import BaseLogParser, Content
 from .parse_result import ParseResult
 from .utils import load_data, output_result
 
@@ -47,15 +47,13 @@ class DrainBaseLogParser(BaseLogParser, ABC):
         delimiters: list[str] | None = None,
         depth=4,
         sim_thr=0.4,
-        max_children=100,
-        parametrize_numeric_tokens=True,
+        children_thr=100,
     ):
         """
         Args:
             depth: Depth of prefix tree (minimum 3).
             sim_thr: Similarity threshold (0-1).
-            max_children: Max children per tree node.
-            parametrize_numeric_tokens: Whether to treat numeric tokens as wildcards.
+            children_thr: Max children per tree node.
         """
         super().__init__(log_format, masking, delimiters)
 
@@ -64,15 +62,10 @@ class DrainBaseLogParser(BaseLogParser, ABC):
 
         self._depth = depth
         self._sim_thr = sim_thr
-        self._max_children = max_children
-        self._parametrize_numeric_tokens = parametrize_numeric_tokens
+        self._children_thr = children_thr
 
         self._root_node = Node()
         self._id_to_cluster: dict[int, LogCluster] = {}
-
-    @staticmethod
-    def _has_numbers(token: Token) -> bool:
-        return any(char.isdigit() for char in token)
 
     def _fast_match(
         self,
