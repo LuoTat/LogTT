@@ -55,8 +55,8 @@ class SpellLogParser(BaseLogParser):
     def __init__(
         self,
         log_format,
-        masking,
-        delimiters: list[str] | None = None,
+        masking=None,
+        delimiters=None,
         sim_thr=0.5,
     ):
         """

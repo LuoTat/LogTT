@@ -2,16 +2,15 @@ from typing import Any
 
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
 
-from modules.logparser.base_log_parser import BaseLogParser
-from modules.logparser.parser_factory import ParserFactory
+from modules.logparser import BaseLogParser, ParserFactory
 
 
 class LogParserListModel(QAbstractListModel):
     """日志解析器列表模型"""
 
     # 用户自定义角色
-    LOG_PARSER_DISCRIPTION_ROLE = Qt.ItemDataRole.UserRole + 1  # 解析器描述角色
-    LOG_PARSER_TYPE_ROLE = Qt.ItemDataRole.UserRole + 2  # 解析器类型角色
+    LOG_PARSER_TYPE_ROLE = Qt.ItemDataRole.UserRole + 1  # 解析器类型角色
+    LOG_PARSER_DISCRIPTION_ROLE = Qt.ItemDataRole.UserRole + 2  # 解析器描述角色
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -34,10 +33,10 @@ class LogParserListModel(QAbstractListModel):
             return self._df[row].name()
 
         # 自定义角色
-        elif role == self.LOG_PARSER_DISCRIPTION_ROLE:
-            return self._df[row].description()
-
         elif role == self.LOG_PARSER_TYPE_ROLE:
             return self._df[row]
+
+        elif role == self.LOG_PARSER_DISCRIPTION_ROLE:
+            return self._df[row].description()
 
         return None

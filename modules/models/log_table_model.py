@@ -17,7 +17,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor
 
 from modules.duckdb_service import DuckDBService
-from modules.logparser.base_log_parser import BaseLogParser
+from modules.logparser import BaseLogParser, LogParserConfig
 
 
 class LogColumn(IntEnum):
@@ -68,32 +68,28 @@ class LogExtractTask(QObject):
         self,
         log_id: int,
         log_file: Path,
-        logparser_type: type[BaseLogParser],
-        format_type: str,
-        log_format: str,
-        mask: list[tuple[str, str]],
-        delimiters: list[str],
+        log_parser_type: type[BaseLogParser],
+        log_parser_config: LogParserConfig,
         structured_table_name: str,
         templates_table_name: str,
     ):
         super().__init__()
         self._log_id = log_id
         self._log_file = log_file
-        self._logparser_type = logparser_type
-        self._format_type = format_type
-        self._log_format = log_format
-        self._mask = mask
-        self._delimiters = delimiters
+        self._log_parser_type = log_parser_type
+        self._log_parser_config = log_parser_config
         self._structured_table_name = structured_table_name
         self._templates_table_name = templates_table_name
 
     @Slot()
     def run(self):
         try:
-            result = self._logparser_type(
-                self._log_format,
-                self._mask,
-                self._delimiters,
+            ex_args = self._log_parser_config.ex_args.get(self._log_parser_type, {})
+            result = self._log_parser_type(
+                self._log_parser_config.log_format,
+                self._log_parser_config.masking,
+                self._log_parser_config.delimiters,
+                **ex_args,
             ).parse(
                 self._log_file,
                 self._structured_table_name,
@@ -207,7 +203,7 @@ class LogTableModel(QAbstractTableModel):
             orientation == Qt.Orientation.Horizontal
             and role == Qt.ItemDataRole.DisplayRole
         ):
-            return self.tr(self._TABLE_HEADERS[section])
+            return self.tr(str(self._TABLE_HEADERS[section]))
         return None
 
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
@@ -309,7 +305,7 @@ class LogTableModel(QAbstractTableModel):
         # 状态列
         elif col == LogColumn.STATUS:
             status = self._get_status(index)
-            return self.tr(self._STATUS_TO_TEXT[status])
+            return self.tr(str(self._STATUS_TO_TEXT[status]))
 
         # 名称列
         elif col == LogColumn.NAME:
@@ -477,20 +473,17 @@ class LogTableModel(QAbstractTableModel):
     def request_extract(
         self,
         index: QModelIndex,
-        logparser_type: type[BaseLogParser],
-        format_type: str,
-        log_format: str,
-        mask: list[tuple[str, str]],
-        delimiters: list[str],
+        log_parser_type: type[BaseLogParser],
+        log_parser_config: LogParserConfig,
     ):
         """请求提取日志"""
         row = index.row()
         log_id = index.data(self.LOG_ID_ROLE)
         # 更新数据库和ui状态
-        self._set_sql_data(log_id, SqlColumn.FORMAT_TYPE, format_type)
-        self._set_sql_data(log_id, SqlColumn.EXTRACT_METHOD, logparser_type.name())
-        self._set_df_data(row, SqlColumn.FORMAT_TYPE, format_type)
-        self._set_df_data(row, SqlColumn.EXTRACT_METHOD, logparser_type.name())
+        self._set_sql_data(log_id, SqlColumn.FORMAT_TYPE, log_parser_config.name)
+        self._set_sql_data(log_id, SqlColumn.EXTRACT_METHOD, log_parser_type.name())
+        self._set_df_data(row, SqlColumn.FORMAT_TYPE, log_parser_config.name)
+        self._set_df_data(row, SqlColumn.EXTRACT_METHOD, log_parser_type.name())
         self.dataChanged.emit(
             self.index(row, LogColumn.FORMAT_TYPE),
             self.index(row, LogColumn.EXTRACT_METHOD),
@@ -500,11 +493,8 @@ class LogTableModel(QAbstractTableModel):
         task = LogExtractTask(
             log_id,
             Path(self._df[row][SqlColumn.LOG_URI]),
-            logparser_type,
-            format_type,
-            log_format,
-            mask,
-            delimiters,
+            log_parser_type,
+            log_parser_config,
             self._df[row][SqlColumn.STRUCTURED_TABLE_NAME],
             self._df[row][SqlColumn.TEMPLATES_TABLE_NAME],
         )

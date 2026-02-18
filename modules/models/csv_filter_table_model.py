@@ -79,7 +79,7 @@ class CsvFilterTableModel(QAbstractTableModel):
             orientation == Qt.Orientation.Horizontal
             and role == Qt.ItemDataRole.DisplayRole
         ):
-            return self.tr(self._TABLE_HEADERS[section])
+            return self.tr(str(self._TABLE_HEADERS[section]))
         return None
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlag:

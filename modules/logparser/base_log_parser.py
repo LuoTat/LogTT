@@ -6,8 +6,6 @@ from typing import TypeAlias
 import polars as pl
 import regex as re
 
-from modules.constants import BUILTIN_MASKING
-
 from .parse_result import ParseResult
 
 Token: TypeAlias = str
@@ -20,7 +18,7 @@ class BaseLogParser(ABC):
     def __init__(
         self,
         log_format: str,
-        masking: list[tuple[str, str]],
+        masking: list[tuple[str, str]] | None = None,
         delimiters: list[str] | None = None,
     ):
         """
@@ -30,19 +28,19 @@ class BaseLogParser(ABC):
             delimiters : delimiters for tokenization.
         """
         self._log_format = log_format
-        self._masking = masking
+        self._masking = masking or []
         self._delimiters = delimiters or []
 
     def _mask_log_df(self, log_df: pl.DataFrame) -> pl.DataFrame:
         """Mask the DataFrame"""
         content_col = pl.col("Content")
-        for regex, replacement in self._masking + BUILTIN_MASKING:
+        for regex, replacement in self._masking:
             content_col = content_col.str.replace_all(regex, replacement)
         return log_df.with_columns(content_col.alias("MaskedContent"))
 
     def _mask_log(self, log: str) -> str:
         """Mask the log"""
-        for regex, replacement in self._masking + BUILTIN_MASKING:
+        for regex, replacement in self._masking:
             log = re.sub(regex, replacement, log)
         return log
 

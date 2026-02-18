@@ -51,7 +51,7 @@ class AppConfig(QConfig):
     )
 
     # 用户自定义日志格式
-    userFormatType = ConfigItem("LogConfig", "FormatType", [])
+    logParserConfigs = ConfigItem("LogConfig", "LogParserConfigs", [])
 
 
 # 创建全局配置实例

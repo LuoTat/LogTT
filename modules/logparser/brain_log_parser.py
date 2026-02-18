@@ -81,8 +81,9 @@ class BrainLogParser(BaseLogParser):
     def __init__(
         self,
         log_format,
-        masking,
-        delimiters: list[str] | None = None,
+        masking=None,
+        delimiters=None,
+        *,
         var_thr=2,
     ):
         """

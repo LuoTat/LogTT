@@ -43,17 +43,17 @@ class DrainBaseLogParser(BaseLogParser, ABC):
     def __init__(
         self,
         log_format,
-        masking,
-        delimiters: list[str] | None = None,
+        masking=None,
+        delimiters=None,
         depth=4,
+        children=100,
         sim_thr=0.4,
-        children_thr=100,
     ):
         """
         Args:
             depth: Depth of prefix tree (minimum 3).
             sim_thr: Similarity threshold (0-1).
-            children_thr: Max children per tree node.
+            children: Max children per tree node.
         """
         super().__init__(log_format, masking, delimiters)
 
@@ -61,8 +61,8 @@ class DrainBaseLogParser(BaseLogParser, ABC):
             raise ValueError("depth argument must be at least 3")
 
         self._depth = depth
+        self._children = children
         self._sim_thr = sim_thr
-        self._children_thr = children_thr
 
         self._root_node = Node()
         self._id_to_cluster: dict[int, LogCluster] = {}

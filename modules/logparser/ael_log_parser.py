@@ -52,8 +52,9 @@ class AELLogParser(BaseLogParser):
     def __init__(
         self,
         log_format,
-        masking,
-        delimiters: list[str] | None = None,
+        masking=None,
+        delimiters=None,
+        *,
         log_cluster_thr=2,
         merge_thr=1,
     ):

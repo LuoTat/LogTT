@@ -38,12 +38,12 @@ class JaccardDrainLogParser(DrainBaseLogParser):
 
             # if token not matched in this layer of existing tree.
             if token not in cur_node.children_node:
-                if len(cur_node.children_node) + 1 < self._children_thr:
+                if len(cur_node.children_node) + 1 < self._children:
                     # 如果当前节点不是最后一个节点，就添加一个新的节点
                     new_node = Node()
                     cur_node.children_node[token] = new_node
                     cur_node = new_node
-                elif len(cur_node.children_node) + 1 == self._children_thr:
+                elif len(cur_node.children_node) + 1 == self._children:
                     # 如果当前节点是最后一个节点，就添加一个新的通配符节点
                     # 注意由于 _parametrize_numeric_tokens 的存在，可能已经存在一个通配符节点了，所以需要先检查一下
                     new_node = Node()
