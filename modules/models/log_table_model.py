@@ -71,7 +71,8 @@ class LogExtractTask(QObject):
         logparser_type: type[BaseLogParser],
         format_type: str,
         log_format: str,
-        regex: list[str],
+        mask: list[tuple[str, str]],
+        delimiters: list[str],
         structured_table_name: str,
         templates_table_name: str,
     ):
@@ -81,14 +82,19 @@ class LogExtractTask(QObject):
         self._logparser_type = logparser_type
         self._format_type = format_type
         self._log_format = log_format
-        self._regex = regex
+        self._mask = mask
+        self._delimiters = delimiters
         self._structured_table_name = structured_table_name
         self._templates_table_name = templates_table_name
 
     @Slot()
     def run(self):
         try:
-            result = self._logparser_type(self._log_format, self._regex).parse(
+            result = self._logparser_type(
+                self._log_format,
+                self._mask,
+                self._delimiters,
+            ).parse(
                 self._log_file,
                 self._structured_table_name,
                 self._templates_table_name,
@@ -98,10 +104,7 @@ class LogExtractTask(QObject):
             )
 
             # 提取完成
-            self.finished.emit(
-                self._log_id,
-                result.line_count,
-            )
+            self.finished.emit(self._log_id, result.line_count)
         except InterruptedError:
             self.interrupted.emit(self._log_id)
         except Exception as e:
@@ -382,7 +385,8 @@ class LogTableModel(QAbstractTableModel):
             self._set_df_data(row, SqlColumn.IS_EXTRACTED, True)
             self._set_df_data(row, SqlColumn.LINE_COUNT, line_count)
             self.dataChanged.emit(
-                self.index(row, 0), self.index(row, self.columnCount() - 1)
+                self.index(row, 0),
+                self.index(row, self.columnCount() - 1),
             )
 
         # 发出完成信号
@@ -397,7 +401,8 @@ class LogTableModel(QAbstractTableModel):
         # 更新ui状态
         if (row := self._get_row(log_id)) >= 0:
             self.dataChanged.emit(
-                self.index(row, 0), self.index(row, self.columnCount() - 1)
+                self.index(row, 0),
+                self.index(row, self.columnCount() - 1),
             )
         # 发出中断信号
         self.extractInterrupted.emit(log_id)
@@ -411,7 +416,8 @@ class LogTableModel(QAbstractTableModel):
         # 更新ui状态
         if (row := self._get_row(log_id)) >= 0:
             self.dataChanged.emit(
-                self.index(row, 0), self.index(row, self.columnCount() - 1)
+                self.index(row, 0),
+                self.index(row, self.columnCount() - 1),
             )
         # 发出错误信号
         self.extractError.emit(log_id, error_msg)
@@ -423,7 +429,8 @@ class LogTableModel(QAbstractTableModel):
         # 更新ui状态
         if (row := self._get_row(log_id)) >= 0:
             self.dataChanged.emit(
-                self.index(row, LogColumn.PROGRESS), self.index(row, LogColumn.PROGRESS)
+                self.index(row, LogColumn.PROGRESS),
+                self.index(row, LogColumn.PROGRESS),
             )
 
     # ==================== 公共方法 ====================
@@ -473,7 +480,8 @@ class LogTableModel(QAbstractTableModel):
         logparser_type: type[BaseLogParser],
         format_type: str,
         log_format: str,
-        regex: list[str],
+        mask: list[tuple[str, str]],
+        delimiters: list[str],
     ):
         """请求提取日志"""
         row = index.row()
@@ -495,7 +503,8 @@ class LogTableModel(QAbstractTableModel):
             logparser_type,
             format_type,
             log_format,
-            regex,
+            mask,
+            delimiters,
             self._df[row][SqlColumn.STRUCTURED_TABLE_NAME],
             self._df[row][SqlColumn.TEMPLATES_TABLE_NAME],
         )

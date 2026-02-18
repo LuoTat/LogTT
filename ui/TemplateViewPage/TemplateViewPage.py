@@ -172,7 +172,8 @@ class TemplateViewPage(QWidget):
 
         # 设置本地筛选器
         filter_action = Action(
-            FluentIcon.FILTER, self.tr("设置 '{0}' 的筛选器").format(column_name)
+            FluentIcon.FILTER,
+            self.tr("设置 '{0}' 的筛选器").format(column_name),
         )
         filter_action.triggered.connect(lambda: self._on_set_column_filter(column_name))
         menu.addAction(filter_action)
@@ -180,7 +181,8 @@ class TemplateViewPage(QWidget):
         # 如果该列有过滤，添加清除选项
         if self._csv_file_table_model.is_column_filtered(column_name):
             clear_action = Action(
-                FluentIcon.DELETE, self.tr("清除 '{0}' 的筛选器").format(column_name)
+                FluentIcon.DELETE,
+                self.tr("清除 '{0}' 的筛选器").format(column_name),
             )
             clear_action.triggered.connect(
                 lambda: self._on_clear_column_filter(column_name)
@@ -205,7 +207,9 @@ class TemplateViewPage(QWidget):
             return
 
         column_name = self._csv_file_table_model.headerData(
-            index.column(), Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole
+            index.column(),
+            Qt.Orientation.Horizontal,
+            Qt.ItemDataRole.DisplayRole,
         )
 
         global_pos = self._table_view.viewport().mapToGlobal(pos)
@@ -221,7 +225,9 @@ class TemplateViewPage(QWidget):
             return
 
         column_name = self._csv_file_table_model.headerData(
-            column_index, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole
+            column_index,
+            Qt.Orientation.Horizontal,
+            Qt.ItemDataRole.DisplayRole,
         )
 
         global_pos = header.mapToGlobal(pos)
@@ -239,7 +245,8 @@ class TemplateViewPage(QWidget):
         )
         if dialog.exec():
             self._csv_file_table_model.set_column_filter(
-                column_name, dialog.current_filter
+                column_name,
+                dialog.current_filter,
             )
             self._update_info_label()
 

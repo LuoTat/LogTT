@@ -78,13 +78,19 @@ class APPMainWindow(FluentWindow):
 
     def _init_navigation(self):
         self.addSubInterface(
-            self.log_manage_page, FluentIcon.LIBRARY, self.tr("日志管理")
+            self.log_manage_page,
+            FluentIcon.LIBRARY,
+            self.tr("日志管理"),
         )
         self.addSubInterface(
-            self.log_view_page, FluentIcon.DOCUMENT, self.tr("日志查看")
+            self.log_view_page,
+            FluentIcon.DOCUMENT,
+            self.tr("日志查看"),
         )
         self.addSubInterface(
-            self.template_view_page, FluentIcon.PIE_SINGLE, self.tr("模板查看")
+            self.template_view_page,
+            FluentIcon.PIE_SINGLE,
+            self.tr("模板查看"),
         )
         # self.navigationInterface.addSeparator()
 
@@ -92,7 +98,9 @@ class APPMainWindow(FluentWindow):
         self.navigationInterface.addWidget(
             routeKey="theme_navigation_button",
             widget=NavigationPushButton(
-                FluentIcon.CONSTRACT, self.tr("主题切换"), False
+                FluentIcon.CONSTRACT,
+                self.tr("主题切换"),
+                False,
             ),
             onClick=self._on_toggle_theme,
             position=NavigationItemPosition.BOTTOM,

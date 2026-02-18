@@ -1,13 +1,13 @@
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout
 from qfluentwidgets import (
     BodyLabel,
     CardWidget,
     FluentIcon,
-    LineEdit,
+    InfoBar,
+    InfoBarPosition,
     MessageBoxBase,
     ModelComboBox,
-    PlainTextEdit,
     SubtitleLabel,
 )
 
@@ -28,6 +28,36 @@ class ExtractLogMessageBox(MessageBoxBase):
         self._init_log_parser_card()
         self._init_format_type_card()
         self.widget.setMinimumWidth(700)
+
+    # ==================== 重写方法 ====================
+
+    def validate(self) -> bool:
+        """验证用户是否选择了提取算法和日志格式"""
+        if self._logparser_combo_box.currentIndex() < 0:
+            InfoBar.warning(
+                title=self.tr("未选择提取算法"),
+                content=self.tr("请选择一个提取算法"),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=4000,
+                parent=self,
+            )
+            return False
+
+        if self._format_type_combo_box.currentIndex() < 0:
+            InfoBar.warning(
+                title=self.tr("未选择日志格式"),
+                content=self.tr("请选择一个日志格式"),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=4000,
+                parent=self,
+            )
+            return False
+
+        return True
 
     # ==================== 重写方法 ====================
 
@@ -175,33 +205,43 @@ class ExtractLogMessageBox(MessageBoxBase):
         card_layout.addWidget(self._format_type_combo_box)
 
         # log_format展示框
-        log_format_label = BodyLabel(self.tr("日志格式："), card)
-        log_format_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(log_format_label)
+        # log_format_label = BodyLabel(self.tr("日志格式："), card)
+        # log_format_label.setStyleSheet("font-weight: 500;")
+        # card_layout.addWidget(log_format_label)
 
-        self._log_format_edit = LineEdit(card)
-        self._log_format_edit.setReadOnly(True)
+        # self._log_format_edit = LineEdit(card)
+        # self._log_format_edit.setReadOnly(True)
         # self.log_format_input.setPlaceholderText("例如：<Date> <Time> <Level>:<Content>")
-        card_layout.addWidget(self._log_format_edit)
+        # card_layout.addWidget(self._log_format_edit)
 
         # log_format_hint = BodyLabel("通常情况下是每一个间隔的内容都需要一个分组", card)
         # log_format_hint.setStyleSheet("color: #888; font-size: 12px;")
         # card_layout.addWidget(log_format_hint)
 
-        # regex展示框
-        regex_label = BodyLabel(self.tr("正则表达式（每行一个）："), card)
-        regex_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(regex_label)
+        # mask展示框
+        # mask_label = BodyLabel(self.tr("掩码正则表达式（每行一个）："), card)
+        # mask_label.setStyleSheet("font-weight: 500;")
+        # card_layout.addWidget(mask_label)
 
-        self._regex_edit = PlainTextEdit(card)
-        self._regex_edit.setReadOnly(True)
+        # self._mask_edit = PlainTextEdit(card)
+        # self._mask_edit.setReadOnly(True)
         # self.regex_input.setPlaceholderText(
         #     """
         #     每行输入一个正则表达式，用于预处理日志，例如：
         #     (\\d+\\.){3}\\d+(:\\d+)?:? # IP
         #     """
         # )
-        card_layout.addWidget(self._regex_edit)
+        # card_layout.addWidget(self._mask_edit)
+
+        # delimiters展示框
+        # delimiters_label = BodyLabel(self.tr("分隔符（每行一个）："), card)
+        # delimiters_label.setStyleSheet("font-weight: 500;")
+        # card_layout.addWidget(delimiters_label)
+
+        # self._delimiters_edit = PlainTextEdit(card)
+        # self._delimiters_edit.setReadOnly(True)
+
+        # card_layout.addWidget(self._delimiters_edit)
 
         # regex_hint = BodyLabel("正则表达式用于预处理，可为空", card)
         # regex_hint.setStyleSheet("color: #888; font-size: 12px;")
@@ -224,10 +264,14 @@ class ExtractLogMessageBox(MessageBoxBase):
     def _on_format_type_selected(self, index: int):
         model_index = self._format_type_list_model.index(index)
         log_format = model_index.data(FormatTypeListModel.LOG_FORMAT_ROLE)
-        regex_list = model_index.data(FormatTypeListModel.LOG_FORMAT_REGEX_ROLE)
+        mask_list = model_index.data(FormatTypeListModel.LOG_FORMAT_MASK_ROLE)
+        delimiters_list = model_index.data(FormatTypeListModel.LOG_FORMAT_DELIM_ROLE)
 
-        self._log_format_edit.setText(log_format)
-        self._regex_edit.setPlainText("\n".join(regex_list))
+        # self._log_format_edit.setText(log_format)
+        # self._mask_edit.setPlainText(
+        #     "\n".join(map(lambda x: f"{x[0]} -> {x[1]}", mask_list))
+        # )
+        # self._delimiters_edit.setPlainText("\n".join(delimiters_list))
 
     # ==================== 公共方法 ====================
 
@@ -256,9 +300,17 @@ class ExtractLogMessageBox(MessageBoxBase):
         return model_index.data(FormatTypeListModel.LOG_FORMAT_ROLE)
 
     @property
-    def log_regex(self) -> list[str]:
-        """获取用户选择的正则表达式列表"""
+    def log_mask(self) -> list[tuple[str, str]]:
+        """获取用户选择的掩码列表"""
         model_index = self._format_type_list_model.index(
             self._format_type_combo_box.currentIndex()
         )
-        return model_index.data(FormatTypeListModel.LOG_FORMAT_REGEX_ROLE)
+        return model_index.data(FormatTypeListModel.LOG_FORMAT_MASK_ROLE)
+
+    @property
+    def log_delimiters(self) -> list[str]:
+        """获取用户选择的分隔符列表"""
+        model_index = self._format_type_list_model.index(
+            self._format_type_combo_box.currentIndex()
+        )
+        return model_index.data(FormatTypeListModel.LOG_FORMAT_DELIM_ROLE)

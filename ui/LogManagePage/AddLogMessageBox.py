@@ -31,7 +31,7 @@ class AddLogMessageBox(MessageBoxBase):
     # ==================== 重写方法 ====================
 
     def validate(self) -> bool:
-        """验证用是否输入合法"""
+        """验证用户是否选择了日志源"""
         if not self._selected_file_path and not self._url_edit.text().strip():
             InfoBar.warning(
                 title=self.tr("未选择文件"),
@@ -107,7 +107,9 @@ class AddLogMessageBox(MessageBoxBase):
 
         select_file_layout = QHBoxLayout()
         self._select_file_button = PushButton(
-            FluentIcon.FOLDER_ADD, self.tr("选择文件"), card
+            FluentIcon.FOLDER_ADD,
+            self.tr("选择文件"),
+            card,
         )
         self._select_file_button.clicked.connect(self._on_select_file)
 
@@ -145,7 +147,9 @@ class AddLogMessageBox(MessageBoxBase):
             self._file_path_label.setToolTip(self._selected_file_path)
             self._file_path_label.installEventFilter(
                 ToolTipFilter(
-                    self._file_path_label, showDelay=300, position=ToolTipPosition.RIGHT
+                    self._file_path_label,
+                    showDelay=300,
+                    position=ToolTipPosition.RIGHT,
                 )
             )
 

@@ -101,7 +101,8 @@ class LogManagePage(QWidget):
         self._table_view.setSortingEnabled(True)
         # 消除显示的排序指示器
         self._table_view.horizontalHeader().setSortIndicator(
-            -1, Qt.SortOrder.AscendingOrder
+            -1,
+            Qt.SortOrder.AscendingOrder,
         )
 
         self._table_view.setModel(self._log_table_model)
@@ -115,7 +116,8 @@ class LogManagePage(QWidget):
         # 设置进度条委托
         self._progress_delegate = ProgressBarDelegate(self._table_view)
         self._table_view.setItemDelegateForColumn(
-            LogColumn.PROGRESS, self._progress_delegate
+            LogColumn.PROGRESS,
+            self._progress_delegate,
         )
         # 设置右键菜单
         self._table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -223,7 +225,8 @@ class LogManagePage(QWidget):
                 dialog.logparser_type,
                 dialog.format_type,
                 dialog.log_format,
-                dialog.log_regex,
+                dialog.log_mask,
+                dialog.log_delimiters,
             )
 
     @Slot(QModelIndex)

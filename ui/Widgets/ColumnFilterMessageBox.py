@@ -42,14 +42,18 @@ class ColumnFilterMessageBox(MessageBoxBase):
 
     def _init_model(self):
         self._csv_filter_table_model = CsvFilterTableModel(
-            self._table_name, self._column_name, self._all_filters, self
+            self._table_name,
+            self._column_name,
+            self._all_filters,
+            self,
         )
         self._csv_filter_table_model.filterChanged.connect(self._on_filter_changed)
 
     def _init_title(self):
         """初始化标题"""
         self._title_label = SubtitleLabel(
-            self.tr("'{0}' 的本地筛选器").format(self._column_name), self
+            self.tr("'{0}' 的本地筛选器").format(self._column_name),
+            self,
         )
         self.viewLayout.addWidget(self._title_label)
 

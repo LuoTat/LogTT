@@ -17,7 +17,6 @@ class DuckDBService:
         """创建日志表(如果不存在)"""
         with duckdb.connect(DB_PATH) as conn:
             conn.execute(
-                # @formatter:off
                 """
                 CREATE SEQUENCE IF NOT EXISTS log_id_seq START 1;
                 CREATE TABLE IF NOT EXISTS log
@@ -34,7 +33,6 @@ class DuckDBService:
                     templates_table_name  VARCHAR GENERATED ALWAYS AS (CAST(id AS VARCHAR) || '_T')
                 );
                 """
-                # @formatter:on
             )
 
     @staticmethod
@@ -62,12 +60,10 @@ class DuckDBService:
         """插入日志记录"""
         with duckdb.connect(DB_PATH) as conn:
             conn.execute(
-                # @formatter:off
                 """
                 INSERT INTO log (log_type, log_uri, extract_method)
                 VALUES (?, ?, ?)
                 """,
-                # @formatter:on
                 [log_type, log_uri, extract_method],
             )
 
@@ -96,9 +92,7 @@ class DuckDBService:
     # ==================== CSV表格显示用 ====================
 
     @staticmethod
-    def _build_filter_expr(
-        filters: dict[str, list[object]],
-    ) -> duckdb.Expression:
+    def _build_filter_expr(filters: dict[str, list[object]]) -> duckdb.Expression:
         """构建精确匹配过滤条件"""
         filter_exprs = []
         for col, values in filters.items():
@@ -160,10 +154,7 @@ class DuckDBService:
     # ==================== CSV表格过滤器用 ====================
 
     @staticmethod
-    def _build_like_filter_expr(
-        column_name: str,
-        keyword: str,
-    ) -> duckdb.Expression:
+    def _build_like_filter_expr(column_name: str, keyword: str) -> duckdb.Expression:
         """构建模糊匹配过滤条件"""
         return duckdb.FunctionExpression(
             "regexp_matches",
