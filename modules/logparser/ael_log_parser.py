@@ -16,55 +16,69 @@
 
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from functools import reduce
 from pathlib import Path
 
 import polars as pl
 
-from .base_log_parser import BaseLogParser
+from .base_log_parser import BaseLogParser, Content
 from .parse_result import ParseResult
 from .parser_factory import parser_register
 from .utils import load_data, output_result
 
 
-class Event:
-    __slots__ = ("logs", "event_str", "event_tokens", "merged")
+class LogCluster:
+    __slots__ = ["rows", "content", "merged"]
 
-    def __init__(self, log_idx, event_str=""):
-        self.logs = [log_idx]
-        self.event_str = event_str
-        self.event_tokens = event_str.split()
+    def __init__(self, content: Content, rows: list[int]):
+        self.content = content
+        self.rows = rows
         self.merged = False
+
+    def get_template(self):
+        return " ".join(self.content)
+
+
+@dataclass(frozen=True, slots=True)
+class LogBinKey:
+    token_count: int
+    para_count: int
 
 
 @parser_register
 class AELLogParser(BaseLogParser):
-    def __init__(self, log_format, regex, min_event_count=2, merge_percent=0.5):
-        """
-
-        Args:
-            min_event_count : minimum number of events to trigger reconciliation
-            merge_percent : maximum percentage of difference to merge two events
-        """
-        super().__init__(log_format, regex)
-
-        self._min_event_count = min_event_count
-        self._merge_percent = merge_percent
-        self._merged_events = []
-        self._bins = {}
-
-    def _output_result(
+    def __init__(
         self,
+        log_format,
+        masking,
+        delimiters: list[str] | None = None,
+        log_cluster_thr=2,
+        merge_thr=1,
+    ):
+        """
+        Args:
+            log_cluster_thr : minimum number of log_clusters to trigger reconciliation.
+            merge_thr : maximum percentage of difference to merge two log_clusters.
+        """
+        super().__init__(log_format, masking, delimiters)
+
+        self._log_cluster_thr = log_cluster_thr
+        self._merge_thr = merge_thr
+
+    @staticmethod
+    def _output_result(
         log_df: pl.DataFrame,
         structured_table_name: str,
         templates_table_name: str,
         keep_para: bool,
+        merged_log_clusters: list[LogCluster],
     ):
         log_templates = [""] * log_df.height
-        for event in self._merged_events:
-            for log_idx in event.logs:
-                log_templates[log_idx] = event.event_str
+        for log_cluster in merged_log_clusters:
+            for row in log_cluster.rows:
+                log_templates[row] = log_cluster.get_template()
 
         output_result(
             log_df,
@@ -75,85 +89,83 @@ class AELLogParser(BaseLogParser):
         )
 
     @staticmethod
-    def _merge_event(e1, e2):
-        for pos in range(len(e1.event_tokens)):
-            if e1.event_tokens[pos] != e2.event_tokens[pos]:
-                e1.event_tokens[pos] = "<*>"
+    def _merge_log_cluster(
+        log_cluster1: LogCluster,
+        log_cluster2: LogCluster,
+    ) -> LogCluster:
+        for idx, (token1, token2) in enumerate(
+            zip(log_cluster1.content, log_cluster2.content)
+        ):
+            if token1 != token2:
+                log_cluster1.content[idx] = "<*>"
 
-        e1.logs.extend(e2.logs)
-        e1.event_str = " ".join(e1.event_tokens)
+        log_cluster1.rows.extend(log_cluster2.rows)
 
-        return e1
+        return log_cluster1
+
+    def _has_diff(self, log_cluster1: LogCluster, log_cluster2: LogCluster):
+        diff = sum(
+            1
+            for token1, token2 in zip(log_cluster1.content, log_cluster2.content)
+            if token1 != token2
+        )
+        return 0 < diff / len(log_cluster1.content) <= self._merge_thr
+
+    def _reconcile(
+        self,
+        log_bin: dict[LogBinKey, list[LogCluster]],
+    ) -> list[LogCluster]:
+        merged_log_clusters: list[LogCluster] = []
+        for log_clusters in log_bin.values():
+            if len(log_clusters) <= self._log_cluster_thr:
+                merged_log_clusters.extend(log_clusters)
+                continue
+
+            log_cluster_groups: list[list[LogCluster]] = []
+            for log_cluster1 in log_clusters:
+                if log_cluster1.merged:
+                    continue
+
+                log_cluster1.merged = True
+                log_cluster_groups.append([log_cluster1])
+
+                for log_clusters2 in log_clusters:
+                    if log_clusters2.merged:
+                        continue
+
+                    if self._has_diff(log_cluster1, log_clusters2):
+                        log_clusters2.merged = True
+                        log_cluster_groups[-1].append(log_clusters2)
+
+            for group in log_cluster_groups:
+                merged_log_cluster = reduce(AELLogParser._merge_log_cluster, group)
+                merged_log_clusters.append(merged_log_cluster)
+
+        return merged_log_clusters
 
     @staticmethod
-    def _has_diff(tokens1, tokens2, merge_percent):
-        diff = sum(1 for t1, t2 in zip(tokens1, tokens2) if t1 != t2)
-        return 0 < diff / len(tokens1) <= merge_percent
-
-    def _reconcile(self):
-        """
-        Merge events if a bin has too many events
-        """
-        for value in self._bins.values():
-            if len(value["Events"]) > self._min_event_count:
-                to_be_merged = []
-                for e1 in value["Events"]:
-                    if e1.merged:
-                        continue
-                    e1.merged = True
-                    to_be_merged.append([e1])
-
-                    for e2 in value["Events"]:
-                        if e2.merged:
-                            continue
-                        if AELLogParser._has_diff(
-                            e1.event_tokens, e2.event_tokens, self._merge_percent
-                        ):
-                            to_be_merged[-1].append(e2)
-                            e2.merged = True
-                for group in to_be_merged:
-                    merged_event = reduce(AELLogParser._merge_event, group)
-                    self._merged_events.append(merged_event)
-            else:
-                self._merged_events.extend(value["Events"])
-
-    def _categorize(self, log_df: pl.DataFrame):
-        """
-        Abstract templates bin by bin
-        使用 dict 做 O(1) 查找替代线性扫描，提前提取 Content 列避免逐次跨语言取值
-        """
-        contents = log_df["Content"].to_list()
-        for value in self._bins.values():
-            value["Events"] = []
-            event_map: dict[str, Event] = {}
-
-            for log_idx in value["Logs"]:
-                log = contents[log_idx]
-                if log in event_map:
-                    event_map[log].logs.append(log_idx)
-                else:
-                    event = Event(log_idx, log)
-                    event_map[log] = event
-                    value["Events"].append(event)
-
-    def _tokenize(self, log_df: pl.DataFrame):
-        """
-        Put logs into bins according to (# of '<*>', # of token)
-        使用 Polars 向量化操作替代 Python 循环
-        """
+    def _get_log_bins(log_df: pl.DataFrame) -> dict[LogBinKey, list[LogCluster]]:
+        log_bin: dict[LogBinKey, list[LogCluster]] = {}
         groups = (
-            pl.DataFrame(
-                {
-                    "token_count": log_df["Content"].str.count_matches(r"\S+"),
-                    "para_count": log_df["Content"].str.count_matches(r"<\*>"),
-                }
+            log_df.select(
+                pl.col("Tokens"),
+                pl.col("Tokens").list.len().alias("token_count"),
+                pl.col("Tokens")
+                .list.eval(pl.element().str.count_matches(r"<§.*§>"))
+                .list.sum()
+                .alias("para_count"),
             )
             .with_row_index("idx")
-            .group_by(["token_count", "para_count"])
+            .group_by(["token_count", "para_count", "Tokens"])
             .agg(pl.col("idx"))
         )
+
         for row in groups.iter_rows():
-            self._bins[(row[0], row[1])] = {"Logs": row[2]}
+            key = LogBinKey(row[0], row[1])
+            event = LogCluster(row[2], row[3])
+            log_bin.setdefault(key, []).append(event)
+
+        return log_bin
 
     def parse(
         self,
@@ -167,14 +179,20 @@ class AELLogParser(BaseLogParser):
         print(f"Parsing file: {log_file}")
         start_time = datetime.now()
 
-        log_df = load_data(log_file, self._log_format, self._regex, should_stop)
+        log_df = load_data(log_file, self._log_format, should_stop)
+        # 预处理日志内容：掩码处理 + 分词
+        log_df = self._mask_log_df(log_df)
+        log_df = self._split_log_df(log_df)
 
-        self._tokenize(log_df)
-        self._categorize(log_df)
-        self._reconcile()
+        log_bin = self._get_log_bins(log_df)
+        merged_log_clusters = self._reconcile(log_bin)
 
-        self._output_result(
-            log_df, structured_table_name, templates_table_name, keep_para
+        AELLogParser._output_result(
+            log_df,
+            structured_table_name,
+            templates_table_name,
+            keep_para,
+            merged_log_clusters,
         )
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
@@ -188,4 +206,4 @@ class AELLogParser(BaseLogParser):
 
     @staticmethod
     def description() -> str:
-        return "AEL 是一种基于事件抽象层次的日志解析方法。"
+        return "AEL 是一种通过分桶与相似度合并来自动抽取日志模板的解析方法。"

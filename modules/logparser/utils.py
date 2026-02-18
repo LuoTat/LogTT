@@ -68,16 +68,11 @@ def _generate_logformat_regex(log_format: str) -> tuple[list[str], re.Pattern]:
 
 
 def load_data(
-    log_file: Path, log_format: str, regex: list[str], should_stop: Callable[[], bool]
+    log_file: Path, log_format: str, should_stop: Callable[[], bool]
 ) -> pl.DataFrame:
     """Load and preprocess log data into a Polars DataFrame"""
     headers, format_regex = _generate_logformat_regex(log_format)
-    log_df = _log_to_dataframe(log_file, headers, format_regex, should_stop)
-    # 使用 Polars 原生字符串操作批量预处理，利用 Rust 多核并行加速
-    content_col = pl.col("Content")
-    for rex in regex:
-        content_col = content_col.str.replace_all(rex, "<*>")
-    return log_df.with_columns(content_col)
+    return _log_to_dataframe(log_file, headers, format_regex, should_stop)
 
 
 def output_result(
@@ -86,7 +81,7 @@ def output_result(
     structured_table_name: str,
     templates_table_name: str,
     keep_para: bool,
-) -> None:
+):
     """Output structured log data and templates to DuckDB tables"""
     log_df = log_df.with_columns(
         pl.Series("EventTemplate", log_templates),

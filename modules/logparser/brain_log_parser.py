@@ -18,122 +18,62 @@
 
 from collections import Counter
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import TypeAlias
 
 import polars as pl
-import regex as re
 
-from .base_log_parser import BaseLogParser
+from .base_log_parser import BaseLogParser, Content, Token
 from .parse_result import ParseResult
 from .parser_factory import parser_register
 from .utils import load_data, output_result
 
 
-class TupleTree:
-    __slots__ = (
-        "_sorted_tuple_vector",
-        "_word_combinations",
-        "_word_combinations_reverse",
-        "_tuple_vector",
-        "_group_len",
-    )
+class FToken:
+    __slots__ = ["row", "col", "token", "freq"]
 
-    def __init__(
-        self,
-        sorted_tuple_vector,
-        word_combinations,
-        word_combinations_reverse,
-        tuple_vector,
-        group_len,
-    ):
-        self._sorted_tuple_vector = sorted_tuple_vector
-        self._word_combinations = word_combinations
-        self._word_combinations_reverse = word_combinations_reverse
-        self._tuple_vector = tuple_vector
-        self._group_len = group_len
+    def __init__(self, row: int, col: int, token: Token, freq: int = 1):
+        self.row = row
+        self.col = col
+        self.token = token
+        self.freq = freq
 
-    def find_root(self, threshold_per):
-        root_set_detail_id = {}
-        root_set_detail = {}
-        root_set = {}
-        for idx, fc in enumerate(self._word_combinations):
-            count = self._group_len[idx]
-            threshold = (max(fc, key=lambda tup: tup[0])[0]) * threshold_per
-            m = 0
-            candidate = fc[0]
-            for fc_w in fc:
-                if fc_w[0] >= threshold:
-                    self._sorted_tuple_vector[idx].append((int(count[0]), -1, -1))
-                    root_set_detail_id.setdefault(fc_w, []).append(
-                        self._sorted_tuple_vector[idx]
-                    )
-                    root_set.setdefault(fc_w, []).append(
-                        self._word_combinations_reverse[idx]
-                    )
-                    root_set_detail.setdefault(fc_w, []).append(self._tuple_vector[idx])
-                    break
-                if fc_w[0] >= m:
-                    candidate = fc_w
-                    m = fc_w[0]
-                if fc_w == fc[-1]:
-                    self._sorted_tuple_vector[idx].append((int(count[0]), -1, -1))
-                    root_set_detail_id.setdefault(candidate, []).append(
-                        self._sorted_tuple_vector[idx]
-                    )
-                    root_set.setdefault(candidate, []).append(
-                        self._word_combinations_reverse[idx]
-                    )
-                    root_set_detail.setdefault(fc_w, []).append(self._tuple_vector[idx])
-        return root_set_detail_id, root_set, root_set_detail
 
-    @staticmethod
-    def up_split(root_set_detail, root_set):
-        for key, tree_node in root_set.items():
-            father_count = []
-            for node in tree_node:
-                pos = node.index(key)
-                father_count.extend(node[:pos])
-            father_set = set(father_count)
-            for father in father_set:
-                if father_count.count(father) != key[0]:
-                    for i in range(len(root_set_detail[key])):
-                        for k in range(len(root_set_detail[key][i])):
-                            if father[0] == root_set_detail[key][i][k]:
-                                root_set_detail[key][i][k] = (
-                                    root_set_detail[key][i][k][0],
-                                    "<*>",
-                                    root_set_detail[key][i][k][2],
-                                )
-                    break
-        return root_set_detail
+@dataclass(frozen=True, slots=True)
+class FTuple:
+    freq: int
+    count: int
 
-    @staticmethod
-    def down_split(root_set_detail_id, threshold, root_set_detail):
-        for key in root_set_detail_id:
-            detail_order = root_set_detail[key]
-            m = []
-            child = {}
-            variable = set()
-            m_count = 0
-            first_sentence = detail_order[0]
-            for det in first_sentence:
-                if det[0] != key[0]:
-                    m.append(m_count)
-                m_count += 1
-            for i in m:
-                for node in detail_order:
-                    if i < len(node):
-                        child.setdefault(i, []).append(node[i][1])
-            for i in m:
-                result = set(child[i])
-                if len(result) >= threshold:
-                    variable = variable.union(result)
-            for i, row in enumerate(root_set_detail_id[key]):
-                for j, item in enumerate(row):
-                    if isinstance(item, tuple) and item[1] in variable:
-                        root_set_detail_id[key][i][j] = (item[0], "<*>", item[2])
-        return root_set_detail_id
+
+class FCounter:
+    __slots__ = ["freq_counter"]
+
+    def __init__(self, fcontent: FContent):
+        freq_list = [ftoken.freq for ftoken in fcontent]
+        self.freq_counter = [
+            FTuple(freq_tuple[0], freq_tuple[1])
+            for freq_tuple in Counter(freq_list).most_common()
+        ]
+
+    def __iter__(self):
+        return iter(self.freq_counter)
+
+    def __len__(self):
+        return len(self.freq_counter)
+
+    def __getitem__(self, index):
+        return self.freq_counter[index]
+
+    def sort_by_count(self):
+        self.freq_counter.sort(key=lambda freq_tuple: freq_tuple.count, reverse=True)
+
+    def get_max_fre(self) -> int:
+        return max(freq_tuple.freq for freq_tuple in self.freq_counter)
+
+
+FContent: TypeAlias = list[FToken]
 
 
 @parser_register
@@ -141,33 +81,31 @@ class BrainLogParser(BaseLogParser):
     def __init__(
         self,
         log_format,
-        regex,
-        threshold=5,
-        delimiter: list[str] | None = None,
+        masking,
+        delimiters: list[str] | None = None,
+        var_thr=2,
     ):
         """
-
         Args:
-            threshold : similarity threshold
-            delimiter : list of delimiters to split log messages
+            var_thr : Threshold for determining variable columns.
         """
-        super().__init__(log_format, regex)
-        self._threshold = threshold
-        self._delimiter = delimiter if delimiter is not None else []
+        super().__init__(log_format, masking, delimiters)
+
+        self._var_thr = var_thr
 
     @staticmethod
     def _output_result(
         log_df: pl.DataFrame,
+        fcontents_group: dict[int, list[FContent]],
         structured_table_name: str,
         templates_table_name: str,
         keep_para: bool,
-        template_set,
     ):
         log_templates = [""] * log_df.height
-        for template, indices in template_set.items():
-            template_str = " ".join(template)
-            for i in indices:
-                log_templates[i] = template_str
+        for fcontents in fcontents_group.values():
+            for fcontent in fcontents:
+                template_tokens = [ftoken.token for ftoken in fcontent]
+                log_templates[fcontent[0].row] = " ".join(template_tokens)
 
         output_result(
             log_df,
@@ -177,103 +115,121 @@ class BrainLogParser(BaseLogParser):
             keep_para,
         )
 
-    @staticmethod
-    def _exclude_digits(string):
-        """Exclude the digits-domain words from partial constant"""
-        digits = re.findall(r"\d", string)
-        if not digits:
-            return False
-        return len(digits) / len(string) >= 0.3
+    def _down_split(
+        self,
+        root_rows: dict[FTuple, list[int]],
+        fcontents: list[FContent],
+    ):
+        for root, rows in root_rows.items():
+            col_max_fre: dict[int, int] = {}
+            col_tokens: dict[int, set[str]] = {}
+
+            for row in rows:
+                for ftoken in fcontents[row]:
+                    col_max_fre[ftoken.col] = max(
+                        col_max_fre.get(ftoken.col, 0),
+                        ftoken.freq,
+                    )
+                    col_tokens.setdefault(ftoken.col, set()).add(ftoken.token)
+
+            # 获取子节点列：最大频率小于 root.fre 的列
+            child_cols = [
+                col for col, max_fre in col_max_fre.items() if max_fre < root.freq
+            ]
+            child_cols.sort(key=lambda col: len(col_tokens.get(col, set())))
+            # 获取变量列：子节点列中不同词数量大于等于 threshold 的列
+            variable_child_cols = {
+                col
+                for col in child_cols
+                if len(col_tokens.get(col, set())) >= self._var_thr
+            }
+            # 将变量列的词置为 <*>
+            for row in rows:
+                for ftoken in fcontents[row]:
+                    if ftoken.col in variable_child_cols:
+                        ftoken.token = "<*>"
 
     @staticmethod
-    def _extract_templates(parse_result):
-        template_set = {}
-        for key in parse_result:
-            for pr in parse_result[key]:
-                sorted_pr = sorted(pr, key=lambda tup: tup[2])
-                template = []
-                for item in sorted_pr[1:]:
-                    word = item[1]
-                    if "<*>" in word or BrainLogParser._exclude_digits(word):
-                        template.append("<*>")
-                    else:
-                        template.append(word)
-                template = tuple(template)
-                template_set.setdefault(template, []).append(pr[-1][0])
-        return template_set
+    def _up_split(root_rows: dict[FTuple, list[int]], fcontents: list[FContent]):
+        for root, rows in root_rows.items():
+            col_max_fre: dict[int, int] = {}
+            col_tokens: dict[int, set[Token]] = {}
+
+            for row in rows:
+                for ftoken in fcontents[row]:
+                    col_max_fre[ftoken.col] = max(
+                        col_max_fre.get(ftoken.col, 0),
+                        ftoken.freq,
+                    )
+                    col_tokens.setdefault(ftoken.col, set()).add(ftoken.token)
+
+            # 获取父节点列：最大频率大于 root.fre 的列
+            parent_cols = {
+                col for col, max_fre in col_max_fre.items() if max_fre > root.freq
+            }
+            # 获取变量列：父节点列中有多个不同词的列
+            variable_parent_cols = {
+                col for col in parent_cols if len(col_tokens[col]) > 1
+            }
+            # 将变量列的词置为 <*>
+            for row in rows:
+                for ftoken in fcontents[row]:
+                    if ftoken.col in variable_parent_cols:
+                        ftoken.token = "<*>"
 
     @staticmethod
-    def _tuple_generate(group_len, tuple_vector, frequency_vector):
-        """
-        Generate word combinations.
+    def _find_root(
+        fcounters: list[FCounter],
+        alpha: float = 0.5,
+    ) -> dict[FTuple, list[int]]:
+        root_rows: dict[FTuple, list[int]] = {}
+        for idx, fcounter in enumerate(fcounters):
+            fcounter.sort_by_count()  # 按 count 排序
+            freq_thr = fcounter.get_max_fre() * alpha
+            matched_freq_tuple = fcounter[0]  # 默认选出现次数最高的 FTuple
+            for freq_tuple in fcounter:
+                if freq_tuple.freq >= freq_thr:
+                    matched_freq_tuple = freq_tuple
+                    break
+            root_rows.setdefault(matched_freq_tuple, []).append(idx)
 
-        Returns:
-            sorted_tuple_vector: each tuple in the tuple_vector will be sorted according their frequencies.
-            word_combinations:  words in the log with the same frequency will be grouped as word combinations and will
-                                be arranged in descending order according to their frequencies.
-            word_combinations_reverse:  The word combinations in the log will be arranged in ascending order according
-                                        to their frequencies.
-        """
-        sorted_tuple_vector = {}
-        word_combinations = {}
-        word_combinations_reverse = {}
-        for key in group_len.keys():
-            for fre in tuple_vector[key]:
-                sorted_fre_reverse = sorted(fre, key=lambda tup: tup[0], reverse=True)
-                sorted_tuple_vector.setdefault(key, []).append(sorted_fre_reverse)
-            for fc in frequency_vector[key]:
-                number = Counter(fc)
-                result = number.most_common()
-                sorted_result = sorted(result, key=lambda tup: tup[1], reverse=True)
-                sorted_fre = sorted(result, key=lambda tup: tup[0], reverse=True)
-                word_combinations.setdefault(key, []).append(sorted_result)
-                word_combinations_reverse.setdefault(key, []).append(sorted_fre)
-        return sorted_tuple_vector, word_combinations, word_combinations_reverse
+        return root_rows
 
     @staticmethod
-    def _get_frequency_vector(contents, delimiter):
-        """
-        Count each word's frequency in the dataset and convert each log into frequency vector.
+    def _get_fcounters_group(
+        fcontents_group: dict[int, list[FContent]],
+    ) -> dict[int, list[FCounter]]:
+        fcounters_group: dict[int, list[FCounter]] = {}
+        for length, fcontents in fcontents_group.items():
+            for fcontent in fcontents:
+                fcounter = FCounter(fcontent)
+                fcounters_group.setdefault(length, []).append(fcounter)
 
-        Returns:
-            group_len: log groups based on length
-            tuple_vector: the word in the log will be converted into a tuple (word_frequency, word_character, word_position)
-            frequency_vector: the word in the log will be converted into its frequency
-        """
-        group_len = {}
-        word_set = {}
-        for idx, c in enumerate(contents):  # using delimiters to get split words
-            for de in delimiter:
-                c = re.sub(de, "", c)
-            c = re.sub(",", ", ", c)
-            c = re.sub(" +", " ", c).split()
-            c.insert(0, str(idx))
-            for pos, token in enumerate(c):
-                word_set.setdefault(str(pos), []).append(token)
-            group_len.setdefault(len(c), []).append(
-                c
-            )  # first grouping: logs with the same length
-        tuple_vector = {}
-        frequency_vector = {}
-        max_len = max(group_len.keys())  # the biggest length of the log in this dataset
-        fre_set = {}  # saving each word's frequency
-        for i in range(max_len):
-            for word in word_set[str(i)]:  # counting each word's frequency
-                word = str(i) + " " + word
-                fre_set[word] = fre_set.get(word, 0) + 1
-        for (
-            key
-        ) in group_len.keys():  # using fre_set to generate frequency vector for the log
-            for c in group_len[key]:  # in each log group with the same length
-                fre = []
-                fre_common = []
-                for position, word_character in enumerate(c[1:]):
-                    frequency_word = fre_set[str(position + 1) + " " + word_character]
-                    fre.append((frequency_word, word_character, position))
-                    fre_common.append(frequency_word)
-                tuple_vector.setdefault(key, []).append(fre)
-                frequency_vector.setdefault(key, []).append(fre_common)
-        return group_len, tuple_vector, frequency_vector
+        return fcounters_group
+
+    @staticmethod
+    def _get_fcontents_group(contents: list[Content]) -> dict[int, list[FContent]]:
+        ftoken_group: dict[int, list[FContent]] = {}
+        for row, content in enumerate(contents):
+            ftoken_list: list[FToken] = []
+            for col, token in enumerate(content):
+                ftoken_list.append(FToken(row, col, token))
+            ftoken_group.setdefault(len(content), []).append(ftoken_list)
+
+        for fcontents in ftoken_group.values():
+            # 同组内每行长度一致，所以可以直接 zip(*all_ftokens) 按列取数据
+            col_counters = [
+                Counter(
+                    ftoken.token for ftoken in col_ftokens
+                )  # 统计该列每个词出现次数
+                for col_ftokens in zip(*fcontents)
+            ]
+            # 把频率写回每个 FToken
+            for fcontent in fcontents:
+                for col, ftoken in enumerate(fcontent):
+                    ftoken.freq = col_counters[col][ftoken.token]
+
+        return ftoken_group
 
     def parse(
         self,
@@ -287,47 +243,38 @@ class BrainLogParser(BaseLogParser):
         print(f"Parsing file: {log_file}")
         start_time = datetime.now()
 
-        log_df = load_data(log_file, self._log_format, self._regex, should_stop)
+        log_df = load_data(log_file, self._log_format, should_stop)
+        # 预处理日志内容：掩码处理 + 分词
+        log_df = self._mask_log_df(log_df)
+        log_df = self._split_log_df(log_df)
+        contents: list[Content] = log_df["Tokens"].to_list()
 
-        contents = log_df["Content"].to_list()
+        fcontents_group = BrainLogParser._get_fcontents_group(contents)
+        fcounters_group = BrainLogParser._get_fcounters_group(fcontents_group)
 
-        group_len, tuple_vector, frequency_vector = (
-            BrainLogParser._get_frequency_vector(contents, self._delimiter)
-        )
+        for fcontents, fcounters in zip(
+            fcontents_group.values(),
+            fcounters_group.values(),
+        ):
+            root_rows = BrainLogParser._find_root(fcounters, 0.5)
 
-        (
-            sorted_tuple_vector,
-            word_combinations,
-            word_combinations_reverse,
-        ) = BrainLogParser._tuple_generate(group_len, tuple_vector, frequency_vector)
-
-        template_set = {}
-        for key in group_len:
-            if should_stop():
-                raise InterruptedError
-
-            tree = TupleTree(
-                sorted_tuple_vector[key],
-                word_combinations[key],
-                word_combinations_reverse[key],
-                tuple_vector[key],
-                group_len[key],
-            )
-            root_set_detail_id, root_set, root_set_detail = tree.find_root(0)
-
-            root_set_detail_id = TupleTree.up_split(root_set_detail_id, root_set)
-            parse_result = TupleTree.down_split(
-                root_set_detail_id, self._threshold, root_set_detail
-            )
-            template_set.update(BrainLogParser._extract_templates(parse_result))
+            BrainLogParser._up_split(root_rows, fcontents)
+            self._down_split(root_rows, fcontents)
 
         BrainLogParser._output_result(
-            log_df, structured_table_name, templates_table_name, keep_para, template_set
+            log_df,
+            fcontents_group,
+            structured_table_name,
+            templates_table_name,
+            keep_para,
         )
 
         print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
         return ParseResult(
-            log_file, log_df.height, structured_table_name, templates_table_name
+            log_file,
+            log_df.height,
+            structured_table_name,
+            templates_table_name,
         )
 
     @staticmethod
@@ -336,4 +283,4 @@ class BrainLogParser(BaseLogParser):
 
     @staticmethod
     def description() -> str:
-        return "Brain 是一种基于双向树结构的高效日志模板提取算法"
+        return "Brain 是一种基于双向树结构的高效日志模板提取算法。"
