@@ -3,7 +3,7 @@
 # Based on https://github.com/logpai/logparser/blob/master/logparser/Drain/Drain.py by LogPAI team
 
 
-from .drain_base_log_parser import Content, DrainBaseLogParser, LogCluster, Node, Token
+from .drain_base_log_parser import Content, DrainBaseLogParser, LogCluster, Node
 from .parser_factory import parser_register
 
 
