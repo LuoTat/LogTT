@@ -73,7 +73,6 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pyside6-fluent-widgets", extra = ["full"] },
     { name = "regex" },
-    { name = "scipy" },
 ]
 
 [package.metadata]
@@ -85,7 +84,6 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=23.0.0" },
     { name = "pyside6-fluent-widgets", extras = ["full"], specifier = ">=1.11.0" },
     { name = "regex", specifier = ">=2026.1.15" },
-    { name = "scipy", specifier = ">=1.17.0" },
 ]
 
 [[package]]

@@ -12,5 +12,4 @@ dependencies = [
     "pyarrow>=23.0.0",
     "pyside6-fluent-widgets[full]>=1.11.0",
     "regex>=2026.1.15",
-    "scipy>=1.17.0",
 ]
