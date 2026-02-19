@@ -83,6 +83,8 @@ def output_result(
     keep_para: bool,
 ):
     """Output structured log data and templates to DuckDB tables"""
+    log_df = log_df.drop("MaskedContent")
+    log_df = log_df.drop("Tokens")
     log_df = log_df.with_columns(
         pl.Series("EventTemplate", log_templates),
     )

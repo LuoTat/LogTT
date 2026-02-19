@@ -15,6 +15,7 @@
 # =========================================================================
 
 
+import math
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -87,7 +88,16 @@ class SpellLogParser(BaseLogParser):
         )
 
     @staticmethod
-    def _create_template(lcs: list[Token], content: Content) -> list[str]:
+    def _merge_wildcards(content: Content) -> Content:
+        merged_content = []
+        for token in content:
+            if token == "<*>" and merged_content and merged_content[-1] == "<*>":
+                continue
+            merged_content.append(token)
+        return merged_content
+
+    @staticmethod
+    def _create_template(lcs: list[Token], content: Content) -> Content:
         ret_val = []
         if not lcs:
             return ret_val
@@ -103,11 +113,11 @@ class SpellLogParser(BaseLogParser):
                 if i < len(content) - 1:
                     ret_val.append("<*>")
                 break
-        return ret_val
+        return SpellLogParser._merge_wildcards(ret_val)
 
     def _remove_seq_from_prefix_tree(self, cluster: LogCluster) -> None:
         parent = self._root_node
-        const_content = [w for w in cluster.content if w != "<*>"]
+        const_content = [token for token in cluster.content if token != "<*>"]
 
         for token in const_content:
             if token in parent.children_node:
@@ -121,9 +131,9 @@ class SpellLogParser(BaseLogParser):
 
     def _add_seq_to_prefix_tree(self, new_cluster: LogCluster) -> None:
         cur_node = self._root_node
-        # seq = [w for w in new_cluster.log_template if w != "<*>"]
+        const_content = [token for token in new_cluster.content if token != "<*>"]
 
-        for token in new_cluster.content:
+        for token in const_content:
             if token in cur_node.children_node:
                 cur_node.children_node[token].template_no += 1
             else:
@@ -136,7 +146,7 @@ class SpellLogParser(BaseLogParser):
         cur_node.cluster_id = new_cluster.cluster_id
 
     @staticmethod
-    def _lcs(content1: Content, content2: Content) -> list[str]:
+    def _lcs(content1: Content, content2: Content) -> list[Token]:
         lengths = [[0] * (len(content2) + 1) for _ in range(len(content1) + 1)]
         # row 0 and column 0 are initialized to 0 already
         for i in range(len(content1)):
@@ -148,23 +158,23 @@ class SpellLogParser(BaseLogParser):
 
         # read the substring out from the matrix
         lcs = []
-        len_of_seq1, len_of_seq2 = len(content1), len(content2)
-        while len_of_seq1 != 0 and len_of_seq2 != 0:
+        len_of_content1, len_of_content2 = len(content1), len(content2)
+        while len_of_content1 != 0 and len_of_content2 != 0:
             if (
-                lengths[len_of_seq1][len_of_seq2]
-                == lengths[len_of_seq1 - 1][len_of_seq2]
+                lengths[len_of_content1][len_of_content2]
+                == lengths[len_of_content1 - 1][len_of_content2]
             ):
-                len_of_seq1 -= 1
+                len_of_content1 -= 1
             elif (
-                lengths[len_of_seq1][len_of_seq2]
-                == lengths[len_of_seq1][len_of_seq2 - 1]
+                lengths[len_of_content1][len_of_content2]
+                == lengths[len_of_content1][len_of_content2 - 1]
             ):
-                len_of_seq2 -= 1
+                len_of_content2 -= 1
             else:
-                assert content1[len_of_seq1 - 1] == content2[len_of_seq2 - 1]
-                lcs.append(content1[len_of_seq1 - 1])
-                len_of_seq1 -= 1
-                len_of_seq2 -= 1
+                assert content1[len_of_content1 - 1] == content2[len_of_content2 - 1]
+                lcs.append(content1[len_of_content1 - 1])
+                len_of_content1 -= 1
+                len_of_content2 -= 1
         lcs.reverse()
         return lcs
 
@@ -173,9 +183,6 @@ class SpellLogParser(BaseLogParser):
         max_clust = None
 
         for cluster in self._id_to_cluster.values():
-            # set_template = set(cluster.log_template)
-            # if len(set_seq & set_template) < 0.5 * size_seq:
-            #     continue
             lcs_length = len(SpellLogParser._lcs(content, cluster.content))
             if lcs_length > max_lcs_count or (
                 lcs_length == max_lcs_count
@@ -184,8 +191,12 @@ class SpellLogParser(BaseLogParser):
                 max_lcs_count = lcs_length
                 max_clust = cluster
 
-        # LCS should be larger than tau * len(itself)
-        if max_lcs_count >= self._sim_thr * len(content):
+        required_content_lcs = self._sim_thr * len(content)
+        required_cluster_lcs = self._sim_thr * len(max_clust.content)
+
+        if max_lcs_count >= math.ceil(
+            required_content_lcs
+        ) and max_lcs_count >= math.ceil(required_cluster_lcs):
             return max_clust
 
         return None
@@ -238,13 +249,13 @@ class SpellLogParser(BaseLogParser):
             return new_cluster
 
         # Add the new log message to the existing cluster
-        new_template_tokens = SpellLogParser._create_template(
+        new_content = SpellLogParser._create_template(
             SpellLogParser._lcs(content, match_cluster.content),
             match_cluster.content,
         )
-        if new_template_tokens != match_cluster.content:
+        if new_content != match_cluster.content:
             self._remove_seq_from_prefix_tree(match_cluster)
-            match_cluster.content = new_template_tokens
+            match_cluster.content = new_content
             self._add_seq_to_prefix_tree(match_cluster)
 
         return match_cluster

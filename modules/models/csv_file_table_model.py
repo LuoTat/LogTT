@@ -67,7 +67,7 @@ class CsvFileTableModel(QAbstractTableModel):
             self._cache_row_data(row)
 
         if role == Qt.ItemDataRole.DisplayRole:
-            return str(self._cache_df.item(row - self._cache_offset, col))
+            return self._cache_df.item(row - self._cache_offset, col)
 
         # 处理前景色角色
         elif role == Qt.ItemDataRole.ForegroundRole:

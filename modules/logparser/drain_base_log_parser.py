@@ -121,11 +121,9 @@ class DrainBaseLogParser(BaseLogParser, ABC):
             return new_cluster
 
         # Add the new log message to the existing cluster
-        new_template_tokens = type(self)._create_template(
-            content, match_cluster.content
-        )
-        if new_template_tokens != match_cluster.content:
-            match_cluster.content = new_template_tokens
+        new_content = type(self)._create_template(content, match_cluster.content)
+        if new_content != match_cluster.content:
+            match_cluster.content = new_content
 
         return match_cluster
 
