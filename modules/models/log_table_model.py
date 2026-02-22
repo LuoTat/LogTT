@@ -91,11 +91,11 @@ class LogExtractTask(QObject):
                 self._log_parser_config.delimiters,
                 **ex_args,
             ).parse(
-                self._log_file,
+                self._log_file.as_posix(),
                 self._structured_table_name,
                 self._templates_table_name,
-                lambda: QThread.currentThread().isInterruptionRequested(),
                 False,
+                lambda: QThread.currentThread().isInterruptionRequested(),
                 lambda progress: self.progress.emit(self._log_id, progress),
             )
 
@@ -232,7 +232,9 @@ class LogTableModel(QAbstractTableModel):
         return None
 
     def sort(
-        self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder
+        self,
+        column: int,
+        order: Qt.SortOrder = Qt.SortOrder.AscendingOrder,
     ) -> None:
         # 无效列索引
         if column < 0:
