@@ -5,11 +5,15 @@ description = "结构化日志分析与可视化系统"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "cython>=3.2.4",
     "duckdb>=1.4.4",
+    "formatparse>=0.6.1",
     "humanize>=4.15.0",
     "loguru>=0.7.3",
-    "polars>=1.37.1",
-    "pyarrow>=23.0.0",
-    "pyside6-fluent-widgets[full]>=1.11.0",
-    "regex>=2026.1.15",
+    "parse>=1.21.1",
+    "polars>=1.38.1",
+    "pyarrow>=23.0.1",
+    "pyside6-fluent-widgets[full]>=1.11.1",
+    "regex>=2026.2.19",
+    "setuptools>=82.0.0",
 ]
