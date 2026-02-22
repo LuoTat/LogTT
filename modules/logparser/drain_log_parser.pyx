@@ -12,6 +12,7 @@ cdef object parser_register
 from datetime import datetime
 
 from cython.operator cimport dereference as deref
+from libc.stdint cimport uint16_t
 from libcpp.memory cimport make_shared, nullptr, shared_ptr
 from libcpp.string cimport to_string
 from libcpp.unordered_map cimport unordered_map
@@ -100,8 +101,8 @@ cdef Content _create_template(
 cdef void _add_to_prefix_tree(
     shared_ptr[LogCluster] cluster,
     shared_ptr[Node] root_node,
-    int depth,
-    int children,
+    uint16_t depth,
+    uint16_t children,
 ):
     cdef const char * wird_card = "<#*#>"
     cdef size_t length = deref(cluster).content.size()
@@ -114,7 +115,7 @@ cdef void _add_to_prefix_tree(
     for idx in range(length):
         new_content[idx + 1] = deref(cluster).content[idx]
 
-    cdef size_t cur_node_depth = 1
+    cdef uint16_t cur_node_depth = 1
     cdef Token token
     for token in new_content:
         # if at max depth or this is last token in template - add current log cluster to the leaf node
@@ -147,7 +148,7 @@ cdef void _add_to_prefix_tree(
 
         cur_node_depth += 1
 
-cdef pair[double, int] _get_distance(
+cdef pair[float, uint16_t] _get_distance(
     Content& content1,
     Content& content2,
     bint include_params,
@@ -156,10 +157,10 @@ cdef pair[double, int] _get_distance(
 
     # list are empty - full match
     if length == 0:
-        return pair[double, int](1.0, 0)
+        return pair[float, uint16_t](1.0, 0)
 
-    cdef int sim_tokens = 0
-    cdef int param_count = 0
+    cdef uint16_t sim_tokens = 0
+    cdef uint16_t param_count = 0
 
     cdef size_t idx
     cdef Token token1
@@ -177,7 +178,7 @@ cdef pair[double, int] _get_distance(
         # 参数位也当匹配贡献
         sim_tokens += param_count
 
-    return pair[double, int](<double> sim_tokens / length, param_count)
+    return pair[float, uint16_t](<float> sim_tokens / length, param_count)
 
 cdef shared_ptr[LogCluster] _fast_match(
     vector[shared_ptr[LogCluster]]& clusters,
@@ -185,16 +186,16 @@ cdef shared_ptr[LogCluster] _fast_match(
     bint include_params,
     float sim_thr,
 ):
-    cdef double max_sim = -1.0
-    cdef int max_param_count = -1
+    cdef float max_sim = -1.0
+    cdef uint16_t max_param_count = 0
     cdef shared_ptr[LogCluster] max_cluster
     cdef size_t length = clusters.size()
 
     cdef size_t idx
     cdef shared_ptr[LogCluster] cluster
-    cdef pair[double, int] result
-    cdef double cur_sim
-    cdef int param_count
+    cdef pair[float, uint16_t] result
+    cdef float cur_sim
+    cdef uint16_t param_count
     for idx in range(length):
         cluster = clusters[idx]
         result = _get_distance(
@@ -220,7 +221,7 @@ cdef shared_ptr[LogCluster] _tree_search(
     Content& content,
     bint include_params,
     shared_ptr[Node] root_node,
-    int depth,
+    uint16_t depth,
     float sim_thr,
 ):
     cdef size_t length = content.size()
@@ -233,7 +234,7 @@ cdef shared_ptr[LogCluster] _tree_search(
     for idx in range(length):
         new_content[idx + 1] = content[idx]
 
-    cdef int cur_node_depth = 1
+    cdef uint16_t cur_node_depth = 1
     cdef Token token
     cdef unordered_map[Token, shared_ptr[Node]].iterator it
     for token in new_content:
@@ -257,8 +258,8 @@ cdef shared_ptr[LogCluster] _tree_search(
 cdef shared_ptr[LogCluster] _add_content(
     Content& content,
     shared_ptr[Node] root_node,
-    int depth,
-    int children,
+    uint16_t depth,
+    uint16_t children,
     float sim_thr,
 ):
     cdef shared_ptr[LogCluster] match_cluster = _tree_search(
@@ -286,8 +287,8 @@ cdef shared_ptr[LogCluster] _add_content(
 cdef class DrainLogParser(BaseLogParser):
     """Drain算法"""
 
-    cdef int _depth
-    cdef int _children
+    cdef uint16_t _depth
+    cdef uint16_t _children
     cdef float _sim_thr
     cdef shared_ptr[Node] _root_node
 
@@ -296,8 +297,8 @@ cdef class DrainLogParser(BaseLogParser):
         string log_format,
         object masking=None,
         object delimiters=None,
-        int depth=4,
-        int children=100,
+        uint16_t depth=4,
+        uint16_t children=100,
         float sim_thr=0.4,
     ):
         """
