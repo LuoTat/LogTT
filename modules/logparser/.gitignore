@@ -1,3 +1,4 @@
+*.so
 *.pyd
 *.cpp
 *.html
