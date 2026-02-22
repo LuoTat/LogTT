@@ -157,7 +157,7 @@ cdef pair[float, uint16_t] _get_distance(
 
     # list are empty - full match
     if length == 0:
-        return pair[float, uint16_t](1.0, 0)
+        return pair[float, uint16_t](<float>1.0, <uint16_t>0)
 
     cdef uint16_t sim_tokens = 0
     cdef uint16_t param_count = 0
