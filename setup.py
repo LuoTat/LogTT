@@ -12,7 +12,7 @@ extensions = [
         extra_compile_args=[
             "-DCYTHON_CLINE_IN_TRACEBACK=0",
             "-O3",
-            "-std:c++20",
+            "-std=c++20",
         ],
     ),
 ]
