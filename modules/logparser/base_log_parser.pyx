@@ -31,8 +31,6 @@ cdef class BaseLogParser:
         string structured_table_name,
         string templates_table_name,
         bint keep_para = False,
-        object should_stop = None,
-        object progress_callback = None,
     ) -> ParseResult:
         """
         parse the log file into SQL tables.
@@ -42,8 +40,6 @@ cdef class BaseLogParser:
             structured_table_name : table name for structured log.
             templates_table_name : table name for templates log.
             keep_para : whether to keep parameter list in structured log file.
-            should_stop : callback function to check if the process should stop.
-            progress_callback : callback function to report progress (0-100).
         """
 
         raise NotImplementedError()
