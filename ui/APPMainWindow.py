@@ -54,7 +54,7 @@ class APPMainWindow(FluentWindow):
                 self,
             )
             if confirm.exec():
-                self.log_manage_page.interrupt_all_extract_tasks()
+                self.log_manage_page.kill_tasks()
                 event.accept()
                 return
 

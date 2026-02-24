@@ -14,11 +14,10 @@ from qfluentwidgets import (
 )
 
 from modules.app_config import appcfg
-from modules.models import LogColumn, LogStatus, LogTableModel
+from modules.models import LogStatus, LogTableModel
 
 from .AddLogMessageBox import AddLogMessageBox
 from .ExtractLogMessageBox import ExtractLogMessageBox
-from .ProgressBarDelegate import ProgressBarDelegate
 
 
 class LogManagePage(QWidget):
@@ -52,7 +51,6 @@ class LogManagePage(QWidget):
 
         # 连接模型信号 -> UI 反馈
         self._log_table_model.extractFinished.connect(self._on_extract_finished)
-        self._log_table_model.extractInterrupted.connect(self._on_extract_interrupted)
         self._log_table_model.extractError.connect(self._on_extract_error)
 
         self._log_table_model.addSuccess.connect(self._on_add_success)
@@ -113,12 +111,6 @@ class LogManagePage(QWidget):
         self._table_view.verticalHeader().hide()
         # 设置每次只选择一行
         self._table_view.setSelectionMode(TableView.SelectionMode.SingleSelection)
-        # 设置进度条委托
-        self._progress_delegate = ProgressBarDelegate(self._table_view)
-        self._table_view.setItemDelegateForColumn(
-            LogColumn.PROGRESS,
-            self._progress_delegate,
-        )
         # 设置右键菜单
         self._table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._table_view.customContextMenuRequested.connect(
@@ -128,7 +120,6 @@ class LogManagePage(QWidget):
         self._table_view.horizontalHeader().sectionResized.connect(
             self._on_column_resized
         )
-
         # 恢复列宽
         self._restore_column_widths()
 
@@ -184,19 +175,15 @@ class LogManagePage(QWidget):
             extract_action = Action(FluentIcon.PLAY, self.tr("开始提取"))
             extract_action.triggered.connect(lambda: self._on_extract_log(index))
             menu.addAction(extract_action)
-        else:
-            # 正在提取的日志
-            stop_action = Action(FluentIcon.CANCEL, self.tr("终止提取"))
-            stop_action.triggered.connect(
-                lambda: self._log_table_model.request_interrupt_task(index)
-            )
-            menu.addAction(stop_action)
 
         menu.addSeparator()
 
         # 删除操作
         delete_action = Action(FluentIcon.DELETE, self.tr("删除"))
         delete_action.triggered.connect(lambda: self._on_delete_log(index))
+        # 如果正在提取，禁用删除
+        if status == LogStatus.EXTRACTING:
+            delete_action.setEnabled(False)
         menu.addAction(delete_action)
 
         # 显示菜单
@@ -251,19 +238,6 @@ class LogManagePage(QWidget):
         InfoBar.success(
             title=self.tr("提取成功"),
             content=self.tr("日志模板提取完成，共 {0} 行").format(f"{line_count:,}"),
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=3000,
-            parent=self,
-        )
-
-    @Slot(int)
-    def _on_extract_interrupted(self, _: int):
-        """处理提取中断"""
-        InfoBar.info(
-            title=self.tr("提取中断"),
-            content=self.tr("日志提取已终止"),
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -355,6 +329,6 @@ class LogManagePage(QWidget):
         """是否有正在提取的任务"""
         return self._log_table_model.has_extracting_tasks()
 
-    def interrupt_all_extract_tasks(self):
+    def kill_tasks(self):
         """中断所有正在提取的任务"""
-        self._log_table_model.interrupt_all_tasks()
+        self._log_table_model.kill_tasks()

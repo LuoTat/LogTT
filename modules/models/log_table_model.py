@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from concurrent.futures import Future, ProcessPoolExecutor
+from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
 from typing import Any
@@ -10,14 +11,13 @@ from PySide6.QtCore import (
     QModelIndex,
     QObject,
     Qt,
-    QThread,
     Signal,
     Slot,
 )
 from PySide6.QtGui import QColor
 
 from modules.duckdb_service import DuckDBService
-from modules.logparser import BaseLogParser, LogParserConfig
+from modules.logparser import BaseLogParser, LogParserConfig, ParseResult
 
 
 class LogColumn(IntEnum):
@@ -28,9 +28,8 @@ class LogColumn(IntEnum):
     LOG_TYPE = 2  # 日志类型
     FORMAT_TYPE = 3  # 日志格式
     CREATE_TIME = 4  # 创建时间
-    PROGRESS = 5  # 进度 -> 虚拟列
-    STATUS = 6  # 状态 -> 虚拟列
-    EXTRACT_METHOD = 7  # 提取方法
+    STATUS = 5  # 状态 -> 虚拟列
+    EXTRACT_METHOD = 6  # 提取方法
 
 
 class SqlColumn(IntEnum):
@@ -56,15 +55,49 @@ class LogStatus(IntEnum):
     EXTRACTING = 2  # 提取中
 
 
-class LogExtractTask(QObject):
-    """日志提取工作线程"""
+class LogExtractTaskPool(QObject):
+    """日志提取工作进程"""
 
     finished = Signal(int, int)  # (log_id, line_count)
-    interrupted = Signal(int)  # (log_id)
     error = Signal(int, str)  # (log_id, error_message)
-    progress = Signal(int, int)  # (log_id, progress)
+
+    @staticmethod
+    def _run_log_extract_task(
+        log_file: Path,
+        log_parser_type: type[BaseLogParser],
+        log_parser_config: LogParserConfig,
+        structured_table_name: str,
+        templates_table_name: str,
+    ) -> ParseResult:
+        """在子进程中执行日志提取任务。"""
+        print(f"Parsing file: {log_file}")
+        start_time = datetime.now()
+        ex_args = log_parser_config.ex_args.get(log_parser_type, {})
+        parser = log_parser_type(
+            log_parser_config.log_format,
+            log_parser_config.masking,
+            log_parser_config.delimiters,
+            **ex_args,
+        )
+        result = parser.parse(
+            log_file.as_posix(),
+            structured_table_name,
+            templates_table_name,
+            False,
+        )
+        print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
+        return result
 
     def __init__(
+        self,
+        max_workers: int = 1,
+        parent=None,
+    ):
+        super().__init__(parent)
+
+        self._pool = ProcessPoolExecutor(max_workers=max_workers)
+
+    def submit(
         self,
         log_id: int,
         log_file: Path,
@@ -73,47 +106,28 @@ class LogExtractTask(QObject):
         structured_table_name: str,
         templates_table_name: str,
     ):
-        super().__init__()
-        self._log_id = log_id
-        self._log_file = log_file
-        self._log_parser_type = log_parser_type
-        self._log_parser_config = log_parser_config
-        self._structured_table_name = structured_table_name
-        self._templates_table_name = templates_table_name
+        future = self._pool.submit(
+            LogExtractTaskPool._run_log_extract_task,
+            log_file,
+            log_parser_type,
+            log_parser_config,
+            structured_table_name,
+            templates_table_name,
+        )
+        future.add_done_callback(
+            lambda f, log_id=log_id: self._on_future_done(f, log_id)
+        )
 
-    @Slot()
-    def run(self):
+    def _on_future_done(self, future: Future, log_id: int):
         try:
-            ex_args = self._log_parser_config.ex_args.get(self._log_parser_type, {})
-            result = self._log_parser_type(
-                self._log_parser_config.log_format,
-                self._log_parser_config.masking,
-                self._log_parser_config.delimiters,
-                **ex_args,
-            ).parse(
-                self._log_file.as_posix(),
-                self._structured_table_name,
-                self._templates_table_name,
-                False,
-                lambda: QThread.currentThread().isInterruptionRequested(),
-                lambda progress: self.progress.emit(self._log_id, progress),
-            )
-
-            # 提取完成
-            self.finished.emit(self._log_id, result.line_count)
-        except InterruptedError:
-            self.interrupted.emit(self._log_id)
+            result = future.result()
+            self.finished.emit(log_id, result.line_count)
         except Exception as e:
-            self.error.emit(self._log_id, str(e))
+            self.error.emit(log_id, str(e))
 
-
-@dataclass
-class LogExtractTaskInfo:
-    """日志提取任务信息"""
-
-    thread: QThread
-    task: LogExtractTask
-    progress: int = 0
+    def kill(self):
+        self._pool.kill_workers()
+        self._pool.shutdown(wait=False, cancel_futures=True)
 
 
 class LogTableModel(QAbstractTableModel):
@@ -126,7 +140,6 @@ class LogTableModel(QAbstractTableModel):
         QT_TRANSLATE_NOOP("LogTableModel", "日志类型"),
         QT_TRANSLATE_NOOP("LogTableModel", "日志格式"),
         QT_TRANSLATE_NOOP("LogTableModel", "创建时间"),
-        QT_TRANSLATE_NOOP("LogTableModel", "进度"),
         QT_TRANSLATE_NOOP("LogTableModel", "状态"),
         QT_TRANSLATE_NOOP("LogTableModel", "提取方法"),
     ]
@@ -150,7 +163,6 @@ class LogTableModel(QAbstractTableModel):
         SqlColumn.LOG_TYPE,
         SqlColumn.FORMAT_TYPE,
         SqlColumn.CREATE_TIME,
-        None,  # 进度虚拟列
         None,  # 状态虚拟列
         SqlColumn.EXTRACT_METHOD,
     ]
@@ -167,7 +179,6 @@ class LogTableModel(QAbstractTableModel):
 
     # UI 控制信号
     extractFinished = Signal(int, int)  # 提取完成 (log_id, line_count)
-    extractInterrupted = Signal(int)  # 提取中断 (log_id)
     extractError = Signal(int, str)  # 提取错误 (log_id, error_message)
     addSuccess = Signal()  # 添加成功
     addDuplicate = Signal()  # 添加重复
@@ -180,10 +191,14 @@ class LogTableModel(QAbstractTableModel):
 
         # 创建log表
         DuckDBService.create_log_table_if_not_exists()
+        # 创建日志提取任务进程池
+        self._log_extract_pool = LogExtractTaskPool(4, self)
+        self._log_extract_pool.finished.connect(self._on_extract_finished)
+        self._log_extract_pool.error.connect(self._on_extract_errored)
         # 一次性获取整个表的数据到内存中
         self._df: list[tuple] = DuckDBService.get_log_table()
-        # 存储正在提取的任务信息: log_id -> LogExtractTaskInfo
-        self._extract_tasks: dict[int, LogExtractTaskInfo] = {}
+        # 存储正在提取的任务信息: log_id
+        self._extract_tasks: set[int] = set()
 
     # ==================== 重写方法 ====================
 
@@ -243,23 +258,6 @@ class LogTableModel(QAbstractTableModel):
         col = LogColumn(column)
         descending = order == Qt.SortOrder.DescendingOrder
 
-        # 虚拟列：进度
-        if col == LogColumn.PROGRESS:
-
-            def sort_progress(log: tuple) -> int:
-                log_id = log[SqlColumn.ID]
-                if log[SqlColumn.IS_EXTRACTED]:
-                    return 100
-                elif log_id in self._extract_tasks:
-                    return self._extract_tasks[log_id].progress
-                else:
-                    return 0
-
-            self.layoutAboutToBeChanged.emit()
-            self._df = sorted(self._df, key=sort_progress, reverse=descending)
-            self.layoutChanged.emit()
-            return
-
         # 虚拟列：状态
         if col == LogColumn.STATUS:
 
@@ -295,17 +293,13 @@ class LogTableModel(QAbstractTableModel):
                 return idx
         return -1
 
-    def _get_display_data(self, index: QModelIndex) -> Any:
+    def _get_display_data(self, index: QModelIndex) -> str:
         """获取显示数据"""
         row = index.row()
         col = index.column()
 
-        # 进度列
-        if col == LogColumn.PROGRESS:
-            return self._get_progress(index)
-
         # 状态列
-        elif col == LogColumn.STATUS:
+        if col == LogColumn.STATUS:
             status = self._get_status(index)
             return self.tr(str(self._STATUS_TO_TEXT[status]))
 
@@ -327,15 +321,6 @@ class LogTableModel(QAbstractTableModel):
         else:
             return LogStatus.NOT_EXTRACTED
 
-    def _get_progress(self, index: QModelIndex) -> int:
-        """获取提取进度"""
-        is_extracted = self._df[index.row()][SqlColumn.IS_EXTRACTED]
-        if is_extracted:
-            return 100
-        elif (log_id := index.data(self.LOG_ID_ROLE)) in self._extract_tasks:
-            return self._extract_tasks[log_id].progress
-        return 0
-
     def _set_df_data(self, row: int, column: SqlColumn, value: object):
         """更新内存DataFrame"""
         row_list = list(self._df[row])
@@ -345,24 +330,6 @@ class LogTableModel(QAbstractTableModel):
     def _set_sql_data(self, log_id: int, column: SqlColumn, value: object):
         """同步数据库"""
         DuckDBService.update_log(log_id, self._SQL_HEADERS[column], value)
-
-    def _interrupt_task(self, index: QModelIndex):
-        """中断提取任务"""
-        log_id = index.data(self.LOG_ID_ROLE)
-        if log_id not in self._extract_tasks:
-            return
-
-        task_info = self._extract_tasks.pop(log_id)
-        task_info.thread.requestInterruption()
-        task_info.thread.quit()
-        task_info.thread.wait()
-
-    def _clean_task(self, log_id: int):
-        """清理任务信息"""
-        if log_id in self._extract_tasks:
-            task_info = self._extract_tasks.pop(log_id)
-            task_info.thread.quit()
-            task_info.thread.wait()
 
     # ==================== 槽函数 ====================
 
@@ -374,7 +341,7 @@ class LogTableModel(QAbstractTableModel):
     ):
         """处理提取完成"""
         # 清理任务信息
-        self._clean_task(log_id)
+        self._extract_tasks.remove(log_id)
 
         # 更新数据库和ui状态
         self._set_sql_data(log_id, SqlColumn.IS_EXTRACTED, True)
@@ -390,26 +357,11 @@ class LogTableModel(QAbstractTableModel):
         # 发出完成信号
         self.extractFinished.emit(log_id, line_count)
 
-    @Slot(int)
-    def _on_extract_interrupted(self, log_id: int):
-        """处理提取中断"""
-        # 清理任务信息
-        self._clean_task(log_id)
-
-        # 更新ui状态
-        if (row := self._get_row(log_id)) >= 0:
-            self.dataChanged.emit(
-                self.index(row, 0),
-                self.index(row, self.columnCount() - 1),
-            )
-        # 发出中断信号
-        self.extractInterrupted.emit(log_id)
-
     @Slot(int, str)
     def _on_extract_errored(self, log_id: int, error_msg: str):
         """处理提取错误"""
         # 清理任务信息
-        self._clean_task(log_id)
+        self._extract_tasks.remove(log_id)
 
         # 更新ui状态
         if (row := self._get_row(log_id)) >= 0:
@@ -419,17 +371,6 @@ class LogTableModel(QAbstractTableModel):
             )
         # 发出错误信号
         self.extractError.emit(log_id, error_msg)
-
-    @Slot(int, int)
-    def _on_extract_progress(self, log_id: int, progress: int):
-        """处理提取进度"""
-        self._extract_tasks[log_id].progress = progress
-        # 更新ui状态
-        if (row := self._get_row(log_id)) >= 0:
-            self.dataChanged.emit(
-                self.index(row, LogColumn.PROGRESS),
-                self.index(row, LogColumn.PROGRESS),
-            )
 
     # ==================== 公共方法 ====================
 
@@ -450,8 +391,6 @@ class LogTableModel(QAbstractTableModel):
 
     def request_delete(self, index: QModelIndex):
         """请求删除日志记录"""
-        # 如果有正在提取的任务，先中断
-        self._interrupt_task(index)
         # 更新数据库和ui状态
         try:
             row = index.row()
@@ -491,8 +430,8 @@ class LogTableModel(QAbstractTableModel):
             self.index(row, LogColumn.EXTRACT_METHOD),
         )
 
-        # 创建提取任务
-        task = LogExtractTask(
+        # 启动进程
+        self._log_extract_pool.submit(
             log_id,
             Path(self._df[row][SqlColumn.LOG_URI]),
             log_parser_type,
@@ -501,36 +440,16 @@ class LogTableModel(QAbstractTableModel):
             self._df[row][SqlColumn.TEMPLATES_TABLE_NAME],
         )
 
-        # 创建工作线程
-        thread = QThread()
-        task.moveToThread(thread)
-
-        # 保存任务信息
-        task_info = LogExtractTaskInfo(thread, task)
-        self._extract_tasks[log_id] = task_info
-
-        # 连接信号
-        thread.started.connect(task.run)
-        task.finished.connect(self._on_extract_finished)
-        task.interrupted.connect(self._on_extract_interrupted)
-        task.error.connect(self._on_extract_errored)
-        task.progress.connect(self._on_extract_progress)
-
-        # 启动线程
-        thread.start()
-
-    def request_interrupt_task(self, index: QModelIndex):
-        """请求中断提取任务"""
-        self._interrupt_task(index)
+        # 记录任务信息
+        self._extract_tasks.add(log_id)
 
     def has_extracting_tasks(self) -> bool:
         """是否有正在提取的任务"""
         return len(self._extract_tasks) > 0
 
-    def interrupt_all_tasks(self):
+    def kill_tasks(self):
         """中断所有正在提取的任务"""
-        for row in range(self.rowCount()):
-            self._interrupt_task(self.index(row, 0))
+        self._log_extract_pool.kill()
 
     def search_by_name(self, keyword: str):
         """按 URI 关键字搜索"""

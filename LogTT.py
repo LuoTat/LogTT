@@ -1,7 +1,7 @@
 import sys
 
 from PySide6.QtCore import Qt, QTranslator
-from PySide6.QtWidgets import QApplication, QStyleFactory
+from PySide6.QtWidgets import QApplication
 from qfluentwidgets import FluentTranslator
 
 from modules.app_config import appcfg
@@ -14,7 +14,6 @@ if __name__ == "__main__":
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_DontCreateNativeWidgetSiblings)
 
     app = QApplication(sys.argv)
-    app.setStyle(QStyleFactory.create("Fusion"))
 
     locale = appcfg.get(appcfg.language).value
     f_translator = FluentTranslator(locale)
