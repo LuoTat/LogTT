@@ -5,11 +5,8 @@
 # Based on https://github.com/logpai/logparser/blob/master/logparser/Drain/Drain.py by LogPAI team
 
 
-cdef object datetime
 cdef object ParseResult
 cdef object parser_register
-
-from datetime import datetime
 
 from cython.operator cimport dereference as deref
 from libc.stdint cimport uint16_t
@@ -80,7 +77,7 @@ cdef Content _create_template(
     Content& content2,
 ):
     cdef size_t length = content1.size()
-    cdef const char * wildcard = "<#*#>"
+    cdef const char* wildcard = "<#*#>"
 
     cdef Content template_content
     template_content.resize(length)
@@ -104,7 +101,7 @@ cdef void _add_to_prefix_tree(
     uint16_t depth,
     uint16_t children,
 ):
-    cdef const char * wird_card = "<#*#>"
+    cdef const char* wird_card = "<#*#>"
     cdef size_t length = deref(cluster).content.size()
     cdef shared_ptr[Node] cur_node = root_node
     cdef Content new_content
@@ -330,12 +327,7 @@ cdef class DrainLogParser(BaseLogParser):
         string structured_table_name,
         string templates_table_name,
         bint keep_para = False,
-        object should_stop = None,
-        object progress_callback = None,
     ) -> ParseResult:
-        print(f"Parsing file: {log_file}")
-        cdef object start_time = datetime.now()
-
         cdef object log_df = load_data(log_file, self._log_format)
         # 预处理日志内容：掩码处理 + 分词
         log_df = mask_log_df(log_df, self._maskings)
@@ -351,14 +343,10 @@ cdef class DrainLogParser(BaseLogParser):
         cdef vector[shared_ptr[LogCluster]] cluster_results
         cluster_results.resize(length)
 
-        cdef size_t idx = 1
+        cdef size_t idx = 0
         cdef Content content
         cdef shared_ptr[LogCluster] match_cluster
-        cdef float progress
         for content in contents:
-            # if should_stop():
-            #     raise InterruptedError
-
             match_cluster = _add_content(
                 content,
                 self._root_node,
@@ -366,12 +354,7 @@ cdef class DrainLogParser(BaseLogParser):
                 self._children,
                 self._sim_thr,
             )
-            cluster_results[idx - 1] = match_cluster
-            # if idx % 10000 == 0 or idx == log_df.height:
-            #     progress = idx * 100.0 / length
-            #     print(f"Processed {progress:.1f}% of log lines.")
-            #     if progress_callback:
-            #         progress_callback(int(progress))
+            cluster_results[idx] = match_cluster
             idx += 1
 
         _to_table(
@@ -382,7 +365,6 @@ cdef class DrainLogParser(BaseLogParser):
             keep_para,
         )
 
-        print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
         return ParseResult(
             log_file,
             length,
