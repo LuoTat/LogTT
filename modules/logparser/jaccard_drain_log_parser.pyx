@@ -11,8 +11,8 @@ cdef object parser_register
 from cython.operator cimport dereference as deref
 from libc.stdint cimport uint16_t
 from libcpp.memory cimport make_shared, nullptr, shared_ptr
-from libcpp.string cimport to_string
 from libcpp.unordered_map cimport unordered_map
+from libcpp.unordered_set cimport unordered_set
 
 from .base_log_parser cimport BaseLogParser
 from .parse_result import ParseResult
@@ -76,22 +76,38 @@ cdef Content _create_template(
     Content& content1,
     Content& content2,
 ):
-    cdef size_t length = content1.size()
+    # Update param_str at different positions with the same length
+    cdef size_t length1 = content1.size()
+    cdef size_t length2 = content2.size()
     cdef const char* wildcard = "<#*#>"
-
     cdef Content template_content
-    template_content.resize(length)
-
     cdef size_t idx
-    cdef Token token1
-    cdef Token token2
-    for idx in range(length):
-        token1 = content1[idx]
-        token2 = content2[idx]
-        if token1 == token2:
-            template_content[idx] = token1
-        else:
-            template_content[idx] = wildcard
+    cdef Token token
+    cdef unordered_set[Token] tmp_set
+
+    if length1 == length2:
+        template_content = content1
+        for idx in range(length1):
+            if template_content[idx] != content2[idx]:
+                template_content[idx] = wildcard
+
+    # param_str is updated at the new position with different length
+    # Take the template with long length
+    elif length1 > length2:
+        for token in content2:
+            tmp_set.insert(token)
+        template_content = content1
+        for idx in range(length1):
+            if not tmp_set.contains(content1[idx]):
+                template_content[idx] = wildcard
+
+    else:
+        for token in content1:
+            tmp_set.insert(token)
+        template_content = content2
+        for idx in range(length2):
+            if not tmp_set.contains(content2[idx]):
+                template_content[idx] = wildcard
 
     return template_content
 
@@ -104,19 +120,12 @@ cdef void _add_to_prefix_tree(
     cdef const char* wird_card = "<#*#>"
     cdef size_t length = deref(cluster).content.size()
     cdef shared_ptr[Node] cur_node = root_node
-    cdef Content new_content
-    new_content.resize(length + 1)
-    new_content[0] = to_string(length)
-
-    cdef size_t idx
-    for idx in range(length):
-        new_content[idx + 1] = deref(cluster).content[idx]
 
     cdef uint16_t cur_node_depth = 1
     cdef Token token
-    for token in new_content:
+    for token in deref(cluster).content:
         # if at max depth or this is last token in template - add current log cluster to the leaf node
-        if cur_node_depth == depth or cur_node_depth == length + 2:
+        if cur_node_depth == depth or cur_node_depth == length + 1:
             deref(cur_node).clusters.push_back(cluster)
             return
 
@@ -150,32 +159,75 @@ cdef pair[float, uint16_t] _get_distance(
     Content& content2,
     bint include_params,
 ):
-    cdef size_t length = content1.size()
+    cdef const char* wird_card = "<#*#>"
+    cdef size_t length1 = content1.size()
+    cdef size_t length2 = content2.size()
 
     # list are empty - full match
-    if length == 0:
+    if length1 == 0:
         return pair[float, uint16_t](<float>1.0, <uint16_t>0)
 
-    cdef uint16_t sim_tokens = 0
+    cdef float sim
     cdef uint16_t param_count = 0
 
-    cdef size_t idx
-    cdef Token token1
-    cdef Token token2
-    for idx in range(length):
-        token1 = content1[idx]
-        token2 = content2[idx]
-        if token1 == "<#*#>":
+    cdef Token token
+    for token in content1:
+        if token == wird_card:
             param_count += 1
-            continue
-        if token1 == token2:
-            sim_tokens += 1
 
+    cdef Content new_content1
+    # If there are param_str, they are removed from the coefficient calculation
     if include_params:
-        # 参数位也当匹配贡献
-        sim_tokens += param_count
+        # 参数位不参与惩罚
+        for token in content1:
+            if token != wird_card:
+                new_content1.push_back(token)
+    else:
+        new_content1 = content1
 
-    return pair[float, uint16_t](<float> sim_tokens / length, param_count)
+    cdef Content new_content2
+    cdef size_t idx
+    # If the token and the data have the same length, and there are param_str in the token
+    if length1 == length2 and param_count > 0:
+        # content2 removes the param_str position
+        for idx in range(length2):
+            if content1[idx] != wird_card:
+                new_content2.push_back(content2[idx])
+    else:
+        new_content2 = content2
+
+    # Calculate the Jaccard coefficient
+    cdef unordered_set[Token] set1
+    cdef unordered_set[Token] set2
+    for token in new_content1:
+        set1.insert(token)
+    for token in new_content2:
+        set2.insert(token)
+
+    cdef size_t inter_size = 0
+    if set1.size() <= set2.size():
+        for token in set1:
+            if set2.contains(token):
+                inter_size += 1
+    else:
+        for token in set2:
+            if set1.contains(token):
+                inter_size += 1
+
+    cdef size_t set1_size = set1.size()
+    cdef size_t set2_size = set2.size()
+    cdef size_t union_size = set1_size + set2_size - inter_size
+
+    if union_size == 0:
+        sim = <float>1.0
+    else:
+        sim = (<float>inter_size) / union_size
+
+    # Jaccard coefficient calculated under the same conditions has a low simSep value
+    # So gain is applied to the calculated value
+    sim = min(sim * 1.3, 1.0)
+
+    return pair[float, uint16_t](sim, param_count)
 
 cdef shared_ptr[LogCluster] _fast_match(
     vector[shared_ptr[LogCluster]]& clusters,
@@ -195,7 +247,11 @@ cdef shared_ptr[LogCluster] _fast_match(
     cdef uint16_t param_count
     for idx in range(length):
         cluster = clusters[idx]
-        result = _get_distance(deref(cluster).content, content, include_params)
+        result = _get_distance(
+            deref(cluster).content,
+            content,
+            include_params,
+        )
         cur_sim = result.first
         param_count = result.second
         if cur_sim > max_sim or (
@@ -220,19 +276,12 @@ cdef shared_ptr[LogCluster] _tree_search(
     cdef size_t length = content.size()
     cdef shared_ptr[Node] cur_node = root_node
 
-    cdef Content new_content
-    new_content.resize(length + 1)
-    new_content[0] = to_string(length)
-    cdef size_t idx
-    for idx in range(length):
-        new_content[idx + 1] = content[idx]
-
     cdef uint16_t cur_node_depth = 1
     cdef Token token
     cdef unordered_map[Token, shared_ptr[Node]].iterator it
-    for token in new_content:
+    for token in content:
         # at max depth or this is last token
-        if cur_node_depth == depth or cur_node_depth == length + 2:
+        if cur_node_depth == depth or cur_node_depth == length + 1:
             # get best match among all clusters with same prefix, or None if no match is above sim_th
             break
 
@@ -277,8 +326,8 @@ cdef shared_ptr[LogCluster] _add_content(
 
     return match_cluster
 
-cdef class DrainLogParser(BaseLogParser):
-    """Drain算法"""
+cdef class JaccardDrainLogParser(BaseLogParser):
+    """JaccardDrain算法"""
 
     cdef uint16_t _depth
     cdef uint16_t _children
@@ -352,6 +401,7 @@ cdef class DrainLogParser(BaseLogParser):
             )
             cluster_results[idx] = match_cluster
             idx += 1
+            # print(idx)
 
         _to_table(
             log_df,
@@ -370,10 +420,10 @@ cdef class DrainLogParser(BaseLogParser):
 
     @staticmethod
     def name() -> str:
-        return "Drain"
+        return "JaccardDrain"
 
     @staticmethod
     def description() -> str:
-        return "Drain 是一种基于树结构的高效日志模板提取算法。"
+        return "JaccardDrain 是一种基于 Drain 和 Jaccard 相似度的高效日志模板提取算法。"
 
-parser_register(DrainLogParser)
+parser_register(JaccardDrainLogParser)
