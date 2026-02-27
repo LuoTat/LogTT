@@ -1,8 +1,7 @@
 # from .ael_log_parser import AELLogParser
 # from .brain_log_parser import BrainLogParser
 from .drain_log_parser import DrainLogParser
-
-# from .jaccard_drain_log_parser import JaccardDrainLogParser
+from .jaccard_drain_log_parser import JaccardDrainLogParser
 from .log_parser_config import LogParserConfig
 
 # from .spell_log_parser import SpellLogParser
@@ -31,10 +30,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 4,
-            #     "sim_thr": 0.5,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 4,
+                "sim_thr": 0.5,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.7,
             # },
@@ -56,10 +55,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 4,
-            #     "sim_thr": 0.5,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 4,
+                "sim_thr": 0.5,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.7,
             # },
@@ -81,10 +80,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 4,
-            #     "sim_thr": 0.5,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 4,
+                "sim_thr": 0.5,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.55,
             # },
@@ -106,10 +105,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 4,
-            #     "sim_thr": 0.5,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 4,
+                "sim_thr": 0.5,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.7,
             # },
@@ -141,10 +140,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 4,
-            #     "sim_thr": 0.5,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 4,
+                "sim_thr": 0.5,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.75,
             # },
@@ -166,10 +165,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 4,
-            #     "sim_thr": 0.5,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 4,
+                "sim_thr": 0.5,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.65,
             # },
@@ -191,10 +190,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 4,
-            #     "sim_thr": 0.5,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 4,
+                "sim_thr": 0.5,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.5,
             # },
@@ -216,10 +215,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 5,
                 "sim_thr": 0.7,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 5,
-            #     "sim_thr": 0.7,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 5,
+                "sim_thr": 0.7,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.7,
             # },
@@ -241,10 +240,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 6,
                 "sim_thr": 0.39,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 6,
-            #     "sim_thr": 0.39,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 6,
+                "sim_thr": 0.39,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.55,
             # },
@@ -272,10 +271,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 6,
                 "sim_thr": 0.2,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 6,
-            #     "sim_thr": 0.2,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 6,
+                "sim_thr": 0.2,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.95,
             # },
@@ -303,10 +302,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.2,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 4,
-            #     "sim_thr": 0.2,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 4,
+                "sim_thr": 0.2,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.5,
             # },
@@ -327,10 +326,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 4,
-            #     "sim_thr": 0.5,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 4,
+                "sim_thr": 0.5,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.6,
             # },
@@ -357,10 +356,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 3,
                 "sim_thr": 0.6,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 3,
-            #     "sim_thr": 0.6,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 3,
+                "sim_thr": 0.6,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.85,
             # },
@@ -381,10 +380,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 5,
                 "sim_thr": 0.6,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 5,
-            #     "sim_thr": 0.6,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 5,
+                "sim_thr": 0.6,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.8,
             # },
@@ -415,10 +414,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 5,
                 "sim_thr": 0.5,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 5,
-            #     "sim_thr": 0.5,
-            # },
+            JaccardDrainLogParser: {
+                "depth": 5,
+                "sim_thr": 0.5,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.9,
             # },
@@ -439,10 +438,34 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 6,
                 "sim_thr": 0.7,
             },
-            # JaccardDrainLogParser: {
-            #     "depth": 6,
-            #     "sim_thr": 0.7,
+            JaccardDrainLogParser: {
+                "depth": 6,
+                "sim_thr": 0.7,
+            },
+            # SpellLogParser: {
+            #     "sim_thr": 0.6,
             # },
+        },
+    ),
+    LogParserConfig(
+        name="Test",
+        log_format="{Content}",
+        ex_args={
+            # AELLogParser: {
+            #     "log_cluster_thr": 2,
+            #     "merge_thr": 0.6,
+            # },
+            # BrainLogParser: {
+            #     "var_thr": 5,
+            # },
+            DrainLogParser: {
+                "depth": 3,
+                "sim_thr": 0.7,
+            },
+            JaccardDrainLogParser: {
+                "depth": 3,
+                "sim_thr": 0.7,
+            },
             # SpellLogParser: {
             #     "sim_thr": 0.6,
             # },
