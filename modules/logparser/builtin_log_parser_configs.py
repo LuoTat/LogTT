@@ -3,8 +3,7 @@
 from .drain_log_parser import DrainLogParser
 from .jaccard_drain_log_parser import JaccardDrainLogParser
 from .log_parser_config import LogParserConfig
-
-# from .spell_log_parser import SpellLogParser
+from .spell_log_parser import SpellLogParser
 
 # 内置日志格式配置
 BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
@@ -34,9 +33,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.7,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.7,
+            },
         },
     ),
     LogParserConfig(
@@ -59,9 +58,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.7,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.7,
+            },
         },
     ),
     LogParserConfig(
@@ -84,9 +83,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.55,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.55,
+            },
         },
     ),
     LogParserConfig(
@@ -109,9 +108,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.7,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.7,
+            },
         },
     ),
     LogParserConfig(
@@ -144,9 +143,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.75,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.75,
+            },
         },
     ),
     LogParserConfig(
@@ -169,9 +168,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.65,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.65,
+            },
         },
     ),
     LogParserConfig(
@@ -194,9 +193,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.5,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.5,
+            },
         },
     ),
     LogParserConfig(
@@ -219,9 +218,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 5,
                 "sim_thr": 0.7,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.7,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.7,
+            },
         },
     ),
     LogParserConfig(
@@ -244,9 +243,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 6,
                 "sim_thr": 0.39,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.55,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.55,
+            },
         },
     ),
     LogParserConfig(
@@ -275,9 +274,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 6,
                 "sim_thr": 0.2,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.95,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.95,
+            },
         },
     ),
     LogParserConfig(
@@ -306,9 +305,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.2,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.5,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.5,
+            },
         },
     ),
     LogParserConfig(
@@ -330,9 +329,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.6,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.6,
+            },
         },
     ),
     LogParserConfig(
@@ -360,9 +359,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 3,
                 "sim_thr": 0.6,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.85,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.85,
+            },
         },
     ),
     LogParserConfig(
@@ -384,9 +383,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 5,
                 "sim_thr": 0.6,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.8,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.8,
+            },
         },
     ),
     LogParserConfig(
@@ -418,9 +417,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 5,
                 "sim_thr": 0.5,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.9,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.9,
+            },
         },
     ),
     LogParserConfig(
@@ -442,9 +441,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 6,
                 "sim_thr": 0.7,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.6,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.6,
+            },
         },
     ),
     LogParserConfig(
@@ -466,9 +465,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "depth": 3,
                 "sim_thr": 0.7,
             },
-            # SpellLogParser: {
-            #     "sim_thr": 0.6,
-            # },
+            SpellLogParser: {
+                "sim_thr": 0.6,
+            },
         },
     ),
 ]
