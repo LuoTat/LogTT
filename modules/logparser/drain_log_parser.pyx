@@ -327,10 +327,6 @@ cdef class DrainLogParser(BaseLogParser):
 
         cdef object[::1] contents = log_df["Tokens"].to_numpy()
         cdef size_t length = contents.shape[0]
-
-        # cdef vector[Content] contents = log_df["Tokens"].to_numpy()
-        # cdef size_t length = contents.size()
-
         cdef vector[shared_ptr[LogCluster]] cluster_results = (
             vector[shared_ptr[LogCluster]](length)
         )
