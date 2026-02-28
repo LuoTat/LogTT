@@ -36,7 +36,7 @@ cdef struct Node:
     vector[shared_ptr[LogCluster]] clusters
     unordered_map[Token, shared_ptr[Node]] children_node
 
-cdef string _get_template(shared_ptr[LogCluster] cluster):
+cdef string _get_template(shared_ptr[LogCluster] cluster)noexcept nogil:
     cdef string template
     cdef Content content = deref(cluster).content
     cdef size_t length = content.size()
@@ -49,16 +49,15 @@ cdef string _get_template(shared_ptr[LogCluster] cluster):
 
     return template
 
-cdef _to_table(
+cdef void _to_table(
     object log_df,
     vector[shared_ptr[LogCluster]]& cluster_results,
     string& structured_table_name,
     string& templates_table_name,
     bint keep_para,
 ):
-    cdef vector[string] log_templates
     cdef size_t length = cluster_results.size()
-    log_templates.resize(length)
+    cdef vector[string] log_templates = vector[string](length)
 
     cdef size_t idx
     for idx in range(length):
@@ -75,12 +74,10 @@ cdef _to_table(
 cdef Content _create_template(
     Content& content1,
     Content& content2,
-):
+)noexcept nogil:
     cdef size_t length = content1.size()
     cdef const char* wildcard = "<#*#>"
-
-    cdef Content template_content
-    template_content.resize(length)
+    cdef Content template_content = Content(length)
 
     cdef size_t idx
     cdef Token token1
@@ -100,14 +97,13 @@ cdef void _add_to_prefix_tree(
     shared_ptr[Node] root_node,
     uint16_t depth,
     uint16_t children,
-):
+)noexcept nogil:
     cdef const char* wird_card = "<#*#>"
     cdef size_t length = deref(cluster).content.size()
     cdef shared_ptr[Node] cur_node = root_node
-    cdef Content new_content
-    new_content.resize(length + 1)
-    new_content[0] = to_string(length)
 
+    cdef Content new_content = Content(length + 1)
+    new_content[0] = to_string(length)
     cdef size_t idx
     for idx in range(length):
         new_content[idx + 1] = deref(cluster).content[idx]
@@ -149,7 +145,7 @@ cdef pair[float, uint16_t] _get_distance(
     Content& content1,
     Content& content2,
     bint include_params,
-):
+)noexcept nogil:
     cdef size_t length = content1.size()
 
     # list are empty - full match
@@ -182,7 +178,7 @@ cdef shared_ptr[LogCluster] _fast_match(
     Content& content,
     bint include_params,
     float sim_thr,
-):
+)noexcept nogil:
     cdef float max_sim = -1.0
     cdef uint16_t max_param_count = 0
     cdef shared_ptr[LogCluster] max_cluster
@@ -216,12 +212,11 @@ cdef shared_ptr[LogCluster] _tree_search(
     shared_ptr[Node] root_node,
     uint16_t depth,
     float sim_thr,
-):
+)noexcept nogil:
     cdef size_t length = content.size()
     cdef shared_ptr[Node] cur_node = root_node
 
-    cdef Content new_content
-    new_content.resize(length + 1)
+    cdef Content new_content = Content(length + 1)
     new_content[0] = to_string(length)
     cdef size_t idx
     for idx in range(length):
@@ -254,7 +249,7 @@ cdef shared_ptr[LogCluster] _add_content(
     uint16_t depth,
     uint16_t children,
     float sim_thr,
-):
+)noexcept nogil:
     cdef shared_ptr[LogCluster] match_cluster = _tree_search(
         content,
         False,
@@ -336,8 +331,9 @@ cdef class DrainLogParser(BaseLogParser):
         # cdef vector[Content] contents = log_df["Tokens"].to_numpy()
         # cdef size_t length = contents.size()
 
-        cdef vector[shared_ptr[LogCluster]] cluster_results
-        cluster_results.resize(length)
+        cdef vector[shared_ptr[LogCluster]] cluster_results = (
+            vector[shared_ptr[LogCluster]](length)
+        )
 
         cdef size_t idx = 0
         cdef Content content

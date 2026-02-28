@@ -36,7 +36,7 @@ cdef struct Node:
     vector[shared_ptr[LogCluster]] clusters
     unordered_map[Token, shared_ptr[Node]] children_node
 
-cdef string _get_template(shared_ptr[LogCluster] cluster):
+cdef string _get_template(shared_ptr[LogCluster] cluster)noexcept nogil:
     cdef string template
     cdef Content content = deref(cluster).content
     cdef size_t length = content.size()
@@ -49,16 +49,15 @@ cdef string _get_template(shared_ptr[LogCluster] cluster):
 
     return template
 
-cdef _to_table(
+cdef void _to_table(
     object log_df,
     vector[shared_ptr[LogCluster]]& cluster_results,
     string& structured_table_name,
     string& templates_table_name,
     bint keep_para,
 ):
-    cdef vector[string] log_templates
     cdef size_t length = cluster_results.size()
-    log_templates.resize(length)
+    cdef vector[string] log_templates = vector[string](length)
 
     cdef size_t idx
     for idx in range(length):
@@ -75,7 +74,7 @@ cdef _to_table(
 cdef Content _create_template(
     Content& content1,
     Content& content2,
-):
+)noexcept nogil:
     # Update param_str at different positions with the same length
     cdef size_t length1 = content1.size()
     cdef size_t length2 = content2.size()
@@ -116,7 +115,7 @@ cdef void _add_to_prefix_tree(
     shared_ptr[Node] root_node,
     uint16_t depth,
     uint16_t children,
-):
+)noexcept nogil:
     cdef const char* wird_card = "<#*#>"
     cdef size_t length = deref(cluster).content.size()
     cdef shared_ptr[Node] cur_node = root_node
@@ -158,7 +157,7 @@ cdef pair[float, uint16_t] _get_distance(
     Content& content1,
     Content& content2,
     bint include_params,
-):
+)noexcept nogil:
     cdef const char* wird_card = "<#*#>"
     cdef size_t length1 = content1.size()
     cdef size_t length2 = content2.size()
@@ -225,7 +224,7 @@ cdef pair[float, uint16_t] _get_distance(
 
     # Jaccard coefficient calculated under the same conditions has a low simSep value
     # So gain is applied to the calculated value
-    sim = min(sim * 1.3, 1.0)
+    sim = <float>min(sim * 1.3, 1.0)
 
     return pair[float, uint16_t](sim, param_count)
 
@@ -234,7 +233,7 @@ cdef shared_ptr[LogCluster] _fast_match(
     Content& content,
     bint include_params,
     float sim_thr,
-):
+)noexcept nogil:
     cdef float max_sim = -1.0
     cdef uint16_t max_param_count = 0
     cdef shared_ptr[LogCluster] max_cluster
@@ -272,7 +271,7 @@ cdef shared_ptr[LogCluster] _tree_search(
     shared_ptr[Node] root_node,
     uint16_t depth,
     float sim_thr,
-):
+)noexcept nogil:
     cdef size_t length = content.size()
     cdef shared_ptr[Node] cur_node = root_node
 
@@ -303,7 +302,7 @@ cdef shared_ptr[LogCluster] _add_content(
     uint16_t depth,
     uint16_t children,
     float sim_thr,
-):
+)noexcept nogil:
     cdef shared_ptr[LogCluster] match_cluster = _tree_search(
         content,
         False,
@@ -359,13 +358,6 @@ cdef class JaccardDrainLogParser(BaseLogParser):
         self._sim_thr = sim_thr
         self._root_node = make_shared[Node]()
 
-    # def add_log_message(self, log: str)-> LogCluster:
-    #     # 预处理日志内容：掩码处理 + 分词
-    #     mask_log = self._mask_log(log)
-    #     content = self._split_log(mask_log)
-    #
-    #     return self._add_content(content)
-
     def parse(
         self,
         string log_file,
@@ -381,12 +373,9 @@ cdef class JaccardDrainLogParser(BaseLogParser):
 
         cdef object[::1] contents = log_df["Tokens"].to_numpy()
         cdef size_t length = contents.shape[0]
-
-        # cdef vector[Content] contents = log_df["Tokens"].to_numpy()
-        # cdef size_t length = contents.size()
-
-        cdef vector[shared_ptr[LogCluster]] cluster_results
-        cluster_results.resize(length)
+        cdef vector[shared_ptr[LogCluster]] cluster_results = (
+            vector[shared_ptr[LogCluster]](length)
+        )
 
         cdef size_t idx = 0
         cdef Content content
@@ -401,7 +390,6 @@ cdef class JaccardDrainLogParser(BaseLogParser):
             )
             cluster_results[idx] = match_cluster
             idx += 1
-            # print(idx)
 
         _to_table(
             log_df,
