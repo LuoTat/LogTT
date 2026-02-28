@@ -288,7 +288,7 @@ cdef class DrainLogParser(BaseLogParser):
     def __init__(
         self,
         string log_format,
-        object masking=None,
+        object maskings=None,
         object delimiters=None,
         uint16_t depth=4,
         uint16_t children=100,
@@ -300,7 +300,7 @@ cdef class DrainLogParser(BaseLogParser):
             children: Max children per tree node.
             sim_thr: Similarity threshold (0-1).
         """
-        super().__init__(log_format, masking, delimiters)
+        super().__init__(log_format, maskings, delimiters)
 
         if depth < 3:
             raise ValueError("depth argument must be at least 3")
