@@ -1,4 +1,5 @@
-# from .ael_log_parser import AELLogParser
+from .ael_log_parser import AELLogParser
+
 # from .brain_log_parser import BrainLogParser
 from .drain_log_parser import DrainLogParser
 from .jaccard_drain_log_parser import JaccardDrainLogParser
@@ -18,10 +19,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         ],
         delimiters=[":"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.5,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.5,
+            },
             # BrainLogParser: {
             #     "var_thr": 2,
             # },
@@ -43,10 +44,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Date} {Time} {Level} [{Process}] {Component}: {Content}",
         delimiters=["=", ":", "_", "(", ")"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.4,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.4,
+            },
             # BrainLogParser: {
             #     "var_thr": 6,
             # },
@@ -68,10 +69,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Date} {Time} {Level} {Component}: {Content}",
         delimiters=[":"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.4,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.4,
+            },
             # BrainLogParser: {
             #     "var_thr": 4,
             # },
@@ -93,10 +94,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Date} {Time} - {Level}  [{Node}:{Component}@{Id}] - {Content}",
         delimiters=["=", ":"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.4,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.4,
+            },
             # BrainLogParser: {
             #     "var_thr": 3,
             # },
@@ -128,10 +129,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         ],
         delimiters=["=", "..", "(", ")"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.5,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.5,
+            },
             # BrainLogParser: {
             #     "var_thr": 6,
             # },
@@ -153,10 +154,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{LogId} {Node} {Component} {State} {Time} {Flag} {Content}",
         delimiters=["=", ":", "-"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 5,
-            #     "merge_thr": 0.4,
-            # },
+            AELLogParser: {
+                "cluster_thr": 5,
+                "merge_thr": 0.4,
+            },
             # BrainLogParser: {
             #     "var_thr": 5,
             # },
@@ -178,10 +179,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Label} {Timestamp} {Date} {User} {Month} {Day} {Time} {Location} {Component}: {Content}",
         delimiters=["=", ":"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.4,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.4,
+            },
             # BrainLogParser: {
             #     "var_thr": 3,
             # },
@@ -203,10 +204,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Date} {Time}, {Level}                  {Component}    {Content}",
         delimiters=["=", ":", "[", "]"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.4,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.4,
+            },
             # BrainLogParser: {
             #     "var_thr": 3,
             # },
@@ -228,10 +229,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Month} {Date} {Time} {Level} {Component}: {Content}",
         delimiters=["=", ":"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.6,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.6,
+            },
             # BrainLogParser: {
             #     "var_thr": 4,
             # },
@@ -259,10 +260,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         ],
         delimiters=["=", ":"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.6,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.6,
+            },
             # BrainLogParser: {
             #     "var_thr": 5,
             # },
@@ -290,10 +291,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         ],
         delimiters=["=", ":", "|"],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.6,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.6,
+            },
             # BrainLogParser: {
             #     "var_thr": 4,
             # },
@@ -314,10 +315,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         name="Apache",
         log_format="[{Time}] [{Level}] {Content}",
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.4,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.4,
+            },
             # BrainLogParser: {
             #     "var_thr": 4,
             # },
@@ -344,10 +345,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
             ),
         ],
         ex_args={
-            #     AELLogParser: {
-            #         "log_cluster_thr": 2,
-            #         "merge_thr": 0.4,
-            #     },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.4,
+            },
             #     BrainLogParser: {
             #         "var_thr": 3,
             #     },
@@ -368,10 +369,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         name="OpenSSH",
         log_format="{Date} {Day} {Time} {Component} sshd[{Pid}]: {Content}",
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 10,
-            #     "merge_thr": 0.7,
-            # },
+            AELLogParser: {
+                "cluster_thr": 10,
+                "merge_thr": 0.7,
+            },
             # BrainLogParser: {
             #     "var_thr": 6,
             # },
@@ -402,10 +403,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
             ),
         ],
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 6,
-            #     "merge_thr": 0.5,
-            # },
+            AELLogParser: {
+                "cluster_thr": 6,
+                "merge_thr": 0.5,
+            },
             # BrainLogParser: {
             #     "var_thr": 5,
             # },
@@ -426,10 +427,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         name="Mac",
         log_format="{Month}  {Date} {Time} {User} {Component}: {Content}",
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.6,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.6,
+            },
             # BrainLogParser: {
             #     "var_thr": 5,
             # },
@@ -450,10 +451,10 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         name="Test",
         log_format="{Content}",
         ex_args={
-            # AELLogParser: {
-            #     "log_cluster_thr": 2,
-            #     "merge_thr": 0.6,
-            # },
+            AELLogParser: {
+                "cluster_thr": 2,
+                "merge_thr": 0.6,
+            },
             # BrainLogParser: {
             #     "var_thr": 5,
             # },

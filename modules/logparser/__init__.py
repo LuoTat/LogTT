@@ -1,4 +1,4 @@
-# from .ael_log_parser import AELLogParser
+from .ael_log_parser import AELLogParser
 from .base_log_parser import BaseLogParser
 
 # from .brain_log_parser import BrainLogParser
@@ -11,7 +11,7 @@ from .parser_factory import ParserFactory
 from .spell_log_parser import SpellLogParser
 
 __all__ = [
-    # "AELLogParser",
+    "AELLogParser",
     "BaseLogParser",
     # "BrainLogParser",
     "BUILTIN_LOG_PARSER_CONFIGS",
