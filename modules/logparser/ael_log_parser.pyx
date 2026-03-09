@@ -24,7 +24,7 @@ cdef object pl
 import polars as pl
 from cython.operator cimport dereference as deref
 from libcpp.memory cimport make_shared, shared_ptr
-from libcpp.numeric cimport reduce
+from libcpp.numeric cimport accumulate
 from libcpp.unordered_map cimport unordered_map
 
 from .base_log_parser cimport BaseLogParser
@@ -142,7 +142,7 @@ cdef bint _has_diff(
         if deref(cluster1).content[idx] != deref(cluster2).content[idx]:
             diff += 1
 
-    return 0 < <float> diff / length <= merge_thr
+    return 0 < <float>diff / length <= merge_thr
 
 cdef vector[shared_ptr[LogCluster]] _reconcile(
     LogBin& log_bin,
@@ -162,6 +162,7 @@ cdef vector[shared_ptr[LogCluster]] _reconcile(
     cdef shared_ptr[LogCluster] log_cluster2
     cdef vector[shared_ptr[LogCluster]] log_cluster_group
     cdef shared_ptr[LogCluster] merged_log_cluster
+    cdef shared_ptr[LogCluster] init_cluster
     for pair in log_bin:
         value = pair.second
         if (value.size() <= cluster_thr):
@@ -193,10 +194,11 @@ cdef vector[shared_ptr[LogCluster]] _reconcile(
                     log_cluster_groups.back().push_back(log_cluster2)
 
         for log_cluster_group in log_cluster_groups:
-            merged_log_cluster = reduce(
+            init_cluster = log_cluster_group.front()
+            merged_log_cluster = accumulate(
                 log_cluster_group.begin() + 1,
                 log_cluster_group.end(),
-                log_cluster_group.front(),
+                init_cluster,
                 _merge_log_cluster,
             )
             merged_log_clusters.push_back(merged_log_cluster)
