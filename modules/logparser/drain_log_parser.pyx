@@ -183,7 +183,7 @@ cdef pair[float, uint16_t] _get_distance(
         # 参数位也当匹配贡献
         sim_tokens += param_count
 
-    return pair[float, uint16_t](<float> sim_tokens / length, param_count)
+    return pair[float, uint16_t](<float>sim_tokens / length, param_count)
 
 cdef shared_ptr[LogCluster] _fast_match(
     vector[shared_ptr[LogCluster]]& clusters,
