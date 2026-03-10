@@ -16,14 +16,14 @@ class BuildExtWithCompilerFlags(build_ext):
                 "/DCYTHON_CLINE_IN_TRACEBACK=0",
                 "/W4",
                 "/O2",
-                "/std:c++20",
+                "/std:c++26",
             ]
         else:
             compile_args = [
                 "-DCYTHON_CLINE_IN_TRACEBACK=0",
                 "-Wall",
                 "-O3",
-                "-std=c++20",
+                "-std=c++26",
             ]
 
         for extension in self.extensions:
@@ -37,6 +37,7 @@ setup(
     cmdclass={"build_ext": BuildExtWithCompilerFlags},
     ext_modules=cythonize(
         "modules/logparser/*.pyx",
+        # "modules/logparser/py_drain_log_parser.pyx",
         force=True,
         show_all_warnings=True,
         annotate=True,
@@ -52,7 +53,7 @@ setup(
             "always_allow_keywords": False,
             "c_string_type": "unicode",
             "c_string_encoding": "utf8",
-            # "profile": True,
+            "profile": True,
             "optimize.use_switch": True,
             "optimize.unpack_method_calls": True,
             "warn.undeclared": True,

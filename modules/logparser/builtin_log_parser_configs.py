@@ -1,7 +1,7 @@
 from .ael_log_parser import AELLogParser
 
 # from .brain_log_parser import BrainLogParser
-from .drain_log_parser import DrainLogParser
+from .py_drain_log_parser import DrainLogParser
 from .jaccard_drain_log_parser import JaccardDrainLogParser
 from .log_parser_config import LogParserConfig
 from .spell_log_parser import SpellLogParser
