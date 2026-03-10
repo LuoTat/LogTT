@@ -28,7 +28,7 @@ import polars as pl
 from .base_log_parser import BaseLogParser, Content, Token
 from .parse_result import ParseResult
 from .parser_factory import parser_register
-from .utils import load_data, output_result
+from .utils import load_data, to_table
 
 
 class FToken:
@@ -81,7 +81,7 @@ class BrainLogParser(BaseLogParser):
     def __init__(
         self,
         log_format,
-        masking=None,
+        maskings=None,
         delimiters=None,
         *,
         var_thr=2,
@@ -90,7 +90,7 @@ class BrainLogParser(BaseLogParser):
         Args:
             var_thr : Threshold for determining variable columns.
         """
-        super().__init__(log_format, masking, delimiters)
+        super().__init__(log_format, maskings, delimiters)
 
         self._var_thr = var_thr
 
@@ -108,7 +108,7 @@ class BrainLogParser(BaseLogParser):
                 template_tokens = [ftoken.token for ftoken in fcontent]
                 log_templates[fcontent[0].row] = " ".join(template_tokens)
 
-        output_result(
+        to_table(
             log_df,
             log_templates,
             structured_table_name,
@@ -144,11 +144,11 @@ class BrainLogParser(BaseLogParser):
                 for col in child_cols
                 if len(col_tokens.get(col, set())) >= self._var_thr
             }
-            # 将变量列的词置为 <*>
+            # 将变量列的词置为 <#*#>
             for row in rows:
                 for ftoken in fcontents[row]:
                     if ftoken.col in variable_child_cols:
-                        ftoken.token = "<*>"
+                        ftoken.token = "<#*#>"
 
     @staticmethod
     def _up_split(root_rows: dict[FTuple, list[int]], fcontents: list[FContent]):
@@ -172,11 +172,11 @@ class BrainLogParser(BaseLogParser):
             variable_parent_cols = {
                 col for col in parent_cols if len(col_tokens[col]) > 1
             }
-            # 将变量列的词置为 <*>
+            # 将变量列的词置为 <#*#>
             for row in rows:
                 for ftoken in fcontents[row]:
                     if ftoken.col in variable_parent_cols:
-                        ftoken.token = "<*>"
+                        ftoken.token = "<#*#>"
 
     @staticmethod
     def _find_root(
