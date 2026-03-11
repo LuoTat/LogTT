@@ -26,7 +26,7 @@ public:
     ~DrainLogParser() = default;
 
     // 返回解析后的日志模板列表
-    std::vector<std::string> parse(const std::vector<TContent>& logs);
+    void parse(const std::string& log_file, const std::string& log_format, const std::vector<std::string>& group_names);
 
 private:
     struct LogCluster

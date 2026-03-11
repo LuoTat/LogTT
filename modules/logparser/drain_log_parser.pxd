@@ -9,4 +9,4 @@ cdef extern from "drain_log_parser.hxx" namespace "logparser":
     cdef cppclass DrainLogParser:
         DrainLogParser()
         DrainLogParser(uint16_t depth, uint16_t children, float sim_thr)
-        vector[string] parse(const vector[vector[string]]& logs)
+        void parse(const string& logs,const string& logs,const vector[string]& logs)

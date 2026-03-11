@@ -1,5 +1,3 @@
-# distutils: language=c++
-
 cdef object ParseResult
 cdef object parser_register
 
@@ -61,7 +59,7 @@ cdef class DrainLogParser(BaseLogParser):
 
         cdef vector[string] log_templates
         cdef vector[vector[string]] logs = log_df["Tokens"]
-        log_templates = self.log_parser.parse(logs)
+        self.log_parser.parse(log_file, self.log_format, ["aaa", "bbb"])
         to_table(
             log_df,
             log_templates,
