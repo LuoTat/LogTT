@@ -1,10 +1,11 @@
 from Cython.Build import cythonize
 from Cython.Compiler import Options
-from setuptools import setup, Extension
+from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 Options.docstrings = False
 Options.fast_fail = True
+
 
 class BuildExtWithCompilerFlags(build_ext):
     def build_extensions(self):
@@ -30,23 +31,15 @@ class BuildExtWithCompilerFlags(build_ext):
 
         super().build_extensions()
 
+
 extensions = [
     Extension(
-        name="modules.logparser.core",
-        sources=[
-            "modules/logparser/py_drain_log_parser.pyx",
-            "modules/logparser/utils.cxx",   # 额外的 C++ 文件
-        ],
+        name="modules.logparser.*",
+        sources=["modules/logparser/*.pyx"],
+        library_dirs=["lib"],
+        libraries=["duckdb"],
+        runtime_library_dirs=["lib"],
         language="c++",
-        include_dirs=[
-            "include",
-        ],
-        libraries=[
-            "duckdb",
-        ],
-        library_dirs=[
-            "lib",  # 替换为 DuckDB 库的实际路径
-        ],
     )
 ]
 
@@ -55,7 +48,7 @@ setup(
     cmdclass={"build_ext": BuildExtWithCompilerFlags},
     ext_modules=cythonize(
         extensions,
-        force=True,
+        # force=True,
         show_all_warnings=True,
         annotate=True,
         compiler_directives={

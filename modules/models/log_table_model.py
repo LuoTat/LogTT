@@ -17,7 +17,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor
 
 from modules.duckdb_service import DuckDBService
-from modules.logparser import BaseLogParser, LogParserConfig, ParseResult
+from modules.logparser import LogParserConfig, ParseResult
 
 
 class LogColumn(IntEnum):

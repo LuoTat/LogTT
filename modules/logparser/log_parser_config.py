@@ -1,8 +1,5 @@
 from typing import Any
-
-from .base_log_parser import BaseLogParser
 from .builtin_masking import BUILTIN_MASKING
-
 
 class LogParserConfig:
     def __init__(
@@ -12,7 +9,7 @@ class LogParserConfig:
         masking: list[tuple[str, str]] | None = None,
         delimiters: list[str] | None = None,
         use_builtin_masking: bool = True,
-        ex_args: dict[type[BaseLogParser], dict[str, Any]] | None = None,
+        ex_args: dict[type[object], dict[str, Any]] | None = None,
     ):
         self.name = name
         self.log_format = log_format

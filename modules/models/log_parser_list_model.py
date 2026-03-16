@@ -2,7 +2,7 @@ from typing import Any
 
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
 
-from modules.logparser import BaseLogParser, ParserFactory
+from modules.logparser import ParserFactory
 
 
 class LogParserListModel(QAbstractListModel):
@@ -15,7 +15,7 @@ class LogParserListModel(QAbstractListModel):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._df: list[type[BaseLogParser]] = ParserFactory.get_all_parsers_type()
+        self._df: list[type[object]] = ParserFactory.get_all_parsers_type()
 
     # ==================== 重写方法 ====================
 

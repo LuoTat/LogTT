@@ -11,7 +11,7 @@ from qfluentwidgets import (
     SubtitleLabel,
 )
 
-from modules.logparser import BaseLogParser, LogParserConfig
+from modules.logparser import LogParserConfig
 from modules.models import LogParserConfigListModel, LogParserListModel
 
 
