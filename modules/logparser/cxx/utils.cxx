@@ -5,6 +5,12 @@
 namespace logparser
 {
 
+duckdb::unique_ptr<duckdb::MaterializedQueryResult> to_materialized_query_result(duckdb::unique_ptr<duckdb::QueryResult> result)
+{
+    D_ASSERT(result->type == duckdb::QueryResultType::MATERIALIZED_RESULT);
+    return duckdb::unique_ptr_cast<duckdb::QueryResult, duckdb::MaterializedQueryResult>(std::move(result));
+}
+
 duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const std::string& log_file, const std::string& log_regex, const std::vector<std::string>& named_fields)
 {
     // 将日志文件作为CSV文件读取，使用特殊的分隔符和引号来避免解析错误

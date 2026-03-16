@@ -28,19 +28,24 @@ std::size_t SpellLogParser::parse(const std::string& log_file, const std::string
     // 初始化内存数据库
     duckdb::DuckDB     db {DB_PATH};
     duckdb::Connection conn {db};
-    duckdb::idx_t      log_length {0};
+    conn.EnableProfiling();
 
     auto rel {load_data(conn, log_file, this->m_log_regex, this->m_named_fields)};
     rel = mask_log_rel(rel, this->m_maskings);
     rel = split_log_rel(rel, this->m_delimiters);
-    auto result {rel->Project("Tokens")->Execute()};
 
-    while (auto data_chunk {result->Fetch()})
+    // 缓存分词结果，避免重复计算
+    rel = rel->Project("* EXCLUDE MaskedContent");
+    rel->Create("_tmp", true);
+    rel = conn.Table("_tmp");
+
+    auto        result {to_materialized_query_result(rel->Project("Tokens")->Execute())};
+    std::size_t log_length {result->RowCount()};
+    for (const auto& data_chunk : result->Collection().Chunks())
     {
-        auto data_length {data_chunk->size()};
-        log_length += data_length;
+        auto data_length {data_chunk.size()};
 
-        const auto& tokens_col {data_chunk->data[0]};
+        const auto& tokens_col {data_chunk.data[0]};
         const auto& tokens_child {duckdb::ListVector::GetEntry(tokens_col)};
 
         const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
@@ -50,8 +55,7 @@ std::size_t SpellLogParser::parse(const std::string& log_file, const std::string
         {
             TContent    content;
             const auto& entry {tokens_data[row]};
-
-            for (duckdb::idx_t i {0}; i < entry.length; ++i)
+            for (auto i : std::views::iota(0UL, entry.length))
             {
                 const auto& token {child_data[entry.offset + i]};
                 content.emplace_back(token.GetData(), token.GetSize());
@@ -66,6 +70,8 @@ std::size_t SpellLogParser::parse(const std::string& log_file, const std::string
         templates.push_back(cluster->get_template());
     }
 
+    // 移除多余列
+    rel = rel->Project("* EXCLUDE Tokens");
     to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
 
     return log_length;
@@ -370,9 +376,9 @@ TContent SpellLogParser::_create_template(const TContent& lcs, const TContent& c
     }
 
     std::size_t lcs_idx {0};
-    for (auto idx : std::views::iota(0UL, content_length))
+    for (auto i : std::views::iota(0UL, content_length))
     {
-        const auto& token {content[idx]};
+        const auto& token {content[i]};
         if (lcs_idx < lcs_length && token == lcs[lcs_idx])
         {
             new_content.push_back(token);
@@ -385,7 +391,7 @@ TContent SpellLogParser::_create_template(const TContent& lcs, const TContent& c
 
         if (lcs_idx == lcs_length)
         {
-            if (idx < content_length - 1)
+            if (i < content_length - 1)
             {
                 new_content.push_back(WILDCARD);
             }

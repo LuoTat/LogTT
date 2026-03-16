@@ -41,17 +41,17 @@ std::size_t DrainLogParser::parse(const std::string& log_file, const std::string
     rel->Create("_tmp", true);
     rel = conn.Table("_tmp");
 
-    auto        result {conn.Query("SELECT Tokens FROM _tmp")};
+    auto        result {to_materialized_query_result(rel->Project("Tokens")->Execute())};
     std::size_t log_length {result->RowCount()};
     for (const auto& data_chunk : result->Collection().Chunks())
     {
         auto data_length {data_chunk.size()};
 
         const auto& tokens_col {data_chunk.data[0]};
-        const auto& tokens_child = duckdb::ListVector::GetEntry(tokens_col);
+        const auto& tokens_child {duckdb::ListVector::GetEntry(tokens_col)};
 
-        const auto tokens_data = duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col);
-        const auto child_data  = duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child);
+        const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
+        const auto child_data {duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child)};
 
         for (auto row : std::views::iota(0UL, data_length))
         {

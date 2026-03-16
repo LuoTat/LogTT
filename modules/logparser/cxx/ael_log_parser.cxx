@@ -1,6 +1,5 @@
 #include "ael_log_parser.hxx"
 #include "utils.hxx"
-#include <print>
 #include <ranges>
 
 namespace logparser
@@ -37,9 +36,8 @@ std::size_t AELLogParser::parse(const std::string& log_file, const std::string& 
     rel->Create("_tmp", true);
     rel = conn.Table("_tmp");
 
-    auto        result {conn.Query("SELECT Tokens FROM _tmp")};
-    std::size_t log_length {result->RowCount()};
-    std::println("Total logs: {}", log_length);
+    auto        result {conn.Query("SELECT count()::UINT64 FROM _tmp")};
+    std::size_t log_length {result->GetValue(0, 0).GetValue<std::uint64_t>()};
 
     auto log_bin {this->_get_log_bins(rel)};
     auto merged_clusters {this->_reconcile(log_bin)};
@@ -65,33 +63,34 @@ std::size_t AELLogParser::parse(const std::string& log_file, const std::string& 
 AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Relation> rel)
 {
     rel = rel->Project(
-        {"LineID", "Tokens", "CAST(length(Tokens) AS UINT8)", "CAST(length(regexp_extract_all(MaskedContent, '<#.*#>')) AS UINT8)"},
+        {"LineID::UINT64", "Tokens", "length(Tokens)::UINT8", "length(regexp_extract_all(MaskedContent, '<#.*#>'))::UINT8"},
         {"LineID", "Tokens", "token_count", "para_count"}
     );
     rel = rel->Aggregate(
         {"token_count", "para_count", "Tokens", "list(LineID)"},
         {"token_count", "para_count", "Tokens"}
     );
-    auto   result {rel->Execute()};
+
+    auto   result {to_materialized_query_result(rel->Execute())};
     LogBin log_bin;
 
-    while (auto data_chunk {result->Fetch()})
+    for (const auto& data_chunk : result->Collection().Chunks())
     {
-        auto data_length {data_chunk->size()};
+        auto data_length {data_chunk.size()};
 
-        const auto& token_count_col {data_chunk->data[0]};
-        const auto& para_count_col {data_chunk->data[1]};
-        const auto& tokens_col {data_chunk->data[2]};
-        const auto& tokens_child = duckdb::ListVector::GetEntry(tokens_col);
-        const auto& line_ids_col {data_chunk->data[3]};
-        const auto& line_ids_child = duckdb::ListVector::GetEntry(line_ids_col);
+        const auto& token_count_col {data_chunk.data[0]};
+        const auto& para_count_col {data_chunk.data[1]};
+        const auto& tokens_col {data_chunk.data[2]};
+        const auto& tokens_child {duckdb::ListVector::GetEntry(tokens_col)};
+        const auto& line_ids_col {data_chunk.data[3]};
+        const auto& line_ids_child {duckdb::ListVector::GetEntry(line_ids_col)};
 
-        const auto token_count_data    = duckdb::FlatVector::GetData<std::uint8_t>(token_count_col);
-        const auto para_count_data     = duckdb::FlatVector::GetData<std::uint8_t>(para_count_col);
-        const auto tokens_data         = duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col);
-        const auto tokens_child_data   = duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child);
-        const auto line_ids_data       = duckdb::FlatVector::GetData<duckdb::list_entry_t>(line_ids_col);
-        const auto line_ids_child_data = duckdb::FlatVector::GetData<int64_t>(line_ids_child);
+        const auto token_count_data {duckdb::FlatVector::GetData<std::uint8_t>(token_count_col)};
+        const auto para_count_data {duckdb::FlatVector::GetData<std::uint8_t>(para_count_col)};
+        const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
+        const auto tokens_child_data {duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child)};
+        const auto line_ids_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(line_ids_col)};
+        const auto line_ids_child_data {duckdb::FlatVector::GetData<std::uint64_t>(line_ids_child)};
 
         for (auto row : std::views::iota(0UL, data_length))
         {
@@ -117,7 +116,7 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
             this->m_cluster_pool.emplace_back(content, rows);
             auto cluster {&this->m_cluster_pool.back()};
 
-            auto [it, inserted] = log_bin.try_emplace(LogBinKey {token_count, para_count}, 1, cluster);
+            auto [it, inserted] {log_bin.try_emplace(LogBinKey {token_count, para_count}, 1, cluster)};
             if (!inserted)
             {
                 it->second.push_back(cluster);
@@ -142,9 +141,9 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
         }
 
         std::vector<std::vector<LogCluster*>> cluster_groups;
-        for (auto idx : std::views::iota(0UL, clusters.size()))
+        for (auto i : std::views::iota(0UL, clusters.size()))
         {
-            auto cluster1 {clusters[idx]};
+            auto cluster1 {clusters[i]};
             if (cluster1->merged)
             {
                 continue;
@@ -153,9 +152,9 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
             cluster1->merged = true;
             cluster_groups.emplace_back(1, cluster1);
 
-            for (auto idy : std::views::iota(idx + 1, clusters.size()))
+            for (auto j : std::views::iota(i + 1, clusters.size()))
             {
-                auto cluster2 {clusters[idy]};
+                auto cluster2 {clusters[j]};
                 if (cluster2->merged)
                 {
                     continue;
@@ -171,7 +170,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
 
         for (const auto& group : cluster_groups)
         {
-            auto merged_cluster = std::accumulate(group.begin() + 1, group.end(), group.front(), AELLogParser::_merge_log_cluster);
+            auto merged_cluster {std::accumulate(group.begin() + 1, group.end(), group.front(), AELLogParser::_merge_log_cluster)};
             merged_clusters.push_back(merged_cluster);
         }
     }
