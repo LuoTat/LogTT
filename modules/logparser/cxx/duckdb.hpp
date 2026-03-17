@@ -10,11 +10,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #pragma once
 #define DUCKDB_AMALGAMATION 1
-#define DUCKDB_SOURCE_ID "3a3967aa81"
-#define DUCKDB_VERSION "v1.5.0"
+#define DUCKDB_SOURCE_ID "7f02bc9165"
+#define DUCKDB_VERSION "v1.5.1-dev232"
 #define DUCKDB_MAJOR_VERSION 1
 #define DUCKDB_MINOR_VERSION 5
-#define DUCKDB_PATCH_VERSION "0"
+#define DUCKDB_PATCH_VERSION "1-dev232"
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //
@@ -1220,32 +1220,6 @@ enum class ProfilerPrintFormat : uint8_t { QUERY_TREE, JSON, QUERY_TREE_OPTIMIZE
 //
 //===----------------------------------------------------------------------===//
 
-
-
-#ifdef _WIN32
-#ifdef DUCKDB_MAIN_LIBRARY
-
-
-#if defined(_WIN32)
-
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
-#ifndef _WINSOCKAPI_
-#define _WINSOCKAPI_
-#endif
-
-#include <windows.h>
-
-#undef CreateDirectory
-#undef MoveFile
-#undef RemoveDirectory
-
-#endif
-
-#endif
-#endif
 
 
 
@@ -4013,6 +3987,9 @@ public:
 
 	//! Case insensitive equals (null-terminated strings)
 	DUCKDB_API static bool CIEquals(const char *l1, idx_t l1_size, const char *l2, idx_t l2_size);
+
+	//! Case insensitive starts-with
+	DUCKDB_API static bool CIStartsWith(const string &str, const string &prefix);
 
 	//! Case insensitive compare
 	DUCKDB_API static bool CILessThan(const string &l1, const string &l2);
@@ -7948,6 +7925,165 @@ public:
 
 
 
+
+//===----------------------------------------------------------------------===//
+//                         DuckDB
+//
+// duckdb/common/path.hpp
+//
+//
+//===----------------------------------------------------------------------===//
+
+
+
+
+
+
+namespace duckdb {
+
+//
+// Parsed representation of a path string, covering posix, windows, URI, and UNC forms.
+//
+// FromString(raw) parses and normalizes the input; ToString() reconstructs it as
+// scheme + authority + anchor + join(segments, sep) + tail
+//
+// Supported input forms and their parsed fields:
+//
+//   Input                         scheme        authority      anchor   segments      IsAbsolute
+//   ----------------------------  ------------  -----------    -------  ------------  -----------
+//   "a/b"                         ""            ""             ""       "a/b"         false
+//   ""  (empty)                   ""            ""             ""       "."           false
+//   "/"                           ""            ""             "/"      ""            true
+//   "/a/b"                        ""            ""             "/"      "a/b"         true
+//   "/a/b/"                       ""            ""             "/"      "a/b"         true   (HasTrailingSeparator)
+//   "file:/a/b"                   "file:"       ""             "/"      "a/b"         true
+//   "file:///a/b"                 "file://"     ""             "/"      "a/b"         true
+//   "file://localhost/a/b"        "file://"     "localhost"    "/"      "a/b"         true
+//   "s3://bucket/bar/baz"         "s3://"       "bucket"       "/"      "bar/baz"     true
+//   "C:\foo" (win)                ""            ""             "C:\"    "foo"         true
+//   "C:relpath" (win)             ""            ""             "C:"     "relpath"     false
+//   "\\server\share\p" (win)      "\\"          "server\share" "\"      "p"           true
+//   "\\?\UNC\server\share" (win)  "\\?\UNC\"    "server\share" "\"      ""            true
+//   "\\?\C:\foo" (win)            "\\?"         ""             "C:\"    "foo"         true
+//
+// HasTrailingSeparator is true when raw input ends with a separator. ToString() re-emits the
+// separator after the last segment (skipped when segments is empty — anchor already ends with it).
+// When Join()ing, LHS inherits trailing_separator from RHS. This is useful (and semantically
+// meaningful) in distinguishing e.g. '/foo/*/'=dirs from '/foo/*'=all.
+//
+// Windows local paths may use '/' or '\\' -- whichever is found first will be applied to
+// remainder of the normalized path; defaults to '/'.
+//
+class Path {
+public:
+	// Primary Constructor
+	static Path FromString(const string &raw);
+
+	string ToString() const;
+
+	// 3 constituent parts of to string -- base + path + trailing separator (IFF path not empty)
+	string GetBase() const;               // scheme + authority + anchor
+	string GetPath() const;               // relative path segments: join(segments, sep), or "." for empty relative
+	string GetTrailingSeparator() const { // returns "" or string(1, separator)
+		return !segments.empty() && has_trailing_separator ? string(1, separator) : "";
+	}
+	const string &GetScheme() const {
+		return scheme;
+	}
+	const string &GetAuthority() const {
+		return authority;
+	}
+	const string &GetAnchor() const {
+		return anchor;
+	}
+	char GetSeparator() const {
+		return separator;
+	}
+
+	bool HasScheme() const {
+		return !scheme.empty();
+	}
+	bool HasAuthority() const {
+		return !authority.empty();
+	}
+	bool HasAnchor() const {
+		return !anchor.empty();
+	}
+
+	bool HasDrive() const;     // always false in non-windows
+	char GetDriveChar() const; // returns \0 if no drive
+
+	bool HasPathSegments() const {
+		return !segments.empty();
+	}
+
+	bool HasTrailingSeparator() const {
+		return has_trailing_separator;
+	}
+
+	bool IsAbsolute() const {
+		return is_absolute;
+	}
+
+	// true for all relative paths, /*,  c:/* (not c:foo), file:/*, \\?\C:\*
+	bool IsLocal() const {
+		// note: HasDrive() covers UNC locals too!
+		return (!IsAbsolute() || !HasScheme() || HasDrive() || StringUtil::StartsWith(scheme, "file:"));
+	}
+
+	bool IsRemote() const {
+		return !IsLocal();
+	}
+
+	const vector<string> &GetPathSegments() const {
+		return segments;
+	}
+
+	// Join (in several forms)
+	Path Join(const Path &rhs) const;
+	Path Join(const string &rhs) const;
+
+	template <typename... Args>
+	Path Join(const string &first, const Args &...rest) const {
+		return Join(first).Join(rest...);
+	}
+
+	Path Join(const vector<string> &paths) const {
+		Path result = *this;
+		for (const auto &rhs : paths) {
+			result = result.Join(rhs);
+		}
+		return result;
+	}
+
+	Path Parent(int n = 1) const;
+
+	// public convenience - string-to-string normalize
+	static string Normalize(const string &input) {
+		return FromString(input).ToString();
+	}
+
+private:
+	string scheme;
+	string authority;
+	string anchor;
+	vector<string> segments;
+
+	char separator = '/';
+	bool has_trailing_separator = false;
+	bool is_absolute = false;
+
+	void NormalizeSegments(const string &raw, size_t path_offset);
+
+	static size_t ParseURIScheme(const string &input, Path &parsed);
+	static size_t ParseFilePathTail(const string &input, size_t start, Path &parsed);
+	static size_t ParseFileSchemes(const string &input, Path &parsed);
+#if defined(_WIN32)
+	static size_t ParseUNCScheme(const string &input, Path &parsed);
+#endif
+};
+
+} // namespace duckdb
 
 
 
@@ -36971,6 +37107,7 @@ struct CachedGlobalSettings {
 	optional_ptr<const GlobalUserSettings> global_user_settings;
 	idx_t version;
 	UserSettingsMap settings;
+	hugeint_t uuid;
 };
 #endif
 
@@ -36989,6 +37126,7 @@ public:
 	idx_t AddExtensionOption(const string &name, ExtensionOption extension_option);
 	case_insensitive_map_t<ExtensionOption> GetExtensionSettings() const;
 	bool TryGetExtensionOption(const String &name, ExtensionOption &result) const;
+	hugeint_t GetUUID() const;
 
 #ifndef __MINGW32__
 	CachedGlobalSettings &GetSettings() const;
@@ -37002,6 +37140,8 @@ private:
 	case_insensitive_map_t<ExtensionOption> extension_parameters;
 	//! Current version of the settings - incremented when settings are modified
 	atomic<idx_t> settings_version;
+	//! Settings uuid
+	hugeint_t uuid;
 };
 
 struct LocalUserSettings {
@@ -39917,8 +40057,6 @@ public:
 	shared_ptr<BufferManager> buffer_manager;
 	//! Encryption Util for OpenSSL and MbedTLS
 	shared_ptr<EncryptionUtil> encryption_util;
-	//! HTTP Request utility functions
-	shared_ptr<HTTPUtil> http_util;
 	//! Reference to the database cache entry (if any)
 	shared_ptr<DatabaseCacheEntry> db_cache_entry;
 	//! Reference to the database file path manager
@@ -40024,6 +40162,8 @@ public:
 	string SanitizeAllowedPath(const string &path) const;
 	ExtensionCallbackManager &GetCallbackManager();
 	const ExtensionCallbackManager &GetCallbackManager() const;
+	void SetHTTPUtil(const shared_ptr<HTTPUtil> &new_http_util);
+	HTTPUtil &GetHTTPUtil() const;
 
 private:
 	mutable mutex config_lock;
@@ -40035,6 +40175,10 @@ private:
 	unique_ptr<IndexTypeSet> index_types;
 	unique_ptr<ExtensionCallbackManager> callback_manager;
 	bool is_user_config = true;
+	//! HTTP Request utility functions
+	shared_ptr<HTTPUtil> http_util;
+	vector<shared_ptr<HTTPUtil>> old_http_utils;
+	mutex http_util_lock;
 };
 
 } // namespace duckdb
@@ -44967,7 +45111,7 @@ public:
 	//! Returns whether or not a specified block is the root block
 	virtual bool IsRootBlock(MetaBlockPointer root) = 0;
 	//! Mark a block as included in the next checkpoint
-	virtual void MarkBlockACheckpointed(block_id_t block_id) = 0;
+	virtual void MarkBlockAsCheckpointed(block_id_t block_id) = 0;
 	//! Mark a block as "used"; either the block is removed from the free list, or the reference count is incremented
 	virtual void MarkBlockAsUsed(block_id_t block_id) = 0;
 	//! Mark a block as "modified"; modified blocks are added to the free list after a checkpoint (i.e. their data is
@@ -49350,6 +49494,7 @@ struct PersistentCollectionData {
 	void Serialize(Serializer &serializer) const;
 	static PersistentCollectionData Deserialize(Deserializer &deserializer);
 	bool HasUpdates() const;
+	vector<block_id_t> GetBlockIds() const;
 };
 
 } // namespace duckdb
