@@ -19,7 +19,7 @@ cdef extern from "spell_log_parser.hxx" namespace "logparser":
         SpellLogParser()
         SpellLogParser(
             string         log_format,
-            vector[string] group_names,
+            vector[string] named_fields,
             vector[Mask]   maskings,
             vector[char]   delimiters,
             float          sim_thr,

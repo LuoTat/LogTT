@@ -36,12 +36,24 @@ cdef class DrainLogParser:
             raise ValueError("depth argument must be at least 3")
 
         cdef object parser = formatparse.compile(log_format)
+        cdef vector[Mask] maskings_cxx
+        cdef vector[char] delimiters_cxx
+
+        if maskings is None:
+            maskings_cxx = vector[Mask]()
+        else:
+            maskings_cxx = maskings
+
+        if delimiters is  None:
+            delimiters_cxx = vector[char]()
+        else:
+            delimiters_cxx = delimiters
 
         self.log_parser = CXXDrainLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
-            maskings or vector[Mask](),
-            delimiters or vector[char](),
+            maskings_cxx,
+            delimiters_cxx,
             depth,
             children,
             sim_thr,

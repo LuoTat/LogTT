@@ -20,7 +20,7 @@ cdef extern from "ael_log_parser.hxx" namespace "logparser":
         AELLogParser()
         AELLogParser(
             string         log_format,
-            vector[string] group_names,
+            vector[string] named_fields,
             vector[Mask]   maskings,
             vector[char]   delimiters,
             size_t         cluster_thr,

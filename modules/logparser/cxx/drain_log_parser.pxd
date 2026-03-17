@@ -20,7 +20,7 @@ cdef extern from "drain_log_parser.hxx" namespace "logparser":
         DrainLogParser()
         DrainLogParser(
             string         log_format,
-            vector[string] group_names,
+            vector[string] named_fields,
             vector[Mask]   maskings,
             vector[char]   delimiters,
             uint16_t       depth,

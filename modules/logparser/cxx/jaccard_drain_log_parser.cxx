@@ -7,14 +7,14 @@ namespace logparser
 
 JaccardDrainLogParser::JaccardDrainLogParser(
     std::string              log_regex,
-    std::vector<std::string> group_names,
+    std::vector<std::string> named_fields,
     std::vector<Mask>        maskings,
     std::vector<char>        delimiters,
     uint16_t                 depth,
     uint16_t                 children,
     float                    sim_thr
 ):
-    BaseLogParser {std::move(log_regex), std::move(group_names), std::move(maskings), std::move(delimiters)},
+    BaseLogParser {std::move(log_regex), std::move(named_fields), std::move(maskings), std::move(delimiters)},
     m_depth {depth},
     m_children {children},
     m_sim_thr {sim_thr}

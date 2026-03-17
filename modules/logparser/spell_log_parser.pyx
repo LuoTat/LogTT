@@ -28,12 +28,24 @@ cdef class SpellLogParser:
         """
 
         cdef object parser = formatparse.compile(log_format)
+        cdef vector[Mask] maskings_cxx
+        cdef vector[char] delimiters_cxx
+
+        if maskings is None:
+            maskings_cxx = vector[Mask]()
+        else:
+            maskings_cxx = maskings
+
+        if delimiters is  None:
+            delimiters_cxx = vector[char]()
+        else:
+            delimiters_cxx = delimiters
 
         self.log_parser = CXXSpellLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
-            maskings or vector[Mask](),
-            delimiters or vector[char](),
+            maskings_cxx,
+            delimiters_cxx,
             sim_thr,
         )
 
