@@ -12,10 +12,10 @@ cdef extern from "base_log_parser.cxx":
 cdef extern from "jaccard_drain_log_parser.cxx":
     pass
 
-cdef extern from "precomp.hxx" namespace "logparser":
+cdef extern from "precomp.hxx" namespace "logparser" nogil:
     ctypedef pair[string, string] Mask
 
-cdef extern from "jaccard_drain_log_parser.hxx" namespace "logparser":
+cdef extern from "jaccard_drain_log_parser.hxx" namespace "logparser" nogil:
     cdef cppclass JaccardDrainLogParser:
         JaccardDrainLogParser()
         JaccardDrainLogParser(

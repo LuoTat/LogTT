@@ -56,12 +56,14 @@ cdef class SpellLogParser:
         string templates_table_name,
         bint keep_para=False,
     ) -> ParseResult:
-        cdef size_t log_length = self.log_parser.parse(
-            log_file,
-            structured_table_name,
-            templates_table_name,
-            keep_para,
-        )
+        cdef size_t log_length
+        with nogil:
+            log_length = self.log_parser.parse(
+                log_file,
+                structured_table_name,
+                templates_table_name,
+                keep_para,
+            )
 
         return ParseResult(
             log_file,

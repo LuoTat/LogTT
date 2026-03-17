@@ -11,7 +11,7 @@ from qfluentwidgets import (
     SubtitleLabel,
 )
 
-from modules.logparser import LogParserConfig
+from modules.logparser import LogParserClassProtocol, LogParserConfig
 from modules.models import LogParserConfigListModel, LogParserListModel
 
 
@@ -275,7 +275,7 @@ class ExtractLogMessageBox(MessageBoxBase):
     # ==================== 公共方法 ====================
 
     @property
-    def log_parser_type(self) -> type[BaseLogParser]:
+    def log_parser_type(self) -> LogParserClassProtocol:
         """获取用户选择的提取算法类型"""
         model_index = self._log_parser_list_model.index(
             self._log_parser_combo_box.currentIndex()

@@ -1,4 +1,4 @@
-from concurrent.futures import Future, ProcessPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
@@ -17,7 +17,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor
 
 from modules.duckdb_service import DuckDBService
-from modules.logparser import LogParserConfig, ParseResult
+from modules.logparser import LogParserClassProtocol, LogParserConfig, ParseResult
 
 
 class LogColumn(IntEnum):
@@ -64,7 +64,7 @@ class LogExtractTaskPool(QObject):
     @staticmethod
     def _run_log_extract_task(
         log_file: Path,
-        log_parser_type: type[BaseLogParser],
+        log_parser_type: LogParserClassProtocol,
         log_parser_config: LogParserConfig,
         structured_table_name: str,
         templates_table_name: str,
@@ -95,13 +95,13 @@ class LogExtractTaskPool(QObject):
     ):
         super().__init__(parent)
 
-        self._pool = ProcessPoolExecutor(max_workers=max_workers)
+        self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
     def submit(
         self,
         log_id: int,
         log_file: Path,
-        log_parser_type: type[BaseLogParser],
+        log_parser_type: LogParserClassProtocol,
         log_parser_config: LogParserConfig,
         structured_table_name: str,
         templates_table_name: str,
@@ -414,7 +414,7 @@ class LogTableModel(QAbstractTableModel):
     def request_extract(
         self,
         index: QModelIndex,
-        log_parser_type: type[BaseLogParser],
+        log_parser_type: LogParserClassProtocol,
         log_parser_config: LogParserConfig,
     ):
         """请求提取日志"""
