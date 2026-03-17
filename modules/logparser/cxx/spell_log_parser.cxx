@@ -25,10 +25,8 @@ std::size_t SpellLogParser::parse(const std::string& log_file, const std::string
     this->m_cluster_pool.clear();
     std::vector<LogCluster*> cluster_results;
     std::vector<std::string> templates;
-    // 初始化内存数据库
-    duckdb::DuckDB     db {DB_PATH};
-    duckdb::Connection conn {db};
-    conn.EnableProfiling();
+    // 获取数据库连接
+    auto conn {get_connection()};
 
     auto rel {load_data(conn, log_file, this->m_log_regex, this->m_named_fields)};
     rel = mask_log_rel(rel, this->m_maskings);

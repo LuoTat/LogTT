@@ -5,6 +5,18 @@
 namespace logparser
 {
 
+duckdb::Connection get_connection()
+{
+    static duckdb::DuckDB db {DB_PATH};
+    duckdb::Connection    conn {db};
+
+#ifdef LOGTT_ENABLE_PROFILING
+    conn.EnableProfiling();
+#endif
+
+    return conn;
+}
+
 duckdb::unique_ptr<duckdb::MaterializedQueryResult> to_materialized_query_result(duckdb::unique_ptr<duckdb::QueryResult> result)
 {
     D_ASSERT(result->type == duckdb::QueryResultType::MATERIALIZED_RESULT);
