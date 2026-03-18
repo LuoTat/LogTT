@@ -1,8 +1,5 @@
-from .ael_log_parser import AELLogParser
-from .drain_log_parser import DrainLogParser
-from .jaccard_drain_log_parser import JaccardDrainLogParser
 from .log_parser_config import LogParserConfig
-from .spell_log_parser import SpellLogParser
+from .parsers import AELLogParser, DrainLogParser, JaccardDrainLogParser, SpellLogParser
 
 
 class Test:

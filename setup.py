@@ -34,8 +34,8 @@ class BuildExtWithCompilerFlags(build_ext):
 
 extensions = [
     Extension(
-        name="modules.logparser.*",
-        sources=["modules/logparser/*.pyx"],
+        name="modules.logparser.parsers",
+        sources=["modules/logparser/parsers.pyx"],
         library_dirs=["lib"],
         libraries=["duckdb"],
         runtime_library_dirs=["lib"],
