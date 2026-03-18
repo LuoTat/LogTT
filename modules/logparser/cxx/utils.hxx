@@ -15,7 +15,6 @@ duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const s
 duckdb::shared_ptr<duckdb::Relation> mask_log_rel(duckdb::shared_ptr<duckdb::Relation> rel, const std::vector<Mask>& maskings);
 duckdb::shared_ptr<duckdb::Relation> split_log_rel(duckdb::shared_ptr<duckdb::Relation> rel, const std::vector<char>& delimiters);
 
-
 void to_table(
     duckdb::Connection&                  conn,
     duckdb::shared_ptr<duckdb::Relation> rel,

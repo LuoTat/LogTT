@@ -56,7 +56,8 @@ duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const s
 
     // 使用正则表达式提取日志字段，并将其展开成多行
     rel = rel->Project({"LineID", std::format("regexp_extract(_raw, '{}', [{}]) AS _cap", log_regex, named_fields_str)});
-    rel = rel->Project(duckdb::vector<duckdb::string> {"LineID", "unnest(_cap)"});
+    using namespace std::string_literals;
+    rel = rel->Project({"LineID"s, "unnest(_cap)"s});
 
     return rel;
 }
@@ -69,7 +70,7 @@ duckdb::shared_ptr<duckdb::Relation> mask_log_rel(duckdb::shared_ptr<duckdb::Rel
     {
         expr = std::format("regexp_replace({}, '{}', '{}', 'g')", expr, regex, replacement);
     }
-    rel = rel->Project(std::format("*, {} AS MaskedContent", expr));
+    rel = rel->Project({"*", std::format("{} AS MaskedContent", expr)});
 
     return rel;
 }
@@ -84,7 +85,7 @@ duckdb::shared_ptr<duckdb::Relation> split_log_rel(duckdb::shared_ptr<duckdb::Re
     }
     // 按空格分割
     expr = std::format("str_split({}, ' ')", expr);
-    rel  = rel->Project(std::format("*, {} AS Tokens", expr));
+    rel  = rel->Project({"*", std::format("{} AS Tokens", expr)});
 
     return rel;
 }
@@ -99,6 +100,7 @@ void to_table(
 )
 {
     // 使用 UDF 将 log_templates 中的模板字符串映射到每一行
+    auto udf_name {std::format("_get_template_{}", structured_table_name)};
     auto udf {
         [&templates](duckdb::DataChunk& args, duckdb::ExpressionState& state, duckdb::Vector& result)
         {
@@ -112,16 +114,19 @@ void to_table(
             }
         }
     };
-    conn.CreateVectorizedFunction<duckdb::string_t, std::int64_t>("_get_template", udf);
-    rel = rel->Project("*, _get_template(LineID) AS Template");
+    conn.CreateVectorizedFunction<duckdb::string_t, std::int64_t>(udf_name, udf);
+
+    rel = rel->Project({"*", std::format("{}(LineID) AS Template", udf_name)});
     rel->Create(structured_table_name);
-    rel = conn.Table(structured_table_name);
 
     // 统计每个模板的出现次数，并按出现次数降序排序
+    rel = conn.Table(structured_table_name);
     rel = rel->Project("Template");
     rel = rel->Aggregate("Template, COUNT(*) AS Count", "Template");
     rel = rel->Order("Count DESC");
     rel->Create(templates_table_name);
+
+    rel->Query("CHECKPOINT");
 }
 
 }    // namespace logparser
