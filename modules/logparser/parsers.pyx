@@ -3,17 +3,17 @@ cdef object ParseResult
 cdef object parser_register
 
 import formatparse
-from libc.stdint cimport uint16_t
+from libc.stdint cimport uint16_t, uint32_t
 from libcpp.string cimport string
 from libcpp.vector cimport vector
-
-from .cxx.parsers cimport (
-AELLogParser as CXXAELLogParser,
-DrainLogParser as CXXDrainLogParser,
-JaccardDrainLogParser as CXXJaccardDrainLogParser,
-Mask,
-SpellLogParser as CXXSpellLogParser,
+from modules.core.parser cimport(
+    AELLogParser as CXX_AELLogParser,
+    DrainLogParser as CXX_DrainLogParser,
+    JaccardDrainLogParser as CXX_JaccardDrainLogParser,
+    Mask,
+    SpellLogParser as CXX_SpellLogParser,
 )
+
 from .parse_result import ParseResult
 from .parser_factory import parser_register
 
@@ -22,14 +22,14 @@ from .parser_factory import parser_register
 cdef class AELLogParser:
     """AEL算法"""
 
-    cdef CXXAELLogParser log_parser
+    cdef CXX_AELLogParser log_parser
 
     def __init__(
         self,
         string log_format,
         object maskings=None,
         object delimiters=None,
-        size_t cluster_thr=2,
+        uint32_t cluster_thr=2,
         float merge_thr=1,
     ):
         """
@@ -52,7 +52,7 @@ cdef class AELLogParser:
         else:
             delimiters_cxx = delimiters
 
-        self.log_parser = CXXAELLogParser(
+        self.log_parser = CXX_AELLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
             maskings_cxx,
@@ -68,7 +68,8 @@ cdef class AELLogParser:
         string templates_table_name,
         bint keep_para=False,
     ) -> ParseResult:
-        cdef size_t log_length
+        cdef uint32_t log_length
+
         with nogil:
             log_length = self.log_parser.parse(
                 log_file,
@@ -97,7 +98,7 @@ cdef class AELLogParser:
 cdef class DrainLogParser:
     """Drain算法"""
 
-    cdef CXXDrainLogParser log_parser
+    cdef CXX_DrainLogParser log_parser
 
     def __init__(
         self,
@@ -132,7 +133,7 @@ cdef class DrainLogParser:
         else:
             delimiters_cxx = delimiters
 
-        self.log_parser = CXXDrainLogParser(
+        self.log_parser = CXX_DrainLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
             maskings_cxx,
@@ -149,7 +150,8 @@ cdef class DrainLogParser:
         string templates_table_name,
         bint keep_para = False,
     ) -> ParseResult:
-        cdef size_t log_length
+        cdef uint32_t log_length
+
         with nogil:
             log_length = self.log_parser.parse(
                 log_file,
@@ -178,7 +180,7 @@ cdef class DrainLogParser:
 cdef class JaccardDrainLogParser:
     """Drain算法"""
 
-    cdef CXXJaccardDrainLogParser log_parser
+    cdef CXX_JaccardDrainLogParser log_parser
 
     def __init__(
         self,
@@ -213,7 +215,7 @@ cdef class JaccardDrainLogParser:
         else:
             delimiters_cxx = delimiters
 
-        self.log_parser = CXXJaccardDrainLogParser(
+        self.log_parser = CXX_JaccardDrainLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
             maskings_cxx,
@@ -230,7 +232,8 @@ cdef class JaccardDrainLogParser:
         string templates_table_name,
         bint keep_para = False,
     ) -> ParseResult:
-        cdef size_t log_length
+        cdef uint32_t log_length
+
         with nogil:
             log_length = self.log_parser.parse(
                 log_file,
@@ -259,7 +262,7 @@ cdef class JaccardDrainLogParser:
 cdef class SpellLogParser:
     """Spell算法"""
 
-    cdef CXXSpellLogParser log_parser
+    cdef CXX_SpellLogParser log_parser
 
     def __init__(
         self,
@@ -287,7 +290,7 @@ cdef class SpellLogParser:
         else:
             delimiters_cxx = delimiters
 
-        self.log_parser = CXXSpellLogParser(
+        self.log_parser = CXX_SpellLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
             maskings_cxx,
@@ -302,7 +305,8 @@ cdef class SpellLogParser:
         string templates_table_name,
         bint keep_para=False,
     ) -> ParseResult:
-        cdef size_t log_length
+        cdef uint32_t log_length
+
         with nogil:
             log_length = self.log_parser.parse(
                 log_file,

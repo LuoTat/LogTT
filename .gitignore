@@ -12,5 +12,6 @@ wheels/
 .idea/
 .serena/
 log_full/
+lib/
 logtt.duckdb
 config.json

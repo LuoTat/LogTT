@@ -197,7 +197,6 @@ class LogManagePage(QWidget):
             log_uri = dialog.log_uri
             if dialog.is_local_file:
                 self._log_table_model.request_add("本地文件", log_uri)
-                return
             else:
                 self._log_table_model.request_add("网络地址", log_uri, "Drain3")
 

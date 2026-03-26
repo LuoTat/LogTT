@@ -1,6 +1,5 @@
 from typing import Any
 
-import polars
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PySide6.QtGui import QColor
 
@@ -8,7 +7,7 @@ from modules.duckdb_service import DuckDBService
 
 
 class CsvFileTableModel(QAbstractTableModel):
-    """专门用来显示DuckDB数据库中保存的csv文件的表格模型，支持分页加载、排序和过滤"""
+    """专门用来显示DuckDB数据库中保存的csv文件的表格模型, 支持分页加载, 排序和过滤"""
 
     # 每次加载的页数
     _WINDOW_PAGES = 5
@@ -24,7 +23,7 @@ class CsvFileTableModel(QAbstractTableModel):
         self._total_row_count = DuckDBService.get_table_row_count(table_name)
 
         # 缓存的DataFrame
-        self._cache_df: polars.DataFrame = polars.DataFrame()
+        self._cache_df: list[list[str]] = []
         self._cache_offset: int = 0
         self._cache_limit: int = 0
 
@@ -67,7 +66,7 @@ class CsvFileTableModel(QAbstractTableModel):
             self._cache_row_data(row)
 
         if role == Qt.ItemDataRole.DisplayRole:
-            return self._cache_df.item(row - self._cache_offset, col)
+            return self._cache_df[row - self._cache_offset][col]
 
         # 处理前景色角色
         elif role == Qt.ItemDataRole.ForegroundRole:

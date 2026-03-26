@@ -1,6 +1,4 @@
 from typing import Any
-
-import polars
 from PySide6.QtCore import (
     QT_TRANSLATE_NOOP,
     QAbstractTableModel,
@@ -13,7 +11,7 @@ from modules.duckdb_service import DuckDBService
 
 
 class CsvFilterTableModel(QAbstractTableModel):
-    """专门用来显示csv文件的列聚合的模型，支持分页加载、排序和关键字过滤"""
+    """专门用来显示csv文件的列聚合的模型, 支持分页加载, 排序和关键字过滤"""
 
     # 每次加载的页数
     _WINDOW_PAGES = 5
@@ -44,7 +42,7 @@ class CsvFilterTableModel(QAbstractTableModel):
         self._total_row_count: int
 
         # 缓存的DataFrame
-        self._cache_df: polars.DataFrame = polars.DataFrame()
+        self._cache_df = None
         self._cache_offset: int = 0
         self._cache_limit: int = 0
 
@@ -103,12 +101,12 @@ class CsvFilterTableModel(QAbstractTableModel):
             self._cache_row_data(row)
 
         if role == Qt.ItemDataRole.DisplayRole:
-            return self._cache_df.item(row - self._cache_offset, col)
+            return self._cache_df[row - self._cache_offset][col]
 
         if role == Qt.ItemDataRole.CheckStateRole:
             if col != 0:
                 return None
-            row_value = self._cache_df.item(row - self._cache_offset, 0)
+            row_value = self._cache_df[row - self._cache_offset][0]
             return (
                 Qt.CheckState.Checked
                 if row_value in self._current_filter
@@ -124,7 +122,7 @@ class CsvFilterTableModel(QAbstractTableModel):
             return False
 
         if role == Qt.ItemDataRole.CheckStateRole:
-            row_value = self._cache_df.item(index.row() - self._cache_offset, 0)
+            row_value = self._cache_df[index.row() - self._cache_offset][0]
 
             if Qt.CheckState(value) == Qt.CheckState.Checked:
                 self._current_filter.append(row_value)
@@ -154,7 +152,6 @@ class CsvFilterTableModel(QAbstractTableModel):
                 self._keyword,
                 self._other_filters,
             )
-
         except Exception as e:
             print(f"Error fetching data: {e}")
 

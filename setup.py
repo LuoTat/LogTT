@@ -37,10 +37,18 @@ extensions = [
         name="modules.logparser.parsers",
         sources=["modules/logparser/parsers.pyx"],
         library_dirs=["lib"],
-        libraries=["duckdb"],
-        runtime_library_dirs=["lib"],
+        libraries=["core"],
+        runtime_library_dirs=["$ORIGIN/../../lib"],
         language="c++",
-    )
+    ),
+    Extension(
+        name="modules.duckdb_service",
+        sources=["modules/duckdb_service.pyx"],
+        library_dirs=["lib"],
+        libraries=["core"],
+        runtime_library_dirs=["$ORIGIN/../lib"],
+        language="c++",
+    ),
 ]
 
 setup(
