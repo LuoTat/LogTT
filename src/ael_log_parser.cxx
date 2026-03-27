@@ -86,7 +86,7 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
         const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
         const auto tokens_child_data {duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child)};
         const auto line_ids_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(line_ids_col)};
-        const auto line_ids_child_data {duckdb::FlatVector::GetData<std::uint32_t>(line_ids_child)};
+        const auto line_ids_child_data {duckdb::FlatVector::GetData<std::int64_t>(line_ids_child)};
 
         for (auto row : std::views::iota(0UL, data_chunk.size()))
         {

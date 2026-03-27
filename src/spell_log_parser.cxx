@@ -149,14 +149,19 @@ SpellLogParser::LogCluster* SpellLogParser::_subseq_match(const TContent& conten
 
 SpellLogParser::LogCluster* SpellLogParser::_lcs_match(const TContent& content)
 {
-    auto         required_content_lcs {static_cast<std::uint16_t>(std::ceil(this->m_sim_thr * content.size()))};
-    std::int16_t max_lcs_length {-1};
-    LogCluster*  max_cluster {nullptr};
+    auto          required_content_lcs {static_cast<std::uint16_t>(std::ceil(this->m_sim_thr * content.size()))};
+    std::uint16_t max_lcs_length {0};
+    LogCluster*   max_cluster {nullptr};
 
     for (const auto& cluster : this->m_cluster_pool)
     {
         auto required_cluster_lcs {static_cast<std::uint16_t>(std::ceil(this->m_sim_thr * cluster.content.size()))};
         auto lcs_length {SpellLogParser::_lcs_length(content, cluster.content, std::max(required_content_lcs, required_cluster_lcs))};
+
+        if (lcs_length == 0)
+        {
+            continue;
+        }
 
         if (lcs_length > max_lcs_length || (lcs_length == max_lcs_length && cluster.content.size() < max_cluster->content.size()))
         {
