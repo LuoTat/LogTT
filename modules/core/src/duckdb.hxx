@@ -11,11 +11,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #pragma once
 #define DUCKDB_AMALGAMATION 1
 #define DUCKDB_AMALGAMATION_EXTENDED 1
-#define DUCKDB_SOURCE_ID "c23c958a93"
-#define DUCKDB_VERSION "v1.5.2-dev118"
+#define DUCKDB_SOURCE_ID "78463ae581"
+#define DUCKDB_VERSION "v1.5.2-dev247"
 #define DUCKDB_MAJOR_VERSION 1
 #define DUCKDB_MINOR_VERSION 5
-#define DUCKDB_PATCH_VERSION "2-dev118"
+#define DUCKDB_PATCH_VERSION "2-dev247"
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //
@@ -58573,12 +58573,7 @@ public:
 
 namespace duckdb {
 
-enum class AllowParserOverride : uint8_t {
-	DEFAULT_OVERRIDE,
-	FALLBACK_OVERRIDE,
-	STRICT_OVERRIDE,
-	STRICT_WHEN_SUPPORTED
-};
+enum class AllowParserOverride : uint8_t { DEFAULT_OVERRIDE, FALLBACK_OVERRIDE, STRICT_OVERRIDE };
 
 } // namespace duckdb
 
@@ -64776,6 +64771,8 @@ struct PivotColumn {
 
 	void Serialize(Serializer &serializer) const;
 	static PivotColumn Deserialize(Deserializer &source);
+
+	vector<PivotColumnEntry> GetEntriesForSerialization(Serializer &serializer) const;
 };
 
 //! Represents a PIVOT or UNPIVOT expression
