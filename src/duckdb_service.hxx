@@ -1,6 +1,6 @@
 #pragma once
 
-#include "duckdb.hxx"
+#include "duckdb.hpp"
 #include <string>
 #include <unordered_map>
 #include <utility>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base_log_parser.hxx"
-#include "duckdb.hxx"
+#include "duckdb.hpp"
 #include "precomp.hxx"
 #include <boost/container_hash/hash.hpp>
 #include <deque>
@@ -56,19 +56,15 @@ private:
         bool operator==(const LogBinKey&) const = default;
     };
 
-    struct LogBinKeyHash
+    inline friend std::size_t hash_value(const LogBinKey& k)
     {
-        [[nodiscard]]
-        std::size_t operator()(const LogBinKey& key) const noexcept
-        {
-            std::size_t seed {0};
-            boost::hash_combine(seed, key.m_token_count);
-            boost::hash_combine(seed, key.m_para_count);
-            return seed;
-        }
-    };
+        std::size_t seed {0};
+        boost::hash_combine(seed, k.m_token_count);
+        boost::hash_combine(seed, k.m_para_count);
+        return seed;
+    }
 
-    using LogBin = std::unordered_map<LogBinKey, std::vector<LogCluster*>, LogBinKeyHash>;
+    using LogBin = std::unordered_map<LogBinKey, std::vector<LogCluster*>, boost::hash<LogBinKey>>;
 
     LogBin                   _get_log_bins(duckdb::shared_ptr<duckdb::Relation> rel);
     std::vector<LogCluster*> _reconcile(LogBin& log_bin);
@@ -79,5 +75,6 @@ private:
     float                  m_merge_thr {1.0F};
     std::deque<LogCluster> m_cluster_pool;
 };
+
 
 }    // namespace logtt

@@ -11,11 +11,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #pragma once
 #define DUCKDB_AMALGAMATION 1
 #define DUCKDB_AMALGAMATION_EXTENDED 1
-#define DUCKDB_SOURCE_ID "78463ae581"
-#define DUCKDB_VERSION "v1.5.2-dev247"
+#define DUCKDB_SOURCE_ID "427ec890f6"
+#define DUCKDB_VERSION "v1.5.2-dev272"
 #define DUCKDB_MAJOR_VERSION 1
 #define DUCKDB_MINOR_VERSION 5
-#define DUCKDB_PATCH_VERSION "2-dev247"
+#define DUCKDB_PATCH_VERSION "2-dev272"
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //

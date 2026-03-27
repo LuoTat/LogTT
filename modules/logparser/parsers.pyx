@@ -6,7 +6,7 @@ import formatparse
 from libc.stdint cimport uint16_t, uint32_t
 from libcpp.string cimport string
 from libcpp.vector cimport vector
-from modules.core.parser cimport(
+from modules.logparser.parser cimport(
     AELLogParser as CXX_AELLogParser,
     DrainLogParser as CXX_DrainLogParser,
     JaccardDrainLogParser as CXX_JaccardDrainLogParser,

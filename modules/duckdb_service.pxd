@@ -4,7 +4,7 @@ from libcpp.string cimport string
 from libcpp.unordered_map cimport unordered_map
 from libcpp.vector cimport vector
 
-cdef extern from "src/duckdb_service.hxx" namespace "logtt" nogil:
+cdef extern from "duckdb_service.hxx" namespace "logtt" nogil:
     ctypedef unordered_map[string, vector[string]] Filters
 
     #  ==================== 日志管理 ====================

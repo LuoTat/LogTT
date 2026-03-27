@@ -9,22 +9,12 @@ Options.fast_fail = True
 
 class BuildExtWithCompilerFlags(build_ext):
     def build_extensions(self):
-        compiler_type = self.compiler.compiler_type
-
-        if compiler_type == "msvc":
-            compile_args = [
-                "/DCYTHON_CLINE_IN_TRACEBACK=0",
-                "/W4",
-                "/O2",
-                "/std:c++latest",
-            ]
-        else:
-            compile_args = [
-                "-DCYTHON_CLINE_IN_TRACEBACK=0",
-                "-Wall",
-                "-O3",
-                "-std=c++26",
-            ]
+        compile_args = [
+            "-DCYTHON_CLINE_IN_TRACEBACK=0",
+            "-Wall",
+            "-O3",
+            "-std=c++26",
+        ]
 
         for extension in self.extensions:
             extension.extra_compile_args = compile_args
@@ -36,6 +26,7 @@ extensions = [
     Extension(
         name="modules.logparser.parsers",
         sources=["modules/logparser/parsers.pyx"],
+        include_dirs=["3rdparty/duckdb/include", "src"],
         library_dirs=["lib"],
         libraries=["core"],
         runtime_library_dirs=["$ORIGIN/../../lib"],
@@ -44,6 +35,7 @@ extensions = [
     Extension(
         name="modules.duckdb_service",
         sources=["modules/duckdb_service.pyx"],
+        include_dirs=["3rdparty/duckdb/include", "src"],
         library_dirs=["lib"],
         libraries=["core"],
         runtime_library_dirs=["$ORIGIN/../lib"],

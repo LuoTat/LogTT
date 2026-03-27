@@ -3,10 +3,10 @@ from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-cdef extern from "src/precomp.hxx" namespace "logtt" nogil:
+cdef extern from "precomp.hxx" namespace "logtt" nogil:
     ctypedef pair[string, string] Mask
 
-cdef extern from "src/ael_log_parser.hxx" namespace "logtt" nogil:
+cdef extern from "ael_log_parser.hxx" namespace "logtt" nogil:
     cdef cppclass AELLogParser:
         AELLogParser()
         AELLogParser(
@@ -24,7 +24,7 @@ cdef extern from "src/ael_log_parser.hxx" namespace "logtt" nogil:
             bint          keep_para,
         )
 
-cdef extern from "src/drain_log_parser.hxx" namespace "logtt" nogil:
+cdef extern from "drain_log_parser.hxx" namespace "logtt" nogil:
     cdef cppclass DrainLogParser:
         DrainLogParser()
         DrainLogParser(
@@ -43,7 +43,7 @@ cdef extern from "src/drain_log_parser.hxx" namespace "logtt" nogil:
             bint          keep_para,
         )
 
-cdef extern from "src/jaccard_drain_log_parser.hxx" namespace "logtt" nogil:
+cdef extern from "jaccard_drain_log_parser.hxx" namespace "logtt" nogil:
     cdef cppclass JaccardDrainLogParser:
         JaccardDrainLogParser()
         JaccardDrainLogParser(
@@ -62,7 +62,7 @@ cdef extern from "src/jaccard_drain_log_parser.hxx" namespace "logtt" nogil:
             bint          keep_para,
         )
 
-cdef extern from "src/spell_log_parser.hxx" namespace "logtt" nogil:
+cdef extern from "spell_log_parser.hxx" namespace "logtt" nogil:
     cdef cppclass SpellLogParser:
         SpellLogParser()
         SpellLogParser(
