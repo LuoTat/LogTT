@@ -100,7 +100,7 @@ duckdb::shared_ptr<duckdb::Relation> split_log_rel(duckdb::shared_ptr<duckdb::Re
     {
         duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
         arg_exprs.push_back(std::move(func_expr));
-        arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(delim)));
+        arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(std::string {delim})));
         arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(std::format("{} ", delim))));
         func_expr = duckdb::make_uniq<duckdb::FunctionExpression>("replace", std::move(arg_exprs));
     }

@@ -91,11 +91,10 @@ static duckdb::unique_ptr<duckdb::ParsedExpression> _build_filter_expr(const Fil
 
 static duckdb::unique_ptr<duckdb::ParsedExpression> _build_like_filter_expr(const std::string& column_name, const std::string& keyword)
 {
-    std::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
     arg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>(column_name));
-    arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(std::format("%{}%", keyword))));
-
-    return duckdb::make_uniq<duckdb::FunctionExpression>("LIKE", std::move(arg_exprs));
+    arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(keyword)));
+    return duckdb::make_uniq<duckdb::FunctionExpression>("contains", std::move(arg_exprs));
 }
 
 // ==================== 日志管理 ====================
