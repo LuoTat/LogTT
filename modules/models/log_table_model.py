@@ -350,7 +350,7 @@ class LogTableModel(QAbstractTableModel):
         self._set_sql_data(log_id, SqlColumn.IS_EXTRACTED, True)
         self._set_sql_data(log_id, SqlColumn.LINE_COUNT, line_count)
         if (row := self._get_row(log_id)) >= 0:
-            self._set_df_data(row, SqlColumn.IS_EXTRACTED, "true")
+            self._set_df_data(row, SqlColumn.IS_EXTRACTED, True)
             self._set_df_data(row, SqlColumn.LINE_COUNT, line_count)
             self.dataChanged.emit(
                 self.index(row, 0),
@@ -469,17 +469,12 @@ class LogTableModel(QAbstractTableModel):
     def search_by_name(self, keyword: str):
         """按 URI 关键字搜索"""
         kw = keyword.strip().lower()
-
-        # 关键字为空时恢复全量数据
-        if not kw:
-            self.refresh()
-            return
-
+        self._log_table = DuckDBService.get_log_table()
         self.beginResetModel()
         self._log_table = [
             row
             for row in self._log_table
-            if kw in Path(row[SqlColumn.LOG_URI]).stem.lower()
+            if kw in Path(row[SqlColumn.LOG_URI]).name.lower()
         ]
         self.endResetModel()
 

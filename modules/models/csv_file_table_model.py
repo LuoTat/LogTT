@@ -126,7 +126,7 @@ class CsvFileTableModel(QAbstractTableModel):
 
     def clear_column_filter(self, column_name: str):
         """清除列的过滤"""
-        self._filters.pop(column_name)
+        self._filters.pop(column_name, [])
         self.refresh()
 
     def clear_all_filters(self):

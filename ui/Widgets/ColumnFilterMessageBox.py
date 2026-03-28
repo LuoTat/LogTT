@@ -28,6 +28,7 @@ class ColumnFilterMessageBox(MessageBoxBase):
         self._table_name = table_name
         self._column_name = column_name
         self._all_filters = all_filters
+        self._current_filter = all_filters.get(column_name, [])
 
         # 初始化模型
         self._init_model()

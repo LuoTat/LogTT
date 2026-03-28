@@ -1,3 +1,4 @@
+from modules.duckdb_service import DuckDBService
 from PySide6.QtCore import (
     QPoint,
     Qt,
@@ -21,7 +22,6 @@ from qfluentwidgets import (
 )
 from qfluentwidgets.components import ModelComboBox
 
-from modules.duckdb_service import DuckDBService
 from modules.models import CsvFileTableModel, ExtractedLogListModel
 from ui.Widgets import ColumnFilterMessageBox
 
@@ -244,10 +244,14 @@ class TemplateViewPage(QWidget):
             self.window(),
         )
         if dialog.exec():
-            self._csv_file_table_model.set_column_filter(
-                column_name,
-                dialog.current_filter,
-            )
+            current_filter = dialog.current_filter
+            if not current_filter:
+                self._csv_file_table_model.clear_column_filter(column_name)
+            else:
+                self._csv_file_table_model.set_column_filter(
+                    column_name,
+                    current_filter,
+                )
             self._update_info_label()
 
     @Slot(str)
