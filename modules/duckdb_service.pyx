@@ -33,56 +33,72 @@ cdef class DuckDBService:
     @staticmethod
     def get_log_table() -> list[tuple]:
         cdef vector[LogEntry] table
+        cdef vector[(uint32_t, string, string, string, string, bint, string, uint32_t, string, string)] result
 
         with nogil:
             table = cxx_get_log_table()
 
-        return [
-            (
-                entry.id,
-                entry.log_type,
-                entry.format_type,
-                entry.log_uri,
-                entry.create_time,
-                entry.is_extracted,
-                entry.extract_method,
-                entry.line_count,
-                entry.structured_table_name,
-                entry.templates_table_name,
+        result.reserve(table.size())
+        cdef LogEntry entry
+        for entry in table:
+            result.push_back(
+                (
+                    entry.id,
+                    entry.log_type,
+                    entry.format_type,
+                    entry.log_uri,
+                    entry.create_time,
+                    entry.is_extracted,
+                    entry.extract_method,
+                    entry.line_count,
+                    entry.structured_table_name,
+                    entry.templates_table_name,
+                )
             )
-            for entry in table
-        ]
+
+        return result
 
     @staticmethod
     def get_extracted_log_table() -> list[tuple]:
         cdef vector[EXLogEntry] table
+        cdef vector[(uint32_t, string, string, string)] result
 
         with nogil:
             table = cxx_get_extracted_log_table()
 
-        return [
-            (
-                entry.id,
-                entry.log_uri,
-                entry.structured_table_name,
-                entry.templates_table_name,
+        result.reserve(table.size())
+        cdef EXLogEntry entry
+        for entry in table:
+            result.push_back(
+                (
+                    entry.id,
+                    entry.log_uri,
+                    entry.structured_table_name,
+                    entry.templates_table_name,
+                )
             )
-            for entry in table
-        ]
+
+        return result
 
     @staticmethod
-    def insert_log_with_no_extract_method(string log_type, string log_uri):
+    def insert_log_with_no_extract_method(string log_type, string log_uri) -> int:
+        cdef int ret
         with nogil:
-            cxx_insert_log(log_type, log_uri)
+            ret = cxx_insert_log(log_type, log_uri)
+
+        return ret
 
     @staticmethod
     def insert_log_with_extract_method(
         string log_type,
         string log_uri,
         string extract_method,
-    ):
+    ) -> int:
+        cdef int ret
         with nogil:
-            cxx_insert_log(log_type, log_uri, extract_method)
+            ret = cxx_insert_log(log_type, log_uri, extract_method)
+
+        return ret
 
     @staticmethod
     def update_log(uint32_t log_id, string column_name, object value):

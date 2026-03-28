@@ -385,22 +385,23 @@ class LogTableModel(QAbstractTableModel):
     ):
         """请求添加日志记录"""
         # 更新数据库和ui状态
-        try:
-            if extract_method is None:
-                DuckDBService.insert_log_with_no_extract_method(log_type, log_uri)
-            else:
-                DuckDBService.insert_log_with_extract_method(
-                    log_type, log_uri, extract_method
-                )
+        ret: int
+        if extract_method is None:
+            ret = DuckDBService.insert_log_with_no_extract_method(log_type, log_uri)
+        else:
+            ret = DuckDBService.insert_log_with_extract_method(
+                log_type,
+                log_uri,
+                extract_method,
+            )
+
+        if ret == 0:
             self.refresh()
             self.addSuccess.emit()
-        # except duckdb.ConstraintException as e:
-        #     if "unique constraint" in str(e.args).lower():
-        #         self.addDuplicate.emit()
-        #     else:
-        #         self.addError.emit(str(e))
-        except Exception as e:
-            self.addError.emit(str(e))
+        elif ret == -1:
+            self.addDuplicate.emit()
+        else:
+            self.addError.emit(self.tr("未知错误"))
 
     def request_delete(self, index: QModelIndex):
         """请求删除日志记录"""

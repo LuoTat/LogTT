@@ -30,8 +30,8 @@ cdef extern from "duckdb_service.hxx" namespace "logtt" nogil:
     void create_log_table_if_not_exists()
     vector[LogEntry] get_log_table()
     vector[EXLogEntry] get_extracted_log_table()
-    void insert_log(const string& log_type, const string& log_uri)
-    void insert_log(
+    int insert_log(const string& log_type, const string& log_uri)
+    int insert_log(
         const string& log_type,
         const string& log_uri,
         const string& extract_method,

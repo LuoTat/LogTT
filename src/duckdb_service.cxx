@@ -2,6 +2,7 @@
 #include "utils.hxx"
 #include <filesystem>
 #include <format>
+#include <print>
 #include <ranges>
 
 namespace logtt
@@ -238,23 +239,57 @@ std::vector<EXLogEntry> get_extracted_log_table()
     return log_table;
 }
 
-void insert_log(const std::string& log_type, const std::string& log_uri)
+int insert_log(const std::string& log_type, const std::string& log_uri)
 {
-    auto&            conn {get_connection()};
-    duckdb::Appender appender {conn, "log"};
-    appender.AddColumn("log_type");
-    appender.AddColumn("log_uri");
-    appender.AppendRow(log_type.c_str(), log_uri.c_str());
+    auto& conn {get_connection()};
+    try
+    {
+        duckdb::Appender appender {conn, "log"};
+        appender.AddColumn("log_type");
+        appender.AddColumn("log_uri");
+        appender.AppendRow(log_type.c_str(), log_uri.c_str());
+        appender.Close();
+        return 0;
+    }
+    catch (const duckdb::Exception& e)
+    {
+        duckdb::ErrorData error {e};
+        if (error.Type() == duckdb::ExceptionType::CONSTRAINT)
+        {
+            return -1;
+        }
+        else
+        {
+            return -2;
+        }
+    }
 }
 
-void insert_log(const std::string& log_type, const std::string& log_uri, const std::string& extract_method)
+int insert_log(const std::string& log_type, const std::string& log_uri, const std::string& extract_method)
 {
-    auto&            conn {get_connection()};
-    duckdb::Appender appender {conn, "log"};
-    appender.AddColumn("log_type");
-    appender.AddColumn("log_uri");
-    appender.AddColumn("extract_method");
-    appender.AppendRow(log_type.c_str(), log_uri.c_str(), extract_method.c_str());
+    auto& conn {get_connection()};
+    try
+    {
+        duckdb::Appender appender {conn, "log"};
+        appender.AddColumn("log_type");
+        appender.AddColumn("log_uri");
+        appender.AddColumn("extract_method");
+        appender.AppendRow(log_type.c_str(), log_uri.c_str(), extract_method.c_str());
+        appender.Close();
+        return 0;
+    }
+    catch (const duckdb::Exception& e)
+    {
+        duckdb::ErrorData error {e};
+        if (error.Type() == duckdb::ExceptionType::CONSTRAINT)
+        {
+            return -1;
+        }
+        else
+        {
+            return -2;
+        }
+    }
 }
 
 void update_log_format_type(std::uint32_t log_id, const std::string& value)

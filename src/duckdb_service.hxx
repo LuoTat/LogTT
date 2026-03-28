@@ -40,8 +40,8 @@ struct EXLogEntry
 void                    create_log_table_if_not_exists();
 std::vector<LogEntry>   get_log_table();
 std::vector<EXLogEntry> get_extracted_log_table();
-void                    insert_log(const std::string& log_type, const std::string& log_uri);
-void                    insert_log(const std::string& log_type, const std::string& log_uri, const std::string& extract_method);
+int                     insert_log(const std::string& log_type, const std::string& log_uri);
+int                     insert_log(const std::string& log_type, const std::string& log_uri, const std::string& extract_method);
 void                    update_log_format_type(std::uint32_t log_id, const std::string& value);
 void                    update_log_is_extracted(std::uint32_t log_id, bool value);
 void                    update_log_extract_method(std::uint32_t log_id, const std::string& value);
