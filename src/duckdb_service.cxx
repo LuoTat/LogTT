@@ -15,7 +15,7 @@ duckdb::Connection& get_connection()
     thread_local duckdb::Connection conn {db};
 
 #ifdef LOGTT_ENABLE_PROFILING
-    conn->EnableProfiling();
+    conn.EnableProfiling();
 #endif
 
     return conn;
