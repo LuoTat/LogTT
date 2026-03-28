@@ -2,7 +2,6 @@
 #include "utils.hxx"
 #include <filesystem>
 #include <format>
-#include <print>
 #include <ranges>
 
 namespace logtt
@@ -480,16 +479,22 @@ std::vector<std::string> get_table_columns(const std::string& table_name)
 
 std::pair<std::uint64_t, std::uint64_t> compact_database()
 {
-    namespace fs = std::filesystem;
+    auto db_path {std::filesystem::path(DB_PATH)};
+    auto tmp_path {db_path};
+    tmp_path.replace_extension(".duckdb.tmp");
+    auto original_size {std::filesystem::file_size(db_path)};
+    std::filesystem::rename(db_path, tmp_path);
 
-    auto& conn {get_connection()};
-    auto  db_path {fs::path(DB_PATH)};
-    auto  original_size {static_cast<std::uint64_t>(fs::exists(db_path) ? fs::file_size(db_path) : 0)};
+    duckdb::DuckDB     db {nullptr};
+    duckdb::Connection conn {db};
+    // 直接从原库复制到新文件
+    conn.Query(std::format("ATTACH '{}' AS db", tmp_path.string()));
+    conn.Query(std::format("ATTACH '{}' AS tmp", db_path.string()));
+    conn.Query("COPY FROM DATABASE db TO tmp");
 
-    conn.Query("CHECKPOINT");
-    conn.Query("VACUUM");
-
-    auto new_size {static_cast<std::uint64_t>(fs::exists(db_path) ? fs::file_size(db_path) : 0)};
+    // 删除临时文件
+    std::filesystem::remove(tmp_path);
+    auto new_size {std::filesystem::file_size(db_path)};
     return {original_size, new_size};
 }
 
