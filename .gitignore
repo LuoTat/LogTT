@@ -9,9 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
-.idea/
-.serena/
-log_full/
-lib/
-logtt.duckdb
-config.json
+/.idea/
+/.serena/
+/log_full/
+/lib/
+/logtt.duckdb
+/config.json
