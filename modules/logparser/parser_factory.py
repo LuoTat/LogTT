@@ -1,8 +1,10 @@
 from typing import Any, Protocol
 
+from .parse_result import ParseResult
+
 
 class LogParserProtocol(Protocol):
-    def parse(self, *args: Any, **kwargs: Any) -> Any: ...
+    def parse(self, *args: Any, **kwargs: Any) -> ParseResult: ...
 
 
 class LogParserClassProtocol(Protocol):

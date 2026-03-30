@@ -1,4 +1,3 @@
-from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
@@ -9,14 +8,16 @@ from PySide6.QtCore import (
     QAbstractTableModel,
     QModelIndex,
     QObject,
+    QRunnable,
     Qt,
+    QThreadPool,
     Signal,
     Slot,
 )
 from PySide6.QtGui import QColor
 
 from modules.duckdb_service import DuckDBService
-from modules.logparser import LogParserClassProtocol, LogParserConfig, ParseResult
+from modules.logparser import LogParserClassProtocol, LogParserConfig
 
 
 class LogColumn(IntEnum):
@@ -54,49 +55,15 @@ class LogStatus(IntEnum):
     EXTRACTING = 2  # 提取中
 
 
-class LogExtractTaskPool(QObject):
-    """日志提取工作进程"""
-
+class LogExtractTaskSignals(QObject):
     finished = Signal(int, int)  # (log_id, line_count)
     error = Signal(int, str)  # (log_id, error_message)
 
-    @staticmethod
-    def _run_log_extract_task(
-        log_file: Path,
-        log_parser_type: LogParserClassProtocol,
-        log_parser_config: LogParserConfig,
-        structured_table_name: str,
-        templates_table_name: str,
-    ) -> ParseResult:
-        """在子进程中执行日志提取任务。"""
-        print(f"Parsing file: {log_file}")
-        start_time = datetime.now()
-        ex_args = log_parser_config.ex_args.get(log_parser_type, {})
-        parser = log_parser_type(
-            log_parser_config.log_format,
-            log_parser_config.masking,
-            log_parser_config.delimiters,
-            **ex_args,
-        )
-        result = parser.parse(
-            log_file.as_posix(),
-            structured_table_name,
-            templates_table_name,
-            False,
-        )
-        print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
-        return result
+
+class LogExtractTask(QRunnable):
+    """日志提取工作"""
 
     def __init__(
-        self,
-        max_workers: int = 1,
-        parent=None,
-    ):
-        super().__init__(parent)
-
-        self._pool = ThreadPoolExecutor(max_workers=max_workers)
-
-    def submit(
         self,
         log_id: int,
         log_file: Path,
@@ -105,28 +72,38 @@ class LogExtractTaskPool(QObject):
         structured_table_name: str,
         templates_table_name: str,
     ):
-        future = self._pool.submit(
-            LogExtractTaskPool._run_log_extract_task,
-            log_file,
-            log_parser_type,
-            log_parser_config,
-            structured_table_name,
-            templates_table_name,
-        )
-        future.add_done_callback(
-            lambda f, log_id=log_id: self._on_future_done(f, log_id)
-        )
+        super().__init__()
+        self._log_id = log_id
+        self._log_file = log_file
+        self._log_parser_type = log_parser_type
+        self._log_parser_config = log_parser_config
+        self._structured_table_name = structured_table_name
+        self._templates_table_name = templates_table_name
 
-    def _on_future_done(self, future: Future, log_id: int):
+        self.signals = LogExtractTaskSignals()
+
+    @Slot()
+    def run(self):
         try:
-            result = future.result()
-            self.finished.emit(log_id, result.line_count)
+            print(f"Parsing file: {self._log_file}")
+            start_time = datetime.now()
+            ex_args = self._log_parser_config.ex_args.get(self._log_parser_type, {})
+            result = self._log_parser_type(
+                self._log_parser_config.log_format,
+                self._log_parser_config.masking,
+                self._log_parser_config.delimiters,
+                **ex_args,
+            ).parse(
+                self._log_file.as_posix(),
+                self._structured_table_name,
+                self._templates_table_name,
+                False,
+            )
+            # 提取完成
+            print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
+            self.signals.finished.emit(self._log_id, result.line_count)
         except Exception as e:
-            self.error.emit(log_id, str(e))
-
-    def kill(self):
-        self._pool.kill_workers()
-        self._pool.shutdown(wait=False, cancel_futures=True)
+            self.signals.error.emit(self._log_id, str(e))
 
 
 class LogTableModel(QAbstractTableModel):
@@ -191,9 +168,7 @@ class LogTableModel(QAbstractTableModel):
         # 创建log表
         DuckDBService.create_log_table_if_not_exists()
         # 创建日志提取任务进程池
-        self._log_extract_pool = LogExtractTaskPool(4, self)
-        self._log_extract_pool.finished.connect(self._on_extract_finished)
-        self._log_extract_pool.error.connect(self._on_extract_errored)
+        self._log_extract_pool = QThreadPool(self, maxThreadCount=4)
         # 一次性获取整个表的数据到内存中
         self._log_table: list[tuple] = DuckDBService.get_log_table()
         # 存储正在提取的任务信息: log_id
@@ -296,7 +271,7 @@ class LogTableModel(QAbstractTableModel):
                 return idx
         return -1
 
-    def _get_display_data(self, index: QModelIndex) -> str:
+    def _get_display_data(self, index: QModelIndex) -> Any:
         """获取显示数据"""
         row = index.row()
         col = index.column()
@@ -446,8 +421,8 @@ class LogTableModel(QAbstractTableModel):
             self.index(row, LogColumn.EXTRACT_METHOD),
         )
 
-        # 启动进程
-        self._log_extract_pool.submit(
+        # 创建提取任务
+        task = LogExtractTask(
             log_id,
             Path(self._log_table[row][SqlColumn.LOG_URI]),
             log_parser_type,
@@ -455,6 +430,11 @@ class LogTableModel(QAbstractTableModel):
             self._log_table[row][SqlColumn.STRUCTURED_TABLE_NAME],
             self._log_table[row][SqlColumn.TEMPLATES_TABLE_NAME],
         )
+        task.signals.finished.connect(self._on_extract_finished)
+        task.signals.error.connect(self._on_extract_errored)
+
+        # 将任务提交到线程池
+        self._log_extract_pool.start(task)
 
         # 记录任务信息
         self._extract_tasks.add(log_id)
@@ -465,7 +445,8 @@ class LogTableModel(QAbstractTableModel):
 
     def kill_tasks(self):
         """中断所有正在提取的任务"""
-        self._log_extract_pool.kill()
+        # for row in range(self.rowCount()):
+        #     self._interrupt_task(self.index(row, 0))
 
     def search_by_name(self, keyword: str):
         """按 URI 关键字搜索"""
