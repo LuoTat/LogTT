@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ParseResult:
     """日志模板提取结果"""
 

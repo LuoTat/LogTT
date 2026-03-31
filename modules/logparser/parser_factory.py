@@ -1,5 +1,6 @@
 from typing import Any, Protocol
 
+from .param_descriptor import ParamDescriptor
 from .parse_result import ParseResult
 
 
@@ -13,6 +14,8 @@ class LogParserClassProtocol(Protocol):
     def name() -> str: ...
     @staticmethod
     def description() -> str: ...
+    @staticmethod
+    def get_param_descriptors() -> list[ParamDescriptor]: ...
 
 
 def parser_register(cls: LogParserClassProtocol):

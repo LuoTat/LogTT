@@ -1,5 +1,7 @@
-cdef object formatparse
+cdef object ParamDescriptor
+cdef object ParamWidgetType
 cdef object ParseResult
+cdef object formatparse
 cdef object parser_register
 
 import formatparse
@@ -14,6 +16,7 @@ from modules.logparser.parser cimport(
     SpellLogParser as CXX_SpellLogParser,
 )
 
+from .param_descriptor import ParamDescriptor, ParamWidgetType
 from .parse_result import ParseResult
 from .parser_factory import parser_register
 
@@ -92,6 +95,27 @@ cdef class AELLogParser:
     @staticmethod
     def description() -> str:
         return "AEL 是一种通过分桶与相似度合并来自动抽取日志模板的解析方法。"
+
+    @staticmethod
+    def get_param_descriptors() -> list:
+        return [
+            ParamDescriptor(
+                name="Cluster Threshold",
+                description="Minimum number of log clusters to trigger reconciliation",
+                widget_type=ParamWidgetType.SpinBox,
+                default=2,
+                minimum=1,
+                maximum=10000,
+            ),
+            ParamDescriptor(
+                name="Merge Threshold",
+                description="Maximum percentage of difference to merge two log clusters",
+                widget_type=ParamWidgetType.DoubleSpinBox,
+                default=1.0,
+                minimum=0.0,
+                maximum=1.0,
+            ),
+        ]
 
 # ========================== Drain ==========================
 
@@ -175,6 +199,35 @@ cdef class DrainLogParser:
     def description() -> str:
         return "Drain 是一种基于树结构的高效日志模板提取算法。"
 
+    @staticmethod
+    def get_param_descriptors() -> list:
+        return [
+            ParamDescriptor(
+                name="Depth",
+                description="Depth of prefix tree",
+                widget_type=ParamWidgetType.IntSpinBox,
+                default=4,
+                minimum=3,
+                maximum=100,
+            ),
+            ParamDescriptor(
+                name="Max Children",
+                description="Max children per tree node",
+                widget_type=ParamWidgetType.IntSpinBox,
+                default=100,
+                minimum=1,
+                maximum=10000,
+            ),
+            ParamDescriptor(
+                name="Similarity Threshold",
+                description="Similarity threshold",
+                widget_type=ParamWidgetType.DoubleSpinBox,
+                default=0.4,
+                minimum=0.0,
+                maximum=1.0,
+            ),
+        ]
+
 # ========================== JaccardDrain ==========================
 
 cdef class JaccardDrainLogParser:
@@ -257,6 +310,35 @@ cdef class JaccardDrainLogParser:
     def description() -> str:
         return "JaccardDrain 是一种基于 Drain 和 Jaccard 相似度的高效日志模板提取算法。"
 
+    @staticmethod
+    def get_param_descriptors() -> list:
+        return [
+            ParamDescriptor(
+                name="Depth",
+                description="Depth of prefix tree",
+                widget_type=ParamWidgetType.IntSpinBox,
+                default=4,
+                minimum=2,
+                maximum=100,
+            ),
+            ParamDescriptor(
+                name="Max Children",
+                description="Max children per tree node",
+                widget_type=ParamWidgetType.IntSpinBox,
+                default=100,
+                minimum=1,
+                maximum=10000,
+            ),
+            ParamDescriptor(
+                name="Similarity Threshold",
+                description="Similarity threshold",
+                widget_type=ParamWidgetType.DoubleSpinBox,
+                default=0.4,
+                minimum=0.0,
+                maximum=1.0,
+            ),
+        ]
+
 # ========================== Spell ==========================
 
 cdef class SpellLogParser:
@@ -329,6 +411,19 @@ cdef class SpellLogParser:
     @staticmethod
     def description() -> str:
         return "Spell 是一种基于前缀树和LCS算法的日志解析方法。"
+
+    @staticmethod
+    def get_param_descriptors() -> list:
+        return [
+            ParamDescriptor(
+                name="Similarity Threshold",
+                description="Similarity threshold",
+                widget_type=ParamWidgetType.DoubleSpinBox,
+                default=0.5,
+                minimum=0.0,
+                maximum=1.0,
+            ),
+        ]
 
 parser_register(AELLogParser)
 parser_register(DrainLogParser)
