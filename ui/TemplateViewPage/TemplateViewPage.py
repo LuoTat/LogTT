@@ -40,7 +40,6 @@ class TemplateViewPage(QWidget):
 
         # 初始化日志列表模型
         self._extracted_log_list_model = ExtractedLogListModel(self)
-        self._csv_file_table_model = None
         self._select_log_id = -1
         self._init_toolbar()
         self._init_table_view()
@@ -55,9 +54,8 @@ class TemplateViewPage(QWidget):
         if (index := self._extracted_log_list_model.get_row(self._select_log_id)) >= 0:
             self._log_combo_box.setCurrentIndex(index)
         else:
-            # 日志已被删除，重置为初始状态
+            # 刚进入此页面或日志已被删除，重置为初始状态
             self._select_log_id = -1
-            self._csv_file_table_model = None
             self._table_view.setModel(None)
             self._log_combo_box.setCurrentIndex(-1)
             self._update_info_label()
@@ -122,7 +120,7 @@ class TemplateViewPage(QWidget):
 
     def _update_info_label(self):
         """更新行数统计标签"""
-        if self._csv_file_table_model:
+        if self._select_log_id != -1:
             total = self._csv_file_table_model.total_row_count()
             filtered = self._csv_file_table_model.filtered_row_count()
 

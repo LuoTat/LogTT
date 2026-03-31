@@ -1,7 +1,7 @@
 from enum import IntEnum
 from typing import Any
 
-from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
+from PySide6.QtCore import QAbstractListModel, QModelIndex, QPersistentModelIndex, Qt
 
 from modules.duckdb_service import DuckDBService
 
@@ -31,10 +31,17 @@ class ExtractedLogListModel(QAbstractListModel):
 
     # ==================== 重写方法 ====================
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(
+        self,
+        parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
+    ) -> int:
         return len(self._df)
 
-    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+    def data(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any:
         if not index.isValid():
             return None
 
@@ -60,9 +67,9 @@ class ExtractedLogListModel(QAbstractListModel):
 
     def get_row(self, log_id: int) -> int:
         """根据 log_id 获取行号"""
-        for idx, row in enumerate(self._df):
+        for i, row in enumerate(self._df):
             if row[SqlColumn.ID] == log_id:
-                return idx
+                return i
         return -1
 
     def refresh(self):

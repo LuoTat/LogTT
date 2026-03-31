@@ -1,3 +1,5 @@
+from humanize import naturalsize
+from modules.duckdb_service import DuckDBService
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QWidget
 from qfluentwidgets import (
@@ -13,8 +15,6 @@ from qfluentwidgets import (
 )
 
 from modules.app_config import appcfg
-from modules.duckdb_service import DuckDBService
-from humanize import naturalsize
 
 
 class SettingPage(ScrollArea):

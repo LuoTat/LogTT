@@ -15,7 +15,7 @@ class LogParserClassProtocol(Protocol):
     def description() -> str: ...
 
 
-def parser_register(cls):
+def parser_register(cls: LogParserClassProtocol):
     ParserFactory.register_parser(cls)
     return cls
 

@@ -1,6 +1,11 @@
 from typing import Any
 
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PySide6.QtCore import (
+    QAbstractTableModel,
+    QModelIndex,
+    QPersistentModelIndex,
+    Qt,
+)
 from PySide6.QtGui import QColor
 
 from modules.duckdb_service import DuckDBService
@@ -23,7 +28,6 @@ class CsvFileTableModel(QAbstractTableModel):
         self._total_row_count = DuckDBService.get_table_row_count(table_name)
 
         # 缓存的DataFrame
-        self._cache_df: list[list[str]] = []
         self._cache_offset: int = 0
         self._cache_limit: int = 0
 
@@ -36,10 +40,16 @@ class CsvFileTableModel(QAbstractTableModel):
 
     # ==================== 重写方法 ====================
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(
+        self,
+        parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
+    ) -> int:
         return self._filtered_row_count
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def columnCount(
+        self,
+        parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
+    ) -> int:
         return len(self._columns)
 
     def headerData(
@@ -55,7 +65,11 @@ class CsvFileTableModel(QAbstractTableModel):
             return self._columns[section]
         return None
 
-    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+    def data(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any:
         if not index.isValid():
             return None
 

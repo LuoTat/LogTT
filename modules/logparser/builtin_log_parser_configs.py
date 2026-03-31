@@ -1,11 +1,6 @@
 from .log_parser_config import LogParserConfig
 from .parsers import AELLogParser, DrainLogParser, JaccardDrainLogParser, SpellLogParser
 
-
-class Test:
-    pass
-
-
 # 内置日志格式配置
 BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
@@ -19,10 +14,6 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         ],
         delimiters=b"=:",
         ex_args={
-            Test: {
-                "cluster_thr": 2,
-                "merge_thr": 0.6,
-            },
             AELLogParser: {
                 "cluster_thr": 2,
                 "merge_thr": 0.6,

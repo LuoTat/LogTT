@@ -1,8 +1,10 @@
 from typing import Any
+
 from PySide6.QtCore import (
     QT_TRANSLATE_NOOP,
     QAbstractTableModel,
     QModelIndex,
+    QPersistentModelIndex,
     Qt,
     Signal,
 )
@@ -42,7 +44,6 @@ class CsvFilterTableModel(QAbstractTableModel):
         self._total_row_count: int
 
         # 缓存的DataFrame
-        self._cache_df = None
         self._cache_offset: int = 0
         self._cache_limit: int = 0
 
@@ -61,10 +62,16 @@ class CsvFilterTableModel(QAbstractTableModel):
 
     # ==================== 重写方法 ====================
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(
+        self,
+        parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
+    ) -> int:
         return self._total_row_count
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def columnCount(
+        self,
+        parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
+    ) -> int:
         return len(self._TABLE_HEADERS)
 
     def headerData(
@@ -80,7 +87,7 @@ class CsvFilterTableModel(QAbstractTableModel):
             return self.tr(str(self._TABLE_HEADERS[section]))
         return None
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         if not index.isValid():
             return Qt.ItemFlag.NoItemFlags
 
@@ -90,7 +97,11 @@ class CsvFilterTableModel(QAbstractTableModel):
 
         return base_flags
 
-    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+    def data(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any:
         if not index.isValid():
             return None
 
@@ -116,7 +127,10 @@ class CsvFilterTableModel(QAbstractTableModel):
         return None
 
     def setData(
-        self, index: QModelIndex, value: Any, role: int = Qt.ItemDataRole.EditRole
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        value: Any,
+        role: int = Qt.ItemDataRole.EditRole,
     ) -> bool:
         if not index.isValid():
             return False

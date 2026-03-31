@@ -24,8 +24,8 @@ class Language(Enum):
 class LanguageSerializer(ConfigSerializer):
     """Language serializer"""
 
-    def serialize(self, language: Language) -> str:
-        return language.value.name() if language != Language.AUTO else "Auto"
+    def serialize(self, value: Language) -> str:
+        return value.value.name() if value != Language.AUTO else "Auto"
 
     def deserialize(self, value: str):
         return Language(QLocale(value)) if value != "Auto" else Language.AUTO

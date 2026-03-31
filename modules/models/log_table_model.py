@@ -8,6 +8,7 @@ from PySide6.QtCore import (
     QAbstractTableModel,
     QModelIndex,
     QObject,
+    QPersistentModelIndex,
     QRunnable,
     Qt,
     QThreadPool,
@@ -176,10 +177,16 @@ class LogTableModel(QAbstractTableModel):
 
     # ==================== 重写方法 ====================
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(
+        self,
+        parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
+    ) -> int:
         return len(self._log_table)
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def columnCount(
+        self,
+        parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
+    ) -> int:
         return len(self._TABLE_HEADERS)
 
     def headerData(
@@ -195,7 +202,11 @@ class LogTableModel(QAbstractTableModel):
             return self.tr(str(self._TABLE_HEADERS[section]))
         return None
 
-    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+    def data(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any:
         if not index.isValid():
             return None
 
@@ -266,12 +277,12 @@ class LogTableModel(QAbstractTableModel):
 
     def _get_row(self, log_id: int) -> int:
         """根据 log_id 获取行号"""
-        for idx, row in enumerate(self._log_table):
+        for i, row in enumerate(self._log_table):
             if row[SqlColumn.ID] == log_id:
-                return idx
+                return i
         return -1
 
-    def _get_display_data(self, index: QModelIndex) -> Any:
+    def _get_display_data(self, index: QModelIndex | QPersistentModelIndex) -> Any:
         """获取显示数据"""
         row = index.row()
         col = index.column()
@@ -289,7 +300,7 @@ class LogTableModel(QAbstractTableModel):
         # 常规列
         return self._log_table[row][self._MODEL_TO_SQL[col]]
 
-    def _get_status(self, index: QModelIndex) -> LogStatus:
+    def _get_status(self, index: QModelIndex | QPersistentModelIndex) -> LogStatus:
         """获取日志状态"""
         is_extracted = self._log_table[index.row()][SqlColumn.IS_EXTRACTED]
         if is_extracted:

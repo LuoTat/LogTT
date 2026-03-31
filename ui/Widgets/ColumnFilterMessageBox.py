@@ -107,7 +107,7 @@ class ColumnFilterMessageBox(MessageBoxBase):
         self._csv_filter_table_model.clear_search()
 
     @Slot(QModelIndex)
-    def _on_table_view_clicked(self, index):
+    def _on_table_view_clicked(self, index: QModelIndex):
         """表格被点击时切换复选框状态"""
         self._csv_filter_table_model.toggle_check_state(index)
 

@@ -10,7 +10,7 @@ class LogParserConfig:
         name: str,
         log_format: str,
         masking: list[tuple[str, str]] | None = None,
-        delimiters: list[str] | None = None,
+        delimiters: bytes | None = None,
         use_builtin_masking: bool = True,
         ex_args: dict[LogParserClassProtocol, dict[str, Any]] | None = None,
     ):
