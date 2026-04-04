@@ -5,6 +5,13 @@ from .parse_result import ParseResult
 
 
 class LogParserProtocol(Protocol):
+    def __init__(
+        self,
+        log_format: str,
+        maskings: list[tuple[str, str]],
+        delimiters: str,
+        **kwargs: Any,
+    ): ...
     def parse(self, *args: Any, **kwargs: Any) -> ParseResult: ...
     @staticmethod
     def name() -> str: ...

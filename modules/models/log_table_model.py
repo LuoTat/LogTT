@@ -18,7 +18,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor
 
 from modules.duckdb_service import DuckDBService
-from modules.logparser import LogParserClassProtocol, LogParserConfig
+from modules.logparser import LogParserConfig, LogParserProtocol
 
 
 class LogColumn(IntEnum):
@@ -68,7 +68,7 @@ class LogExtractTask(QRunnable):
         self,
         log_id: int,
         log_file: Path,
-        log_parser_type: LogParserClassProtocol,
+        log_parser_type: type[LogParserProtocol],
         log_parser_config: LogParserConfig,
         structured_table_name: str,
         templates_table_name: str,
@@ -417,7 +417,7 @@ class LogTableModel(QAbstractTableModel):
     def request_extract(
         self,
         index: QModelIndex,
-        log_parser_type: LogParserClassProtocol,
+        log_parser_type: type[LogParserProtocol],
         log_parser_config: LogParserConfig,
     ):
         """请求提取日志"""
