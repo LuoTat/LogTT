@@ -1,35 +1,34 @@
 from .log_parser_config import LogParserConfig
-from .parsers import AELLogParser, DrainLogParser, JaccardDrainLogParser, SpellLogParser
 
 # 内置日志格式配置
 BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Android",
         log_format="{Date} {Time}  {Pid}  {Tid} {Level} {Component}: {Content}",
-        masking=[
+        user_maskings=[
             (
                 r"(/[\w-]+)+",
                 "<#PATH#>",
             ),
         ],
-        delimiters=b"=:",
+        delimiters="=:",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 5,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 6,
                 "sim_thr": 0.2,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 6,
                 "sim_thr": 0.2,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.95,
             },
         },
@@ -38,22 +37,22 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         name="Apache",
         log_format="[{Time}] [{Level}] {Content}",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 4,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.6,
             },
         },
@@ -61,7 +60,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="BGL",
         log_format="{Label} {Timestamp} {Date} {Node} {Time} {NodeRepeat} {Type} {Component} {Level} {Content}",
-        masking=[
+        user_maskings=[
             (
                 r"core\.\d+",
                 "<#CORE#>",
@@ -71,24 +70,24 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "<#ADDR#>",
             ),
         ],
-        delimiters=b"=()",
+        delimiters="=()",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.5,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 6,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.75,
             },
         },
@@ -96,30 +95,30 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="HDFS",
         log_format="{Date} {Time} {Pid} {Level} {Component}: {Content}",
-        masking=[
+        user_maskings=[
             (
                 r"blk_-?\d+",
                 "<#BLK#>",
             ),
         ],
-        delimiters=b":",
+        delimiters=":",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.5,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 2,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.7,
             },
         },
@@ -127,24 +126,24 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="HPC",
         log_format="{LogId} {Node} {Component} {State} {Time} {Flag} {Content}",
-        delimiters=b"=:-",
+        delimiters="=:-",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 5,
                 "merge_thr": 0.4,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 5,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.65,
             },
         },
@@ -152,24 +151,24 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Hadoop",
         log_format="{Date} {Time} {Level} [{Process}] {Component}: {Content}",
-        delimiters=b"=:_()",
+        delimiters="=:_()",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 6,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.7,
             },
         },
@@ -177,30 +176,30 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="HealthApp",
         log_format="{Time}|{Component}|{Pid}|{Content}",
-        masking=[
+        user_maskings=[
             (
                 r"\d+##\d+##\d+##\d+##\d+##\d+",
                 "<#SEQ#>",
             ),
         ],
-        delimiters=b"=:|",
+        delimiters="=:|",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 4,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.2,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.2,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.5,
             },
         },
@@ -208,24 +207,24 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Linux",
         log_format="{Month} {Date} {Time} {Level} {Component}: {Content}",
-        delimiters=b"=:",
+        delimiters="=:",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 4,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 6,
                 "sim_thr": 0.39,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 6,
                 "sim_thr": 0.39,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.55,
             },
         },
@@ -234,22 +233,22 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         name="Mac",
         log_format="{Month}  {Date} {Time} {User} {Component}: {Content}",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 5,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 6,
                 "sim_thr": 0.7,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 6,
                 "sim_thr": 0.7,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.6,
             },
         },
@@ -258,22 +257,22 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         name="OpenSSH",
         log_format="{Date} {Day} {Time} {Component} sshd[{Pid}]: {Content}",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 10,
                 "merge_thr": 0.7,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 6,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 5,
                 "sim_thr": 0.6,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 5,
                 "sim_thr": 0.6,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.8,
             },
         },
@@ -281,7 +280,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="OpenStack",
         log_format="{Logrecord} {Date} {Time} {Pid} {Level} {Component} [{ADDR}] {Content}",
-        masking=[
+        user_maskings=[
             (
                 r"\[instance:(.*?)\]",
                 "<#INST#>",
@@ -292,22 +291,22 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
             ),
         ],
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 6,
                 "merge_thr": 0.5,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 5,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 5,
                 "sim_thr": 0.5,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 5,
                 "sim_thr": 0.5,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.9,
             },
         },
@@ -315,29 +314,29 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Proxifier",
         log_format="[{Time}] {Program} - {Content}",
-        masking=[
+        user_maskings=[
             (
                 r"<\d+\ssec",
                 "<#DURATION#>",
             ),
         ],
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            #     BrainLogParser: {
+            #     "BrainLogParser": {
             #         "var_thr": 3,
             #     },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 3,
                 "sim_thr": 0.6,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 3,
                 "sim_thr": 0.6,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.85,
             },
         },
@@ -345,24 +344,24 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Spark",
         log_format="{Date} {Time} {Level} {Component}: {Content}",
-        delimiters=b":",
+        delimiters=":",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 4,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.55,
             },
         },
@@ -370,24 +369,24 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Thunderbird",
         log_format="{Label} {Timestamp} {Date} {User} {Month} {Day} {Time} {Location} {Component}: {Content}",
-        delimiters=b"=:",
+        delimiters="=:",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 3,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.5,
             },
         },
@@ -395,24 +394,24 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Windows",
         log_format="{Date} {Time}, {Level}                  {Component}    {Content}",
-        delimiters=b"=:[]",
+        delimiters="=:[]",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 3,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 5,
                 "sim_thr": 0.7,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 5,
                 "sim_thr": 0.7,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.7,
             },
         },
@@ -420,24 +419,24 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Zookeeper",
         log_format="{Date} {Time} - {Level}  [{Node}:{Component}@{Id}] - {Content}",
-        delimiters=b"=:",
+        delimiters="=:",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 3,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.7,
             },
         },
@@ -446,22 +445,22 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         name="Test",
         log_format="{Content}",
         ex_args={
-            AELLogParser: {
+            "AELLogParser": {
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # BrainLogParser: {
+            # "BrainLogParser": {
             #     "var_thr": 5,
             # },
-            DrainLogParser: {
+            "DrainLogParser": {
                 "depth": 3,
                 "sim_thr": 0.7,
             },
-            JaccardDrainLogParser: {
+            "JaccardDrainLogParser": {
                 "depth": 3,
                 "sim_thr": 0.7,
             },
-            SpellLogParser: {
+            "SpellLogParser": {
                 "sim_thr": 0.6,
             },
         },

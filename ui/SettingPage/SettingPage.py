@@ -10,14 +10,16 @@ from qfluentwidgets import (
     InfoBar,
     InfoBarPosition,
     PrimaryPushSettingCard,
-    ScrollArea,
+    SmoothScrollArea,
     setThemeColor,
 )
 
 from modules.app_config import appcfg
 
+from .LogParserConfigManageDialog import LogParserConfigManageDialog
 
-class SettingPage(ScrollArea):
+
+class SettingPage(SmoothScrollArea):
     """设置页面"""
 
     def __init__(self, parent=None):
@@ -32,6 +34,7 @@ class SettingPage(ScrollArea):
 
         self._init_theme_color_card()
         self._init_language_card()
+        self._init_log_parser_config_card()
         self._init_compact_db_card()
 
         appcfg.appRestartSig.connect(self._on_need_restart)
@@ -60,6 +63,17 @@ class SettingPage(ScrollArea):
         )
         self._main_layout.addWidget(self.languageCard)
 
+    def _init_log_parser_config_card(self):
+        self._log_parser_config_card = PrimaryPushSettingCard(
+            self.tr("管理配置"),
+            FluentIcon.DOCUMENT,
+            self.tr("自定义日志格式"),
+            self.tr("添加、编辑或删除自定义的日志格式配置"),
+            self._scroll_widget,
+        )
+        self._log_parser_config_card.clicked.connect(self._on_manage_log_parser_config)
+        self._main_layout.addWidget(self._log_parser_config_card)
+
     def _init_compact_db_card(self):
         self._compact_db_card = PrimaryPushSettingCard(
             self.tr("立即优化"),
@@ -85,6 +99,12 @@ class SettingPage(ScrollArea):
             duration=3000,
             parent=self,
         )
+
+    @Slot()
+    def _on_manage_log_parser_config(self):
+        """打开日志格式配置管理对话框"""
+        dialog = LogParserConfigManageDialog(self)
+        dialog.exec()
 
     @Slot()
     def _on_compact_database(self):

@@ -11,6 +11,7 @@ class ParamWidgetType(Enum):
 
 @dataclass(frozen=True, slots=True)
 class ParamDescriptor:
+    arg_name: str
     name: str
     description: str
     widget_type: ParamWidgetType
@@ -21,12 +22,12 @@ class ParamDescriptor:
     def get_widget(self) -> SpinBox | DoubleSpinBox:
         if self.widget_type == ParamWidgetType.SpinBox:
             widget = SpinBox()
-            widget.setValue(int(self.default))
             widget.setRange(int(self.minimum), int(self.maximum))
+            widget.setValue(int(self.default))
         else:
             widget = DoubleSpinBox()
-            widget.setSingleStep(0.1)
-            widget.setValue(self.default)
+            widget.setSingleStep(0.01)
             widget.setRange(self.minimum, self.maximum)
+            widget.setValue(self.default)
 
         return widget

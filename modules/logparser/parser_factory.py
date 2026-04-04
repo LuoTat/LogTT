@@ -6,10 +6,6 @@ from .parse_result import ParseResult
 
 class LogParserProtocol(Protocol):
     def parse(self, *args: Any, **kwargs: Any) -> ParseResult: ...
-
-
-class LogParserClassProtocol(Protocol):
-    def __call__(self, *args: Any, **kwargs: Any) -> LogParserProtocol: ...
     @staticmethod
     def name() -> str: ...
     @staticmethod
@@ -18,20 +14,19 @@ class LogParserClassProtocol(Protocol):
     def get_param_descriptors() -> list[ParamDescriptor]: ...
 
 
-def parser_register(cls: LogParserClassProtocol):
+def parser_register(cls: type[LogParserProtocol]):
     ParserFactory.register_parser(cls)
-    return cls
 
 
 class ParserFactory:
     """解析器工厂"""
 
-    _all_parsers_type: list[LogParserClassProtocol] = []
+    _all_parsers_type: list[type[LogParserProtocol]] = []
 
     @classmethod
-    def register_parser(cls, parser_class: LogParserClassProtocol):
+    def register_parser(cls, parser_class: type[LogParserProtocol]):
         cls._all_parsers_type.append(parser_class)
 
     @classmethod
-    def get_all_parsers_type(cls) -> list[LogParserClassProtocol]:
+    def get_all_parsers_type(cls) -> list[type[LogParserProtocol]]:
         return cls._all_parsers_type.copy()

@@ -11,7 +11,7 @@ from qfluentwidgets import (
     SubtitleLabel,
 )
 
-from modules.logparser import LogParserClassProtocol, LogParserConfig
+from modules.logparser import LogParserConfig, LogParserProtocol
 from modules.models import LogParserConfigListModel, LogParserListModel
 
 
@@ -22,7 +22,7 @@ class ExtractLogMessageBox(MessageBoxBase):
         super().__init__(parent)
 
         self._log_parser_list_model = LogParserListModel(self)
-        self._format_type_list_model = LogParserConfigListModel(self)
+        self._log_parser_config_list_model = LogParserConfigListModel(self)
 
         self._init_log_parser_card()
         self._init_format_type_card()
@@ -57,81 +57,6 @@ class ExtractLogMessageBox(MessageBoxBase):
             return False
 
         return True
-
-    # ==================== 重写方法 ====================
-
-    # def validate(self) -> bool:
-    #     if not self._is_custom_mode:
-    #         format_config = self._format_config_manager.get_format_config(self.selected_format_type)
-    #         self.selected_log_format = format_config.log_format
-    #         self.selected_regex = format_config.regex
-    #         return True
-
-    #     # 验证格式名称
-    #     format_name = self.format_name_input.text().strip()
-    #     if not format_name:
-    #         InfoBar.warning(
-    #             title="创建失败",
-    #             content="请输入格式名称",
-    #             orient=Qt.Orientation.Horizontal,
-    #             isClosable=True,
-    #             position=InfoBarPosition.TOP,
-    #             duration=4000,
-    #             parent=self,
-    #         )
-    #         return False
-    #     if format_name == "自定义":
-    #         InfoBar.warning(
-    #             title="创建失败",
-    #             content="格式名称不能为 '自定义'",
-    #             orient=Qt.Orientation.Horizontal,
-    #             isClosable=True,
-    #             position=InfoBarPosition.TOP,
-    #             duration=4000,
-    #             parent=self,
-    #         )
-    #         return False
-
-    #     if self._format_config_manager.is_format_type_exists(format_name):
-    #         InfoBar.warning(
-    #             title="创建失败",
-    #             content=f"格式名称 '{format_name}' 已存在，请使用其他名称",
-    #             orient=Qt.Orientation.Horizontal,
-    #             isClosable=True,
-    #             position=InfoBarPosition.TOP,
-    #             duration=4000,
-    #             parent=self,
-    #         )
-    #         return False
-
-    #     # 验证正则表达式
-    #     regex_text = self.regex_input.toPlainText().strip()
-    #     regex_list = []
-    #     if regex_text:
-    #         for line in regex_text.split("\n"):
-    #             line = line.strip()
-    #             if line:
-    #                 try:
-    #                     regex.compile(line)
-    #                     regex_list.append(line)
-    #                 except regex.error as e:
-    #                     InfoBar.warning(
-    #                         title="创建失败",
-    #                         content=f"无效的正则表达式: {line}\n错误: {str(e)}",
-    #                         orient=Qt.Orientation.Horizontal,
-    #                         isClosable=True,
-    #                         position=InfoBarPosition.TOP,
-    #                         duration=4000,
-    #                         parent=self,
-    #                     )
-    #                     return False
-
-    #     # 保存自定义配置
-    #     # self.selected_format_type = format_name
-    #     # self.selected_log_format = self.log_format_input.text().strip()
-    #     # self.selected_regex = regex_list
-
-    #     return True
 
     # ==================== 私有方法 ====================
 
@@ -188,7 +113,6 @@ class ExtractLogMessageBox(MessageBoxBase):
         title_layout.addSpacing(6)
         title_layout.addWidget(title_label)
         title_layout.addStretch(1)
-
         card_layout.addLayout(title_layout)
 
         format_type_label = BodyLabel(self.tr("选择格式："), card)
@@ -196,55 +120,9 @@ class ExtractLogMessageBox(MessageBoxBase):
         card_layout.addWidget(format_type_label)
 
         self._format_type_combo_box = ModelComboBox(card)
-        self._format_type_combo_box.setModel(self._format_type_list_model)
+        self._format_type_combo_box.setModel(self._log_parser_config_list_model)
         self._format_type_combo_box.setPlaceholderText(self.tr("请选择日志格式类型"))
-        # self._format_type_combo_box.currentIndexChanged.connect(
-        #     self._on_format_type_selected
-        # )
         card_layout.addWidget(self._format_type_combo_box)
-
-        # log_format展示框
-        # log_format_label = BodyLabel(self.tr("日志格式："), card)
-        # log_format_label.setStyleSheet("font-weight: 500;")
-        # card_layout.addWidget(log_format_label)
-
-        # self._log_format_edit = LineEdit(card)
-        # self._log_format_edit.setReadOnly(True)
-        # self.log_format_input.setPlaceholderText("例如：<Date> <Time> <Level>:<Content>")
-        # card_layout.addWidget(self._log_format_edit)
-
-        # log_format_hint = BodyLabel("通常情况下是每一个间隔的内容都需要一个分组", card)
-        # log_format_hint.setStyleSheet("color: #888; font-size: 12px;")
-        # card_layout.addWidget(log_format_hint)
-
-        # mask展示框
-        # mask_label = BodyLabel(self.tr("掩码正则表达式（每行一个）："), card)
-        # mask_label.setStyleSheet("font-weight: 500;")
-        # card_layout.addWidget(mask_label)
-
-        # self._mask_edit = PlainTextEdit(card)
-        # self._mask_edit.setReadOnly(True)
-        # self.regex_input.setPlaceholderText(
-        #     """
-        #     每行输入一个正则表达式，用于预处理日志，例如：
-        #     (\\d+\\.){3}\\d+(:\\d+)?:? # IP
-        #     """
-        # )
-        # card_layout.addWidget(self._mask_edit)
-
-        # delimiters展示框
-        # delimiters_label = BodyLabel(self.tr("分隔符（每行一个）："), card)
-        # delimiters_label.setStyleSheet("font-weight: 500;")
-        # card_layout.addWidget(delimiters_label)
-
-        # self._delimiters_edit = PlainTextEdit(card)
-        # self._delimiters_edit.setReadOnly(True)
-
-        # card_layout.addWidget(self._delimiters_edit)
-
-        # regex_hint = BodyLabel("正则表达式用于预处理，可为空", card)
-        # regex_hint.setStyleSheet("color: #888; font-size: 12px;")
-        # card_layout.addWidget(regex_hint)
 
         self.viewLayout.addWidget(card)
 
@@ -259,23 +137,10 @@ class ExtractLogMessageBox(MessageBoxBase):
 
         self._hint_label.setText(parser_discription)
 
-    # @Slot(int)
-    # def _on_format_type_selected(self, index: int):
-    #     model_index = self._format_type_list_model.index(index)
-    #     log_format = model_index.data(LogParserConfigListModel.LOG_FORMAT_ROLE)
-    #     mask_list = model_index.data(LogParserConfigListModel.MASKING_ROLE)
-    #     delimiters_list = model_index.data(LogParserConfigListModel.DELIMITERS_ROLE)
-
-    # self._log_format_edit.setText(log_format)
-    # self._mask_edit.setPlainText(
-    #     "\n".join(map(lambda x: f"{x[0]} -> {x[1]}", mask_list))
-    # )
-    # self._delimiters_edit.setPlainText("\n".join(delimiters_list))
-
     # ==================== 公共方法 ====================
 
     @property
-    def log_parser_type(self) -> LogParserClassProtocol:
+    def log_parser_type(self) -> type[LogParserProtocol]:
         """获取用户选择的提取算法类型"""
         model_index = self._log_parser_list_model.index(
             self._log_parser_combo_box.currentIndex()
@@ -285,7 +150,7 @@ class ExtractLogMessageBox(MessageBoxBase):
     @property
     def log_parser_config(self) -> LogParserConfig:
         """获取用户选择的格式类型名称"""
-        model_index = self._format_type_list_model.index(
+        model_index = self._log_parser_config_list_model.index(
             self._format_type_combo_box.currentIndex()
         )
         return model_index.data(LogParserConfigListModel.LOG_PARSER_CONFIG_ROLE)

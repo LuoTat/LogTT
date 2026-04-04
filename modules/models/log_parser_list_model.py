@@ -2,7 +2,7 @@ from typing import Any
 
 from PySide6.QtCore import QAbstractListModel, QModelIndex, QPersistentModelIndex, Qt
 
-from modules.logparser import LogParserClassProtocol, ParserFactory
+from modules.logparser import LogParserProtocol, ParserFactory
 
 
 class LogParserListModel(QAbstractListModel):
@@ -15,7 +15,7 @@ class LogParserListModel(QAbstractListModel):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._df: list[LogParserClassProtocol] = ParserFactory.get_all_parsers_type()
+        self._data: list[type[LogParserProtocol]] = ParserFactory.get_all_parsers_type()
 
     # ==================== 重写方法 ====================
 
@@ -23,7 +23,7 @@ class LogParserListModel(QAbstractListModel):
         self,
         parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
     ) -> int:
-        return len(self._df)
+        return len(self._data)
 
     def data(
         self,
@@ -37,13 +37,13 @@ class LogParserListModel(QAbstractListModel):
 
         # 显示角色
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
-            return self._df[row].name()
+            return self._data[row].name()
 
         # 自定义角色
         elif role == self.LOG_PARSER_TYPE_ROLE:
-            return self._df[row]
+            return self._data[row]
 
         elif role == self.LOG_PARSER_DISCRIPTION_ROLE:
-            return self._df[row].description()
+            return self._data[row].description()
 
         return None

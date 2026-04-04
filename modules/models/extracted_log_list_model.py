@@ -27,7 +27,7 @@ class ExtractedLogListModel(QAbstractListModel):
         super().__init__(parent)
 
         # 一次性获取整个表的数据到内存中
-        self._df: list[tuple] = DuckDBService.get_extracted_log_table()
+        self._data: list[tuple] = DuckDBService.get_extracted_log_table()
 
     # ==================== 重写方法 ====================
 
@@ -35,7 +35,7 @@ class ExtractedLogListModel(QAbstractListModel):
         self,
         parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
     ) -> int:
-        return len(self._df)
+        return len(self._data)
 
     def data(
         self,
@@ -49,17 +49,17 @@ class ExtractedLogListModel(QAbstractListModel):
 
         # 显示角色
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
-            return self._df[row][SqlColumn.LOG_URI]
+            return self._data[row][SqlColumn.LOG_URI]
 
         # 自定义角色：返回各种数据
         elif role == self.LOG_ID_ROLE:
-            return int(self._df[row][SqlColumn.ID])
+            return int(self._data[row][SqlColumn.ID])
 
         elif role == self.STRUCTURED_TABLE_NAME_ROLE:
-            return self._df[row][SqlColumn.STRUCTURED_TABLE_NAME]
+            return self._data[row][SqlColumn.STRUCTURED_TABLE_NAME]
 
         elif role == self.TEMPLATES_TABLE_NAME_ROLE:
-            return self._df[row][SqlColumn.TEMPLATES_TABLE_NAME]
+            return self._data[row][SqlColumn.TEMPLATES_TABLE_NAME]
 
         return None
 
@@ -67,7 +67,7 @@ class ExtractedLogListModel(QAbstractListModel):
 
     def get_row(self, log_id: int) -> int:
         """根据 log_id 获取行号"""
-        for i, row in enumerate(self._df):
+        for i, row in enumerate(self._data):
             if row[SqlColumn.ID] == log_id:
                 return i
         return -1
@@ -75,5 +75,5 @@ class ExtractedLogListModel(QAbstractListModel):
     def refresh(self):
         """刷新数据"""
         self.beginResetModel()
-        self._df = DuckDBService.get_extracted_log_table()
+        self._data = DuckDBService.get_extracted_log_table()
         self.endResetModel()

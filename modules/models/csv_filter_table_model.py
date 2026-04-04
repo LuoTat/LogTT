@@ -112,12 +112,12 @@ class CsvFilterTableModel(QAbstractTableModel):
             self._cache_row_data(row)
 
         if role == Qt.ItemDataRole.DisplayRole:
-            return self._cache_df[row - self._cache_offset][col]
+            return self._cache_data[row - self._cache_offset][col]
 
         if role == Qt.ItemDataRole.CheckStateRole:
             if col != 0:
                 return None
-            row_value = self._cache_df[row - self._cache_offset][0]
+            row_value = self._cache_data[row - self._cache_offset][0]
             return (
                 Qt.CheckState.Checked
                 if row_value in self._current_filter
@@ -136,7 +136,7 @@ class CsvFilterTableModel(QAbstractTableModel):
             return False
 
         if role == Qt.ItemDataRole.CheckStateRole:
-            row_value = self._cache_df[index.row() - self._cache_offset][0]
+            row_value = self._cache_data[index.row() - self._cache_offset][0]
 
             if Qt.CheckState(value) == Qt.CheckState.Checked:
                 self._current_filter.append(row_value)
@@ -158,7 +158,7 @@ class CsvFilterTableModel(QAbstractTableModel):
         self._cache_offset = max(0, row - self._PAGE_SIZE)
 
         try:
-            self._cache_df, self._total_row_count = DuckDBService.fetch_filter_table(
+            self._cache_data, self._total_row_count = DuckDBService.fetch_filter_table(
                 self._table_name,
                 self._column_name,
                 self._cache_offset,

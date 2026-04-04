@@ -88,10 +88,13 @@ class LogExtractTask(QRunnable):
         try:
             print(f"Parsing file: {self._log_file}")
             start_time = datetime.now()
-            ex_args = self._log_parser_config.ex_args.get(self._log_parser_type, {})
+            ex_args = self._log_parser_config.ex_args.get(
+                self._log_parser_type.name(),
+                {},
+            )
             result = self._log_parser_type(
                 self._log_parser_config.log_format,
-                self._log_parser_config.masking,
+                self._log_parser_config.user_maskings,
                 self._log_parser_config.delimiters,
                 **ex_args,
             ).parse(
@@ -171,7 +174,7 @@ class LogTableModel(QAbstractTableModel):
         # 创建日志提取任务进程池
         self._log_extract_pool = QThreadPool(self, maxThreadCount=4)
         # 一次性获取整个表的数据到内存中
-        self._log_table: list[tuple] = DuckDBService.get_log_table()
+        self._data: list[tuple] = DuckDBService.get_log_table()
         # 存储正在提取的任务信息: log_id
         self._extract_tasks: set[int] = set()
 
@@ -181,7 +184,7 @@ class LogTableModel(QAbstractTableModel):
         self,
         parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
     ) -> int:
-        return len(self._log_table)
+        return len(self._data)
 
     def columnCount(
         self,
@@ -223,7 +226,7 @@ class LogTableModel(QAbstractTableModel):
 
         # 处理自定义角色 - LOG_ID_ROLE
         elif role == self.LOG_ID_ROLE:
-            return self._log_table[index.row()][SqlColumn.ID]
+            return self._data[index.row()][SqlColumn.ID]
 
         # 处理自定义角色 - LOG_STATUS_ROLE
         elif role == self.LOG_STATUS_ROLE:
@@ -255,8 +258,8 @@ class LogTableModel(QAbstractTableModel):
                     return LogStatus.NOT_EXTRACTED
 
             self.layoutAboutToBeChanged.emit()
-            self._log_table = sorted(
-                self._log_table,
+            self._data = sorted(
+                self._data,
                 key=sort_status,
                 reverse=descending,
             )
@@ -266,8 +269,8 @@ class LogTableModel(QAbstractTableModel):
         # 常规列：直接按数据库列索引排序
         sql_col = self._MODEL_TO_SQL[col]
         self.layoutAboutToBeChanged.emit()
-        self._log_table = sorted(
-            self._log_table,
+        self._data = sorted(
+            self._data,
             key=lambda log: (log[sql_col] is None, log[sql_col]),
             reverse=descending,
         )
@@ -277,7 +280,7 @@ class LogTableModel(QAbstractTableModel):
 
     def _get_row(self, log_id: int) -> int:
         """根据 log_id 获取行号"""
-        for i, row in enumerate(self._log_table):
+        for i, row in enumerate(self._data):
             if row[SqlColumn.ID] == log_id:
                 return i
         return -1
@@ -294,15 +297,15 @@ class LogTableModel(QAbstractTableModel):
 
         # 名称列
         elif col == LogColumn.NAME:
-            uri = self._log_table[row][SqlColumn.LOG_URI]
+            uri = self._data[row][SqlColumn.LOG_URI]
             return Path(uri).name
 
         # 常规列
-        return self._log_table[row][self._MODEL_TO_SQL[col]]
+        return self._data[row][self._MODEL_TO_SQL[col]]
 
     def _get_status(self, index: QModelIndex | QPersistentModelIndex) -> LogStatus:
         """获取日志状态"""
-        is_extracted = self._log_table[index.row()][SqlColumn.IS_EXTRACTED]
+        is_extracted = self._data[index.row()][SqlColumn.IS_EXTRACTED]
         if is_extracted:
             return LogStatus.EXTRACTED
         elif index.data(self.LOG_ID_ROLE) in self._extract_tasks:
@@ -312,9 +315,9 @@ class LogTableModel(QAbstractTableModel):
 
     def _set_df_data(self, row: int, column: SqlColumn, value: object):
         """更新内存DataFrame"""
-        row_list = list(self._log_table[row])
+        row_list = list(self._data[row])
         row_list[column] = value
-        self._log_table[row] = tuple(row_list)
+        self._data[row] = tuple(row_list)
 
     def _set_sql_data(self, log_id: int, column: SqlColumn, value: object):
         """同步数据库"""
@@ -395,10 +398,8 @@ class LogTableModel(QAbstractTableModel):
         try:
             row = index.row()
             log_id = index.data(self.LOG_ID_ROLE)
-            structured_table_name = self._log_table[row][
-                SqlColumn.STRUCTURED_TABLE_NAME
-            ]
-            templates_table_name = self._log_table[row][SqlColumn.TEMPLATES_TABLE_NAME]
+            structured_table_name = self._data[row][SqlColumn.STRUCTURED_TABLE_NAME]
+            templates_table_name = self._data[row][SqlColumn.TEMPLATES_TABLE_NAME]
 
             # 删除关联的结构化表和模板表
             DuckDBService.drop_table(structured_table_name)
@@ -407,7 +408,7 @@ class LogTableModel(QAbstractTableModel):
             DuckDBService.delete_log(log_id)
 
             self.beginRemoveRows(QModelIndex(), row, row)
-            self._log_table.pop(row)
+            self._data.pop(row)
             self.endRemoveRows()
             self.deleteSuccess.emit()
         except Exception as e:
@@ -435,11 +436,11 @@ class LogTableModel(QAbstractTableModel):
         # 创建提取任务
         task = LogExtractTask(
             log_id,
-            Path(self._log_table[row][SqlColumn.LOG_URI]),
+            Path(self._data[row][SqlColumn.LOG_URI]),
             log_parser_type,
             log_parser_config,
-            self._log_table[row][SqlColumn.STRUCTURED_TABLE_NAME],
-            self._log_table[row][SqlColumn.TEMPLATES_TABLE_NAME],
+            self._data[row][SqlColumn.STRUCTURED_TABLE_NAME],
+            self._data[row][SqlColumn.TEMPLATES_TABLE_NAME],
         )
         task.signals.finished.connect(self._on_extract_finished)
         task.signals.error.connect(self._on_extract_errored)
@@ -462,12 +463,10 @@ class LogTableModel(QAbstractTableModel):
     def search_by_name(self, keyword: str):
         """按 URI 关键字搜索"""
         kw = keyword.strip().lower()
-        self._log_table = DuckDBService.get_log_table()
+        self._data = DuckDBService.get_log_table()
         self.beginResetModel()
-        self._log_table = [
-            row
-            for row in self._log_table
-            if kw in Path(row[SqlColumn.LOG_URI]).name.lower()
+        self._data = [
+            row for row in self._data if kw in Path(row[SqlColumn.LOG_URI]).name.lower()
         ]
         self.endResetModel()
 
@@ -479,5 +478,5 @@ class LogTableModel(QAbstractTableModel):
     def refresh(self):
         """刷新模型数据"""
         self.beginResetModel()
-        self._log_table = DuckDBService.get_log_table()
+        self._data = DuckDBService.get_log_table()
         self.endResetModel()

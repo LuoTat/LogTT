@@ -8,7 +8,7 @@ import formatparse
 from libc.stdint cimport uint16_t, uint32_t
 from libcpp.string cimport string
 from libcpp.vector cimport vector
-from modules.logparser.parser cimport(
+from modules.logparser.parser cimport (
     AELLogParser as CXX_AELLogParser,
     DrainLogParser as CXX_DrainLogParser,
     JaccardDrainLogParser as CXX_JaccardDrainLogParser,
@@ -30,8 +30,8 @@ cdef class AELLogParser:
     def __init__(
         self,
         string log_format,
-        object maskings=None,
-        object delimiters=None,
+        vector[Mask] maskings,
+        object delimiters,
         uint32_t cluster_thr=2,
         float merge_thr=1,
     ):
@@ -42,24 +42,12 @@ cdef class AELLogParser:
         """
 
         cdef object parser = formatparse.compile(log_format)
-        cdef vector[Mask] maskings_cxx
-        cdef vector[char] delimiters_cxx
-
-        if maskings is None:
-            maskings_cxx = vector[Mask]()
-        else:
-            maskings_cxx = maskings
-
-        if delimiters is None:
-            delimiters_cxx = vector[char]()
-        else:
-            delimiters_cxx = delimiters
 
         self.log_parser = CXX_AELLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
-            maskings_cxx,
-            delimiters_cxx,
+            maskings,
+            delimiters.encode("ascii"),
             cluster_thr,
             merge_thr,
         )
@@ -97,23 +85,25 @@ cdef class AELLogParser:
         return "AEL 是一种通过分桶与相似度合并来自动抽取日志模板的解析方法。"
 
     @staticmethod
-    def get_param_descriptors() -> list:
+    def get_param_descriptors() -> list[ParamDescriptor]:
         return [
             ParamDescriptor(
-                name="Cluster Threshold",
-                description="Minimum number of log clusters to trigger reconciliation",
-                widget_type=ParamWidgetType.SpinBox,
-                default=2,
-                minimum=1,
-                maximum=10000,
+                "cluster_thr",
+                "Cluster Threshold",
+                "Minimum number of log clusters to trigger reconciliation",
+                ParamWidgetType.SpinBox,
+                2,
+                1,
+                1000,
             ),
             ParamDescriptor(
-                name="Merge Threshold",
-                description="Maximum percentage of difference to merge two log clusters",
-                widget_type=ParamWidgetType.DoubleSpinBox,
-                default=1.0,
-                minimum=0.0,
-                maximum=1.0,
+                "merge_thr",
+                "Merge Threshold",
+                "Maximum percentage of difference to merge two log clusters",
+                ParamWidgetType.DoubleSpinBox,
+                1.0,
+                0.0,
+                1.0,
             ),
         ]
 
@@ -127,8 +117,8 @@ cdef class DrainLogParser:
     def __init__(
         self,
         string log_format,
-        object maskings=None,
-        object delimiters=None,
+        vector[Mask] maskings,
+        object delimiters,
         uint16_t depth=4,
         uint16_t children=100,
         float sim_thr=0.4,
@@ -144,24 +134,12 @@ cdef class DrainLogParser:
             raise ValueError("depth argument must be at least 3")
 
         cdef object parser = formatparse.compile(log_format)
-        cdef vector[Mask] maskings_cxx
-        cdef vector[char] delimiters_cxx
-
-        if maskings is None:
-            maskings_cxx = vector[Mask]()
-        else:
-            maskings_cxx = maskings
-
-        if delimiters is None:
-            delimiters_cxx = vector[char]()
-        else:
-            delimiters_cxx = delimiters
 
         self.log_parser = CXX_DrainLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
-            maskings_cxx,
-            delimiters_cxx,
+            maskings,
+            delimiters.encode("ascii"),
             depth,
             children,
             sim_thr,
@@ -200,31 +178,34 @@ cdef class DrainLogParser:
         return "Drain 是一种基于树结构的高效日志模板提取算法。"
 
     @staticmethod
-    def get_param_descriptors() -> list:
+    def get_param_descriptors() -> list[ParamDescriptor]:
         return [
             ParamDescriptor(
-                name="Depth",
-                description="Depth of prefix tree",
-                widget_type=ParamWidgetType.IntSpinBox,
-                default=4,
-                minimum=3,
-                maximum=100,
+                "depth",
+                "Depth",
+                "Depth of prefix tree",
+                ParamWidgetType.SpinBox,
+                4,
+                3,
+                100,
             ),
             ParamDescriptor(
-                name="Max Children",
-                description="Max children per tree node",
-                widget_type=ParamWidgetType.IntSpinBox,
-                default=100,
-                minimum=1,
-                maximum=10000,
+                "children",
+                "Max Children",
+                "Max children per tree node",
+                ParamWidgetType.SpinBox,
+                100,
+                1,
+                1000,
             ),
             ParamDescriptor(
-                name="Similarity Threshold",
-                description="Similarity threshold",
-                widget_type=ParamWidgetType.DoubleSpinBox,
-                default=0.4,
-                minimum=0.0,
-                maximum=1.0,
+                "sim_thr",
+                "Similarity Threshold",
+                "Similarity threshold",
+                ParamWidgetType.DoubleSpinBox,
+                0.4,
+                0.0,
+                1.0,
             ),
         ]
 
@@ -238,8 +219,8 @@ cdef class JaccardDrainLogParser:
     def __init__(
         self,
         string log_format,
-        object maskings=None,
-        object delimiters=None,
+        vector[Mask] maskings,
+        object delimiters,
         uint16_t depth=4,
         uint16_t children=100,
         float sim_thr=0.4,
@@ -255,24 +236,12 @@ cdef class JaccardDrainLogParser:
             raise ValueError("depth argument must be at least 2")
 
         cdef object parser = formatparse.compile(log_format)
-        cdef vector[Mask] maskings_cxx
-        cdef vector[char] delimiters_cxx
-
-        if maskings is None:
-            maskings_cxx = vector[Mask]()
-        else:
-            maskings_cxx = maskings
-
-        if delimiters is None:
-            delimiters_cxx = vector[char]()
-        else:
-            delimiters_cxx = delimiters
 
         self.log_parser = CXX_JaccardDrainLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
-            maskings_cxx,
-            delimiters_cxx,
+            maskings,
+            delimiters.encode("ascii"),
             depth,
             children,
             sim_thr,
@@ -311,31 +280,34 @@ cdef class JaccardDrainLogParser:
         return "JaccardDrain 是一种基于 Drain 和 Jaccard 相似度的高效日志模板提取算法。"
 
     @staticmethod
-    def get_param_descriptors() -> list:
+    def get_param_descriptors() -> list[ParamDescriptor]:
         return [
             ParamDescriptor(
-                name="Depth",
-                description="Depth of prefix tree",
-                widget_type=ParamWidgetType.IntSpinBox,
-                default=4,
-                minimum=2,
-                maximum=100,
+                "depth",
+                "Depth",
+                "Depth of prefix tree",
+                ParamWidgetType.SpinBox,
+                4,
+                2,
+                100,
             ),
             ParamDescriptor(
-                name="Max Children",
-                description="Max children per tree node",
-                widget_type=ParamWidgetType.IntSpinBox,
-                default=100,
-                minimum=1,
-                maximum=10000,
+                "children",
+                "Max Children",
+                "Max children per tree node",
+                ParamWidgetType.SpinBox,
+                100,
+                1,
+                1000,
             ),
             ParamDescriptor(
-                name="Similarity Threshold",
-                description="Similarity threshold",
-                widget_type=ParamWidgetType.DoubleSpinBox,
-                default=0.4,
-                minimum=0.0,
-                maximum=1.0,
+                "sim_thr",
+                "Similarity Threshold",
+                "Similarity threshold",
+                ParamWidgetType.DoubleSpinBox,
+                0.4,
+                0.0,
+                1.0,
             ),
         ]
 
@@ -349,8 +321,8 @@ cdef class SpellLogParser:
     def __init__(
         self,
         string log_format,
-        object maskings=None,
-        object delimiters=None,
+        vector[Mask] maskings,
+        object delimiters,
         float sim_thr=0.5,
     ):
         """
@@ -359,24 +331,12 @@ cdef class SpellLogParser:
         """
 
         cdef object parser = formatparse.compile(log_format)
-        cdef vector[Mask] maskings_cxx
-        cdef vector[char] delimiters_cxx
-
-        if maskings is None:
-            maskings_cxx = vector[Mask]()
-        else:
-            maskings_cxx = maskings
-
-        if delimiters is None:
-            delimiters_cxx = vector[char]()
-        else:
-            delimiters_cxx = delimiters
 
         self.log_parser = CXX_SpellLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
-            maskings_cxx,
-            delimiters_cxx,
+            maskings,
+            delimiters.encode("ascii"),
             sim_thr,
         )
 
@@ -413,15 +373,16 @@ cdef class SpellLogParser:
         return "Spell 是一种基于前缀树和LCS算法的日志解析方法。"
 
     @staticmethod
-    def get_param_descriptors() -> list:
+    def get_param_descriptors() -> list[ParamDescriptor]:
         return [
             ParamDescriptor(
-                name="Similarity Threshold",
-                description="Similarity threshold",
-                widget_type=ParamWidgetType.DoubleSpinBox,
-                default=0.5,
-                minimum=0.0,
-                maximum=1.0,
+                "sim_thr",
+                "Similarity Threshold",
+                "Similarity threshold",
+                ParamWidgetType.DoubleSpinBox,
+                0.5,
+                0.0,
+                1.0,
             ),
         ]
 

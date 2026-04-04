@@ -11,6 +11,7 @@ from qfluentwidgets import (
 )
 
 from .constants import CONFIG_PATH
+from .logparser import LogParserConfigSerializer
 
 
 class Language(Enum):
@@ -51,7 +52,12 @@ class AppConfig(QConfig):
     )
 
     # 用户自定义日志格式
-    logParserConfigs = ConfigItem("LogConfig", "LogParserConfigs", [])
+    logParserConfigs = ConfigItem(
+        "LogConfig",
+        "LogParserConfigs",
+        [],
+        serializer=LogParserConfigSerializer(),
+    )
 
 
 # 创建全局配置实例

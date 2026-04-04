@@ -1,5 +1,5 @@
 # 内置掩码规则(正则表达式, 替换字符串)
-BUILTIN_MASKING: list[tuple[str, str]] = [
+BUILTIN_MASKINGS: list[tuple[str, str]] = [
     # (
     #     r"(?P<S>^|[^A-Za-z\d])([A-Za-z\d]{2,}:){3,}[A-Za-z\d]{2,}(?P<E>[^A-Za-z\d]|$)",
     #     r"$S<#ID#>$E",

@@ -80,7 +80,7 @@ class CsvFileTableModel(QAbstractTableModel):
             self._cache_row_data(row)
 
         if role == Qt.ItemDataRole.DisplayRole:
-            return self._cache_df[row - self._cache_offset][col]
+            return self._cache_data[row - self._cache_offset][col]
 
         # 处理前景色角色
         elif role == Qt.ItemDataRole.ForegroundRole:
@@ -99,7 +99,7 @@ class CsvFileTableModel(QAbstractTableModel):
         self._cache_offset = max(0, row - self._PAGE_SIZE)
 
         try:
-            self._cache_df, self._filtered_row_count = DuckDBService.fetch_csv_table(
+            self._cache_data, self._filtered_row_count = DuckDBService.fetch_csv_table(
                 self._table_name,
                 self._cache_offset,
                 self._cache_limit,
