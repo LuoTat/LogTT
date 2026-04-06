@@ -1,13 +1,15 @@
+cdef object formatparse
+cdef object parser_register
 cdef object ParamDescriptor
 cdef object ParamWidgetType
 cdef object ParseResult
-cdef object formatparse
-cdef object parser_register
+cdef object QCoreApplication
 
-import formatparse
 from libc.stdint cimport uint16_t, uint32_t
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+
+import formatparse
 from modules.logparser.parser cimport (
     AELLogParser as CXX_AELLogParser,
     DrainLogParser as CXX_DrainLogParser,
@@ -15,6 +17,7 @@ from modules.logparser.parser cimport (
     Mask,
     SpellLogParser as CXX_SpellLogParser,
 )
+from PySide6.QtCore import QCoreApplication
 
 from .param_descriptor import ParamDescriptor, ParamWidgetType
 from .parse_result import ParseResult
@@ -82,7 +85,7 @@ cdef class AELLogParser:
 
     @staticmethod
     def description() -> str:
-        return "AEL 是一种通过分桶与相似度合并来自动抽取日志模板的解析方法。"
+        return QCoreApplication.translate("AELLogParser", "AEL 是一种通过分桶与相似度合并来自动抽取日志模板的解析方法。")
 
     @staticmethod
     def get_param_descriptors() -> list[ParamDescriptor]:
@@ -90,7 +93,7 @@ cdef class AELLogParser:
             ParamDescriptor(
                 "cluster_thr",
                 "Cluster Threshold",
-                "Minimum number of log clusters to trigger reconciliation",
+                QCoreApplication.translate("AELLogParser", "日志簇数量触发日志簇的合并的最小值"),
                 ParamWidgetType.SpinBox,
                 2,
                 1,
@@ -99,7 +102,7 @@ cdef class AELLogParser:
             ParamDescriptor(
                 "merge_thr",
                 "Merge Threshold",
-                "Maximum percentage of difference to merge two log clusters",
+                QCoreApplication.translate("AELLogParser", "合并两个日志簇的最大差异百分比"),
                 ParamWidgetType.DoubleSpinBox,
                 1.0,
                 0.0,
@@ -175,7 +178,7 @@ cdef class DrainLogParser:
 
     @staticmethod
     def description() -> str:
-        return "Drain 是一种基于树结构的高效日志模板提取算法。"
+        return QCoreApplication.translate("DrainLogParser", "Drain 是一种基于树结构的高效日志模板提取算法。")
 
     @staticmethod
     def get_param_descriptors() -> list[ParamDescriptor]:
@@ -183,7 +186,7 @@ cdef class DrainLogParser:
             ParamDescriptor(
                 "depth",
                 "Depth",
-                "Depth of prefix tree",
+                QCoreApplication.translate("DrainLogParser", "前缀树的最大深度"),
                 ParamWidgetType.SpinBox,
                 4,
                 3,
@@ -192,7 +195,7 @@ cdef class DrainLogParser:
             ParamDescriptor(
                 "children",
                 "Max Children",
-                "Max children per tree node",
+                QCoreApplication.translate("DrainLogParser", "每个树节点的最大子节点数"),
                 ParamWidgetType.SpinBox,
                 100,
                 1,
@@ -201,7 +204,7 @@ cdef class DrainLogParser:
             ParamDescriptor(
                 "sim_thr",
                 "Similarity Threshold",
-                "Similarity threshold",
+                QCoreApplication.translate("DrainLogParser", "相似度阈值"),
                 ParamWidgetType.DoubleSpinBox,
                 0.4,
                 0.0,
@@ -277,7 +280,7 @@ cdef class JaccardDrainLogParser:
 
     @staticmethod
     def description() -> str:
-        return "JaccardDrain 是一种基于 Drain 和 Jaccard 相似度的高效日志模板提取算法。"
+        return QCoreApplication.translate("JaccardDrainLogParser", "JaccardDrain 是一种基于 Drain 和 Jaccard 相似度的高效日志模板提取算法。")
 
     @staticmethod
     def get_param_descriptors() -> list[ParamDescriptor]:
@@ -285,7 +288,7 @@ cdef class JaccardDrainLogParser:
             ParamDescriptor(
                 "depth",
                 "Depth",
-                "Depth of prefix tree",
+                QCoreApplication.translate("JaccardDrainLogParser", "前缀树的最大深度"),
                 ParamWidgetType.SpinBox,
                 4,
                 2,
@@ -294,7 +297,7 @@ cdef class JaccardDrainLogParser:
             ParamDescriptor(
                 "children",
                 "Max Children",
-                "Max children per tree node",
+                QCoreApplication.translate("JaccardDrainLogParser", "每个树节点的最大子节点数"),
                 ParamWidgetType.SpinBox,
                 100,
                 1,
@@ -303,7 +306,7 @@ cdef class JaccardDrainLogParser:
             ParamDescriptor(
                 "sim_thr",
                 "Similarity Threshold",
-                "Similarity threshold",
+                QCoreApplication.translate("JaccardDrainLogParser", "相似度阈值"),
                 ParamWidgetType.DoubleSpinBox,
                 0.4,
                 0.0,
@@ -370,7 +373,7 @@ cdef class SpellLogParser:
 
     @staticmethod
     def description() -> str:
-        return "Spell 是一种基于前缀树和LCS算法的日志解析方法。"
+        return QCoreApplication.translate("SpellLogParser", "Spell 是一种基于前缀树和LCS算法的日志解析方法。")
 
     @staticmethod
     def get_param_descriptors() -> list[ParamDescriptor]:
@@ -378,7 +381,7 @@ cdef class SpellLogParser:
             ParamDescriptor(
                 "sim_thr",
                 "Similarity Threshold",
-                "Similarity threshold",
+                QCoreApplication.translate("SpellLogParser", "相似度阈值"),
                 ParamWidgetType.DoubleSpinBox,
                 0.5,
                 0.0,

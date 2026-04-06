@@ -1,9 +1,13 @@
-.PHONY: all build_cython clean
+.PHONY: all build_cython clean lupdate lrelease
 
 SRC_DIR     := src
 BUILD_DIR   := build
 LIB_DIR     := lib
 INCLUDE_DIR := 3rdparty/duckdb/include
+
+I18N_XML := resource/i18n/en_US.xml
+I18N_TS  := resource/i18n/en_US.ts
+I18N_QM  := resource/i18n/en_US.qm
 
 DUCKDB_LIB := $(LIB_DIR)/libduckdb.so
 CORE_LIB   := $(LIB_DIR)/libcore.so
@@ -39,3 +43,13 @@ build_cython:
 
 clean:
 	rm -rf $(BUILD_DIR) $(LIB_DIR)
+
+lupdate:
+	@if [ -f "$(I18N_XML)" ]; then cp "$(I18N_XML)" "$(I18N_TS)"; fi
+	uv run pyside6-lupdate -no-obsolete -extensions py,pyx . -ts $(I18N_TS)
+	mv $(I18N_TS) $(I18N_XML)
+
+lrelease:
+	cp $(I18N_XML) $(I18N_TS)
+	uv run pyside6-lrelease $(I18N_TS) -qm $(I18N_QM)
+	rm -f $(I18N_TS)
