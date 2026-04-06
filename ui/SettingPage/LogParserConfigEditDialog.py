@@ -3,10 +3,9 @@ import re
 
 import formatparse
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import (
     BodyLabel,
-    CardWidget,
     FluentIcon,
     InfoBar,
     InfoBarPosition,
@@ -14,7 +13,6 @@ from qfluentwidgets import (
     MessageBoxBase,
     PlainTextEdit,
     SmoothScrollArea,
-    SubtitleLabel,
     SwitchButton,
 )
 
@@ -22,7 +20,7 @@ from modules.logparser import (
     LogParserConfig,
     ParserFactory,
 )
-from ui.Widgets.ParserParamCard import ParserParamCard
+from ui.Widgets import ParserParamCard, TitleCard
 
 
 class LogParserConfigEditDialog(MessageBoxBase):
@@ -40,11 +38,11 @@ class LogParserConfigEditDialog(MessageBoxBase):
         self._scroll_area.setWidgetResizable(True)
 
         self._scroll_widget = QWidget(self._scroll_area)
+        self._main_layout = QVBoxLayout(self._scroll_widget)
         # 将背景设为透明以同一卡片背景
         self._scroll_widget.setStyleSheet("background: transparent;")
-        self._main_layout = QVBoxLayout(self._scroll_widget)
-
         self._scroll_area.setWidget(self._scroll_widget)
+
         self.viewLayout.addWidget(self._scroll_area)
 
         self._init_basic_card()
@@ -139,103 +137,74 @@ class LogParserConfigEditDialog(MessageBoxBase):
         )
 
     def _init_basic_card(self):
-        card = CardWidget(self)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(18, 16, 18, 16)
-        card_layout.setSpacing(10)
+        card = TitleCard(FluentIcon.EDIT, self.tr("基本信息"), self)
 
-        # 标题
-        title_layout = QHBoxLayout()
-        icon_label = QLabel(self)
-        icon_label.setPixmap(FluentIcon.EDIT.icon().pixmap(20, 20))
-        title_label = SubtitleLabel(self.tr("基本信息"), card)
-        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
-        title_layout.addWidget(icon_label)
-        title_layout.addSpacing(6)
-        title_layout.addWidget(title_label)
-        title_layout.addStretch(1)
-        card_layout.addLayout(title_layout)
-
-        # 名称
         name_label = BodyLabel(self.tr("配置名称："), card)
         name_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(name_label)
+        card.viewLayout.addWidget(name_label)
 
         self._name_edit = LineEdit(card)
         self._name_edit.setPlaceholderText(self.tr("例如：MyApp"))
         self._name_edit.setClearButtonEnabled(True)
-        card_layout.addWidget(self._name_edit)
+        card.viewLayout.addWidget(self._name_edit)
 
-        # 日志格式
         log_format_label = BodyLabel(self.tr("日志格式："), card)
         log_format_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(log_format_label)
+        card.viewLayout.addWidget(log_format_label)
 
         self._log_format_edit = LineEdit(card)
         self._log_format_edit.setPlaceholderText(
             self.tr("例如：{Date} {Time} {Level}: {Content}")
         )
         self._log_format_edit.setClearButtonEnabled(True)
-        card_layout.addWidget(self._log_format_edit)
+        card.viewLayout.addWidget(self._log_format_edit)
 
         log_format_hint = BodyLabel(
             self.tr("使用 {字段名} 标记日志中的各个部分，必须包含 {Content}"),
             card,
         )
         log_format_hint.setStyleSheet("color: #888; font-size: 12px;")
-        card_layout.addWidget(log_format_hint)
+        card.viewLayout.addWidget(log_format_hint)
 
-        # 分隔符
         delimiters_label = BodyLabel(self.tr("分隔符："), card)
         delimiters_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(delimiters_label)
+        card.viewLayout.addWidget(delimiters_label)
 
         self._delimiters_edit = LineEdit(card)
         self._delimiters_edit.setPlaceholderText(self.tr("例如：=:()"))
         self._delimiters_edit.setClearButtonEnabled(True)
-        card_layout.addWidget(self._delimiters_edit)
+        card.viewLayout.addWidget(self._delimiters_edit)
 
         delimiters_hint = BodyLabel(
             self.tr("用于分词的额外分隔字符，直接拼接输入，可留空。仅支持 ASCII 字符"),
             card,
         )
         delimiters_hint.setStyleSheet("color: #888; font-size: 12px;")
-        card_layout.addWidget(delimiters_hint)
+        card.viewLayout.addWidget(delimiters_hint)
 
         # 使用内置掩码
         masking_toggle_layout = QHBoxLayout()
+
         masking_toggle_label = BodyLabel(self.tr("使用内置掩码规则："), card)
         masking_toggle_label.setStyleSheet("font-weight: 500;")
+        masking_toggle_layout.addWidget(masking_toggle_label)
+
+        masking_toggle_layout.addStretch()
+
         self._use_builtin_masking_switch = SwitchButton(card)
         self._use_builtin_masking_switch.setChecked(True)
-        masking_toggle_layout.addWidget(masking_toggle_label)
-        masking_toggle_layout.addStretch(1)
         masking_toggle_layout.addWidget(self._use_builtin_masking_switch)
-        card_layout.addLayout(masking_toggle_layout)
+
+        card.viewLayout.addLayout(masking_toggle_layout)
 
         self._main_layout.addWidget(card)
 
     def _init_masking_card(self):
-        card = CardWidget(self)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(18, 16, 18, 16)
-        card_layout.setSpacing(10)
-
-        # 标题
-        title_layout = QHBoxLayout()
-        icon_label = QLabel(self)
-        icon_label.setPixmap(FluentIcon.FILTER.icon().pixmap(20, 20))
-        title_label = SubtitleLabel(self.tr("自定义掩码规则"), card)
-        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
-        title_layout.addWidget(icon_label)
-        title_layout.addSpacing(6)
-        title_layout.addWidget(title_label)
-        title_layout.addStretch(1)
-        card_layout.addLayout(title_layout)
+        card = TitleCard(FluentIcon.FILTER, self.tr("自定义掩码规则"), self)
 
         masking_label = BodyLabel(self.tr("掩码规则："), card)
         masking_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(masking_label)
+        card.viewLayout.addWidget(masking_label)
 
         self._masking_edit = PlainTextEdit(card)
         self._masking_edit.setPlaceholderText(
@@ -249,12 +218,11 @@ class LogParserConfigEditDialog(MessageBoxBase):
 ]""")
         )
         self._masking_edit.setMaximumHeight(160)
-        card_layout.addWidget(self._masking_edit)
+        card.viewLayout.addWidget(self._masking_edit)
 
         masking_hint = BodyLabel(self.tr("每项为 [正则, 替换] 的数组"), card)
         masking_hint.setStyleSheet("color: #888; font-size: 12px;")
-        masking_hint.setWordWrap(True)
-        card_layout.addWidget(masking_hint)
+        card.viewLayout.addWidget(masking_hint)
 
         self._main_layout.addWidget(card)
 

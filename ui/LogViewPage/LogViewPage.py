@@ -66,11 +66,9 @@ class LogViewPage(QWidget):
         tool_bar_layout = QHBoxLayout()
         tool_bar_layout.setSpacing(16)
 
-        # 日志选择标签
         label = BodyLabel(self.tr("选择日志："), self)
         tool_bar_layout.addWidget(label)
 
-        # 日志选择下拉框
         self._log_combo_box = ModelComboBox(self)
         self._log_combo_box.setModel(self._extracted_log_list_model)
         self._log_combo_box.setMinimumWidth(400)
@@ -80,7 +78,6 @@ class LogViewPage(QWidget):
 
         tool_bar_layout.addStretch()
 
-        # 统计信息
         self._info_label = BodyLabel(self)
         tool_bar_layout.addWidget(self._info_label)
 
@@ -92,7 +89,6 @@ class LogViewPage(QWidget):
         self._table_view = TableView(self)
         self._table_view.setBorderVisible(True)
         self._table_view.setBorderRadius(8)
-
         # 禁用单元格换行
         self._table_view.setWordWrap(False)
         # 隐藏垂直表头
@@ -110,7 +106,6 @@ class LogViewPage(QWidget):
         header.customContextMenuRequested.connect(
             self._on_header_context_menu_requested
         )
-
         self._main_layout.addWidget(self._table_view)
 
     def _update_info_label(self):

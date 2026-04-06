@@ -1,20 +1,20 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QVBoxLayout
+from PySide6.QtWidgets import QFileDialog, QHBoxLayout
 from qfluentwidgets import (
     BodyLabel,
-    CardWidget,
     FluentIcon,
     InfoBar,
     InfoBarPosition,
     LineEdit,
     MessageBoxBase,
     PushButton,
-    SubtitleLabel,
     ToolTipFilter,
     ToolTipPosition,
 )
+
+from ui.Widgets import TitleCard
 
 
 class AddLogMessageBox(MessageBoxBase):
@@ -49,82 +49,49 @@ class AddLogMessageBox(MessageBoxBase):
     # ==================== 私有方法 ====================
 
     def _init_network_card(self):
-        card = CardWidget(self)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(18, 16, 18, 16)
-        card_layout.setSpacing(10)
-
-        title_layout = QHBoxLayout()
-        icon_label = QLabel(self)
-        icon_label.setPixmap(FluentIcon.GLOBE.icon().pixmap(20, 20))
-        title_label = SubtitleLabel(self.tr("网络日志源"), card)
-        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
-
-        title_layout.addWidget(icon_label)
-        title_layout.addSpacing(6)
-        title_layout.addWidget(title_label)
-        title_layout.addStretch(1)
-
-        card_layout.addLayout(title_layout)
+        card = TitleCard(FluentIcon.GLOBE, self.tr("网络日志源"), self)
 
         url_label = BodyLabel(self.tr("Syslog 服务器地址："), card)
         url_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(url_label)
+        card.viewLayout.addWidget(url_label)
 
         self._url_edit = LineEdit(card)
         self._url_edit.setPlaceholderText(self.tr("例如：syslog://192.168.1.100:514"))
         self._url_edit.setClearButtonEnabled(True)
-        card_layout.addWidget(self._url_edit)
+        card.viewLayout.addWidget(self._url_edit)
 
         hint_label = BodyLabel(self.tr("支持 UDP/TCP，默认端口 514"), card)
         hint_label.setStyleSheet("color: #888; font-size: 12px;")
-        card_layout.addWidget(hint_label)
+        card.viewLayout.addWidget(hint_label)
 
         self.viewLayout.addWidget(card)
 
     def _init_local_file_card(self):
-        card = CardWidget(self)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(18, 16, 18, 16)
-        card_layout.setSpacing(10)
-
-        title_layout = QHBoxLayout()
-        icon_label = QLabel(self)
-        icon_label.setPixmap(FluentIcon.FOLDER.icon().pixmap(20, 20))
-        title_label = SubtitleLabel(self.tr("本地文件源"), card)
-        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
-
-        title_layout.addWidget(icon_label)
-        title_layout.addSpacing(6)
-        title_layout.addWidget(title_label)
-        title_layout.addStretch(1)
-
-        card_layout.addLayout(title_layout)
+        card = TitleCard(FluentIcon.FOLDER, self.tr("本地文件源"), self)
 
         file_label = BodyLabel(self.tr("选择日志文件："), card)
         file_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(file_label)
+        card.viewLayout.addWidget(file_label)
 
         select_file_layout = QHBoxLayout()
+
         self._select_file_button = PushButton(
             FluentIcon.FOLDER_ADD,
             self.tr("选择文件"),
             card,
         )
         self._select_file_button.clicked.connect(self._on_select_file)
+        select_file_layout.addWidget(self._select_file_button)
 
         self._file_path_label = BodyLabel(self.tr("未选择文件"), card)
         self._file_path_label.setStyleSheet("color: #888; padding-left: 8px;")
-
-        select_file_layout.addWidget(self._select_file_button)
         select_file_layout.addWidget(self._file_path_label)
-        select_file_layout.addStretch(1)
 
-        card_layout.addLayout(select_file_layout)
+        card.viewLayout.addLayout(select_file_layout)
 
         hint_label = BodyLabel(self.tr("支持 .log, .txt 等文本格式"), card)
         hint_label.setStyleSheet("color: #888; font-size: 12px;")
-        card_layout.addWidget(hint_label)
+        card.viewLayout.addWidget(hint_label)
 
         self.viewLayout.addWidget(card)
 

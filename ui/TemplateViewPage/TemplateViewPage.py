@@ -67,11 +67,9 @@ class TemplateViewPage(QWidget):
         tool_bar_layout = QHBoxLayout()
         tool_bar_layout.setSpacing(16)
 
-        # 日志选择标签
         label = BodyLabel(self.tr("选择日志："), self)
         tool_bar_layout.addWidget(label)
 
-        # 日志选择下拉框
         self._log_combo_box = ModelComboBox(self)
         self._log_combo_box.setModel(self._extracted_log_list_model)
         self._log_combo_box.setMinimumWidth(400)
@@ -81,7 +79,6 @@ class TemplateViewPage(QWidget):
 
         tool_bar_layout.addStretch()
 
-        # 统计信息
         self._info_label = BodyLabel(self)
         tool_bar_layout.addWidget(self._info_label)
 

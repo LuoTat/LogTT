@@ -23,10 +23,10 @@ class ParserParamCard(GroupHeaderCardWidget):
             widget = desc.get_widget()
             widget.setFixedWidth(160)
             self.addGroup(
-                icon=FluentIcon.SETTING,
-                title=desc.name,
-                content=desc.description,
-                widget=widget,
+                FluentIcon.SETTING,
+                desc.name,
+                desc.description,
+                widget,
             )
             self._widget_pairs.append((desc, widget))
 

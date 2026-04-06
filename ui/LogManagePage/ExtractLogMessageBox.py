@@ -1,18 +1,16 @@
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout
 from qfluentwidgets import (
     BodyLabel,
-    CardWidget,
     FluentIcon,
     InfoBar,
     InfoBarPosition,
     MessageBoxBase,
     ModelComboBox,
-    SubtitleLabel,
 )
 
 from modules.logparser import LogParserConfig, LogParserProtocol
 from modules.models import LogParserConfigListModel, LogParserListModel
+from ui.Widgets import TitleCard
 
 
 class ExtractLogMessageBox(MessageBoxBase):
@@ -61,27 +59,11 @@ class ExtractLogMessageBox(MessageBoxBase):
     # ==================== 私有方法 ====================
 
     def _init_log_parser_card(self):
-        card = CardWidget(self)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(18, 16, 18, 16)
-        card_layout.setSpacing(10)
-
-        title_layout = QHBoxLayout()
-        icon_label = QLabel(self)
-        icon_label.setPixmap(FluentIcon.DEVELOPER_TOOLS.icon().pixmap(20, 20))
-        title_label = SubtitleLabel(self.tr("选择提取算法"), card)
-        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
-
-        title_layout.addWidget(icon_label)
-        title_layout.addSpacing(6)
-        title_layout.addWidget(title_label)
-        title_layout.addStretch(1)
-
-        card_layout.addLayout(title_layout)
+        card = TitleCard(FluentIcon.DEVELOPER_TOOLS, self.tr("选择提取算法"), self)
 
         log_parser_label = BodyLabel(self.tr("提取算法："), card)
         log_parser_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(log_parser_label)
+        card.viewLayout.addWidget(log_parser_label)
 
         self._log_parser_combo_box = ModelComboBox(card)
         self._log_parser_combo_box.setModel(self._log_parser_list_model)
@@ -89,40 +71,25 @@ class ExtractLogMessageBox(MessageBoxBase):
         self._log_parser_combo_box.currentIndexChanged.connect(
             self._on_log_parser_selected
         )
-        card_layout.addWidget(self._log_parser_combo_box)
+        card.viewLayout.addWidget(self._log_parser_combo_box)
 
         self._hint_label = BodyLabel(card)
         self._hint_label.setStyleSheet("color: #888; font-size: 12px;")
-        card_layout.addWidget(self._hint_label)
+        card.viewLayout.addWidget(self._hint_label)
 
         self.viewLayout.addWidget(card)
 
     def _init_format_type_card(self):
-        card = CardWidget(self)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(18, 16, 18, 16)
-        card_layout.setSpacing(10)
-
-        title_layout = QHBoxLayout()
-        icon_label = QLabel(self)
-        icon_label.setPixmap(FluentIcon.DOCUMENT.icon().pixmap(20, 20))
-        title_label = SubtitleLabel(self.tr("日志格式配置"), card)
-        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
-
-        title_layout.addWidget(icon_label)
-        title_layout.addSpacing(6)
-        title_layout.addWidget(title_label)
-        title_layout.addStretch(1)
-        card_layout.addLayout(title_layout)
+        card = TitleCard(FluentIcon.DOCUMENT, self.tr("日志格式配置"), self)
 
         format_type_label = BodyLabel(self.tr("选择格式："), card)
         format_type_label.setStyleSheet("font-weight: 500;")
-        card_layout.addWidget(format_type_label)
+        card.viewLayout.addWidget(format_type_label)
 
         self._format_type_combo_box = ModelComboBox(card)
         self._format_type_combo_box.setModel(self._log_parser_config_list_model)
         self._format_type_combo_box.setPlaceholderText(self.tr("请选择日志格式类型"))
-        card_layout.addWidget(self._format_type_combo_box)
+        card.viewLayout.addWidget(self._format_type_combo_box)
 
         self.viewLayout.addWidget(card)
 

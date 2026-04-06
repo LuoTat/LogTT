@@ -75,16 +75,16 @@ class LogManagePage(QWidget):
             lambda keyword: self._log_table_model.search_by_name(keyword)
         )
         self._search_edit.clearSignal.connect(self._log_table_model.clear_search)
+        tool_bar_layout.addWidget(self._search_edit)
+
+        tool_bar_layout.addStretch()
 
         self._refresh_button = PushButton(FluentIcon.SYNC, self.tr("刷新"), self)
         self._refresh_button.clicked.connect(self._log_table_model.refresh)
+        tool_bar_layout.addWidget(self._refresh_button)
 
         self._add_button = PrimaryPushButton(FluentIcon.ADD, self.tr("新增日志"), self)
         self._add_button.clicked.connect(self._on_add_log)
-
-        tool_bar_layout.addWidget(self._search_edit, 1)
-        tool_bar_layout.addStretch(1)
-        tool_bar_layout.addWidget(self._refresh_button)
         tool_bar_layout.addWidget(self._add_button)
 
         self._main_layout.addLayout(tool_bar_layout)
@@ -94,7 +94,6 @@ class LogManagePage(QWidget):
         self._table_view = TableView(self)
         self._table_view.setBorderVisible(True)
         self._table_view.setBorderRadius(8)
-
         # 启用排序，为了不默认排序任何列必须在setModel之前设置
         self._table_view.setSortingEnabled(True)
         # 消除显示的排序指示器
@@ -102,9 +101,7 @@ class LogManagePage(QWidget):
             -1,
             Qt.SortOrder.AscendingOrder,
         )
-
         self._table_view.setModel(self._log_table_model)
-
         # 禁用单元格换行
         self._table_view.setWordWrap(False)
         # 隐藏垂直表头
@@ -122,7 +119,6 @@ class LogManagePage(QWidget):
         )
         # 恢复列宽
         self._restore_column_widths()
-
         self._main_layout.addWidget(self._table_view)
 
     def _restore_column_widths(self):
