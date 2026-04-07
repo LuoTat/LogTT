@@ -89,11 +89,19 @@ class LogParserConfigEditDialog(MessageBoxBase):
                         or not isinstance(item[1], str)
                     ):
                         raise ValueError
+                    item[0].encode("ascii")
+                    item[1].encode("ascii")
                     re.compile(item[0])
             except json.JSONDecodeError:
                 self._show_warning(
                     self.tr("掩码格式错误"),
                     self.tr("请输入有效的 JSON 数组"),
+                )
+                return False
+            except UnicodeEncodeError:
+                self._show_warning(
+                    self.tr("掩码格式错误"),
+                    self.tr("掩码规则只能包含 ASCII 字符"),
                 )
                 return False
             except re.error:
@@ -217,7 +225,7 @@ class LogParserConfigEditDialog(MessageBoxBase):
     ]
 ]""")
         )
-        self._masking_edit.setMaximumHeight(160)
+        self._masking_edit.setMinimumHeight(160)
         card.viewLayout.addWidget(self._masking_edit)
 
         masking_hint = BodyLabel(self.tr("每项为 [正则, 替换] 的数组"), card)
@@ -244,9 +252,7 @@ class LogParserConfigEditDialog(MessageBoxBase):
         self._log_format_edit.setText(config.log_format)
         self._delimiters_edit.setText(config.delimiters)
         self._use_builtin_masking_switch.setChecked(config.use_builtin_maskings)
-        self._masking_edit.setPlainText(
-            json.dumps(config.user_maskings, ensure_ascii=False, indent=4)
-        )
+        self._masking_edit.setPlainText(json.dumps(config.user_maskings, indent=4))
 
         # 填充 ex_args
         if config.ex_args:
