@@ -8,7 +8,6 @@ dependencies = [
     "cython>=3.2.4",
     "formatparse>=0.6.1",
     "humanize>=4.15.0",
-    "loguru>=0.7.3",
     "pyside6-fluent-widgets[full]>=1.11.1",
     "setuptools>=82.0.1",
 ]
