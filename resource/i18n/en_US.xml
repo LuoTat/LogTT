@@ -4,17 +4,17 @@
 <context>
     <name>AELLogParser</name>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="88"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="89"/>
         <source>AEL 是一种通过分桶与相似度合并来自动抽取日志模板的解析方法。</source>
         <translation>AEL is a log parsing method that automatically extracts log templates through bucketing and similarity-based merging.</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="96"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="97"/>
         <source>日志簇数量触发日志簇的合并的最小值</source>
         <translation>Minimum number of log clusters to trigger reconciliation</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="105"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="106"/>
         <source>合并两个日志簇的最大差异百分比</source>
         <translation>Maximum percentage of difference to merge two log clusters</translation>
     </message>
@@ -147,6 +147,19 @@
     </message>
 </context>
 <context>
+    <name>BrainLogParser</name>
+    <message>
+        <location filename="../../modules/logparser/parsers.pyx" line="452"/>
+        <source>Brain 是一种基于双向树结构的高效日志模板提取算法。</source>
+        <translation>Brain is an efficient log template extraction algorithm based on a bidirectional tree structure.</translation>
+    </message>
+    <message>
+        <location filename="../../modules/logparser/parsers.pyx" line="460"/>
+        <source>判定变量列的最小不同词数量</source>
+        <translation>Threshold for determining variable columns</translation>
+    </message>
+</context>
+<context>
     <name>ColumnFilterMessageBox</name>
     <message>
         <location filename="../../ui/Widgets/ColumnFilterMessageBox.py" line="56"/>
@@ -175,22 +188,22 @@
 <context>
     <name>DrainLogParser</name>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="181"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="182"/>
         <source>Drain 是一种基于树结构的高效日志模板提取算法。</source>
         <translation>Drain is an efficient log template extraction algorithm based on a tree structure.</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="189"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="190"/>
         <source>前缀树的最大深度</source>
         <translation>Depth of prefix tree</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="198"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="199"/>
         <source>每个树节点的最大子节点数</source>
         <translation>Max children per tree node</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="207"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="208"/>
         <source>相似度阈值</source>
         <translation>Similarity threshold</translation>
     </message>
@@ -251,22 +264,22 @@
 <context>
     <name>JaccardDrainLogParser</name>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="283"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="284"/>
         <source>JaccardDrain 是一种基于 Drain 和 Jaccard 相似度的高效日志模板提取算法。</source>
         <translation>JaccardDrain is an efficient log template extraction algorithm based on Drain and Jaccard similarity.</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="291"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="292"/>
         <source>前缀树的最大深度</source>
         <translation>Depth of prefix tree</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="300"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="301"/>
         <source>每个树节点的最大子节点数</source>
         <translation>Max children per tree node</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="309"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="310"/>
         <source>相似度阈值</source>
         <translation>Similarity threshold</translation>
     </message>
@@ -403,103 +416,109 @@
         <translation>Log format must contain the {Content} field</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="95"/>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="107"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="97"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="103"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="115"/>
         <source>掩码格式错误</source>
         <translation>Invalid mask format</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="96"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="98"/>
         <source>请输入有效的 JSON 数组</source>
         <translation>Please enter a valid JSON array</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="101"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="104"/>
+        <source>掩码规则只能包含 ASCII 字符</source>
+        <translation>Masking rules can only contain ASCII characters</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="109"/>
         <source>掩码正则无效</source>
         <translation>Invalid mask regex</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="102"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="110"/>
         <source>掩码中包含无效的正则表达式</source>
         <translation>Mask contains invalid regular expressions</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="108"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="116"/>
         <source>格式须为 [[&quot;正则&quot;, &quot;替换&quot;], ...] 的二维数组</source>
         <translation>Format must be a 2D array like [[&quot;regex&quot;, &quot;replacement&quot;], ...]</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="119"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="127"/>
         <source>分隔符无效</source>
         <translation>Invalid delimiters</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="120"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="128"/>
         <source>分隔符只能包含 ASCII 字符</source>
         <translation>Delimiters can only contain ASCII characters</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="140"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="148"/>
         <source>基本信息</source>
         <translation>Basic Information</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="142"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="150"/>
         <source>配置名称：</source>
         <translation>Configuration Name:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="147"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="155"/>
         <source>例如：MyApp</source>
         <translation>For example: MyApp</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="151"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="159"/>
         <source>日志格式：</source>
         <translation>Log Format:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="157"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="165"/>
         <source>例如：{Date} {Time} {Level}: {Content}</source>
         <translation>For example: {Date} {Time} {Level}: {Content}</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="163"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="171"/>
         <source>使用 {字段名} 标记日志中的各个部分，必须包含 {Content}</source>
         <translation>Use {fieldName} to mark each part of the log, and it must include {Content}</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="169"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="177"/>
         <source>分隔符：</source>
         <translation>Delimiters:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="174"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="182"/>
         <source>例如：=:()</source>
         <translation>For example: =:()</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="179"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="187"/>
         <source>用于分词的额外分隔字符，直接拼接输入，可留空。仅支持 ASCII 字符</source>
         <translation>Additional delimiter characters for tokenization. Enter them directly with no separator; can be left empty. ASCII characters only</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="188"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="196"/>
         <source>使用内置掩码规则：</source>
         <translation>Use built-in masking rules:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="203"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="211"/>
         <source>自定义掩码规则</source>
         <translation>Custom Masking Rules</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="205"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="213"/>
         <source>掩码规则：</source>
         <translation>Masking Rules:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="211"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="219"/>
         <source>
 例如：
 [
@@ -518,7 +537,7 @@ For example:
 ]</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="223"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="231"/>
         <source>每项为 [正则, 替换] 的数组</source>
         <translation>Each item should be an array of [regex, replacement]</translation>
     </message>
@@ -768,12 +787,12 @@ For example:
 <context>
     <name>SpellLogParser</name>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="376"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="377"/>
         <source>Spell 是一种基于前缀树和LCS算法的日志解析方法。</source>
         <translation>Spell is a log parsing method based on a prefix tree and the LCS algorithm.</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="384"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="385"/>
         <source>相似度阈值</source>
         <translation>Similarity threshold</translation>
     </message>

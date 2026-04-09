@@ -74,7 +74,7 @@ duckdb::shared_ptr<duckdb::Relation> mask_log_rel(duckdb::shared_ptr<duckdb::Rel
 {
     // 从 ColumnRefExpression("Content") 开始，逐层嵌套 regexp_replace
     duckdb::unique_ptr<duckdb::ParsedExpression> func_expr {duckdb::make_uniq<duckdb::ColumnRefExpression>("Content")};
-    for (const auto& [regex, replacement] : maskings)
+    for (auto&& [regex, replacement] : maskings)
     {
         duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
         arg_exprs.push_back(std::move(func_expr));
@@ -96,7 +96,7 @@ duckdb::shared_ptr<duckdb::Relation> split_log_rel(duckdb::shared_ptr<duckdb::Re
 {
     // 从 ColumnRefExpression("MaskedContent") 开始，逐层嵌套 replace
     duckdb::unique_ptr<duckdb::ParsedExpression> func_expr {duckdb::make_uniq<duckdb::ColumnRefExpression>("MaskedContent")};
-    for (auto delim : delimiters)
+    for (auto&& delim : delimiters)
     {
         duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
         arg_exprs.push_back(std::move(func_expr));
@@ -137,7 +137,7 @@ void to_table(
             auto result_data {duckdb::FlatVector::GetData<duckdb::string_t>(result)};
 
             const auto line_id_data {duckdb::FlatVector::GetData<std::int64_t>(args.data[0])};
-            for (auto i : std::views::iota(0UL, args.size()))
+            for (auto&& i : std::views::iota(0UL, args.size()))
             {
                 result_data[i] = duckdb::StringVector::AddString(result, templates[line_id_data[i] - 1]);
             }

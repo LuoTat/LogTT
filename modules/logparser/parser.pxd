@@ -78,3 +78,20 @@ cdef extern from "spell_log_parser.hxx" namespace "logtt" nogil:
             const string& templates_table_name,
             bint          keep_para,
         )
+
+cdef extern from "brain_log_parser.hxx" namespace "logtt" nogil:
+    cdef cppclass BrainLogParser:
+        BrainLogParser()
+        BrainLogParser(
+            string         log_format,
+            vector[string] named_fields,
+            vector[Mask]   maskings,
+            vector[char]   delimiters,
+            uint16_t       var_thr,
+        )
+        uint32_t parse(
+            const string& log_file,
+            const string& structured_table_name,
+            const string& templates_table_name,
+            bint          keep_para,
+        )

@@ -41,11 +41,11 @@ std::uint32_t AELLogParser::parse(const std::string& log_file, const std::string
     auto merged_clusters {this->_reconcile(log_bin)};
 
     templates.resize(log_length);
-    for (const auto* cluster : merged_clusters)
+    for (auto&& cluster : merged_clusters)
     {
         auto log_template {cluster->get_template()};
 
-        for (auto row : cluster->rows)
+        for (auto&& row : cluster->rows)
         {
             templates[row - 1] = log_template;
         }
@@ -72,7 +72,7 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
     auto   result {to_materialized_query_result(rel->Execute())};
     LogBin log_bin;
 
-    for (const auto& data_chunk : result->Collection().Chunks())
+    for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& token_count_col {data_chunk.data[0]};
         const auto& para_count_col {data_chunk.data[1]};
@@ -88,7 +88,7 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
         const auto line_ids_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(line_ids_col)};
         const auto line_ids_child_data {duckdb::FlatVector::GetData<std::int64_t>(line_ids_child)};
 
-        for (auto row : std::views::iota(0UL, data_chunk.size()))
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
             TContent                   content;
             std::vector<std::uint32_t> rows;
@@ -98,12 +98,12 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
             const auto& tokens_entry {tokens_data[row]};
             const auto& line_ids_entry {line_ids_data[row]};
 
-            for (auto i : std::views::iota(0UL, tokens_entry.length))
+            for (auto&& i : std::views::iota(0UL, tokens_entry.length))
             {
                 const auto& token {tokens_child_data[tokens_entry.offset + i]};
                 content.emplace_back(token.GetData(), token.GetSize());
             }
-            for (auto i : std::views::iota(0UL, line_ids_entry.length))
+            for (auto&& i : std::views::iota(0UL, line_ids_entry.length))
             {
                 auto line_id {line_ids_child_data[line_ids_entry.offset + i]};
                 rows.push_back(line_id);
@@ -128,7 +128,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
     std::vector<LogCluster*> merged_clusters;
 
     // 对于每个桶中的日志簇，计算它们之间的差异，并将相似的簇合并
-    for (auto& [_, clusters] : log_bin)
+    for (auto&& [_, clusters] : log_bin)
     {
         if (clusters.size() <= this->m_cluster_thr)
         {
@@ -137,7 +137,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
         }
 
         std::vector<std::vector<LogCluster*>> cluster_groups;
-        for (auto i : std::views::iota(0UL, clusters.size()))
+        for (auto&& i : std::views::iota(0UL, clusters.size()))
         {
             auto cluster1 {clusters[i]};
             if (cluster1->merged)
@@ -148,7 +148,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
             cluster1->merged = true;
             cluster_groups.emplace_back(1, cluster1);
 
-            for (auto j : std::views::iota(i + 1, clusters.size()))
+            for (auto&& j : std::views::iota(i + 1, clusters.size()))
             {
                 auto cluster2 {clusters[j]};
                 if (cluster2->merged)
@@ -164,7 +164,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
             }
         }
 
-        for (const auto& group : cluster_groups)
+        for (auto&& group : cluster_groups)
         {
             auto merged_cluster {std::accumulate(group.begin() + 1, group.end(), group.front(), AELLogParser::_merge_log_cluster)};
             merged_clusters.push_back(merged_cluster);
@@ -178,7 +178,7 @@ bool AELLogParser::_has_diff(const LogCluster* cluster1, const LogCluster* clust
 {
     std::uint16_t diff {0};
 
-    for (auto [token1, token2] : std::views::zip(cluster1->content, cluster2->content))
+    for (auto&& [token1, token2] : std::views::zip(cluster1->content, cluster2->content))
     {
         if (token1 != token2)
         {
@@ -192,7 +192,7 @@ bool AELLogParser::_has_diff(const LogCluster* cluster1, const LogCluster* clust
 
 AELLogParser::LogCluster* AELLogParser::_merge_log_cluster(LogCluster* cluster1, const LogCluster* cluster2)
 {
-    for (auto [token1, token2] : std::views::zip(cluster1->content, cluster2->content))
+    for (auto&& [token1, token2] : std::views::zip(cluster1->content, cluster2->content))
     {
         if (token1 != token2)
         {

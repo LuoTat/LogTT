@@ -39,7 +39,7 @@ std::uint32_t SpellLogParser::parse(const std::string& log_file, const std::stri
 
     auto result {to_materialized_query_result(rel->Project("Tokens")->Execute())};
     auto log_length {result->RowCount()};
-    for (const auto& data_chunk : result->Collection().Chunks())
+    for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& tokens_col {data_chunk.data[0]};
         const auto& tokens_child {duckdb::ListVector::GetEntry(tokens_col)};
@@ -47,11 +47,11 @@ std::uint32_t SpellLogParser::parse(const std::string& log_file, const std::stri
         const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
         const auto child_data {duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child)};
 
-        for (auto row : std::views::iota(0UL, data_chunk.size()))
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
             TContent    content;
             const auto& entry {tokens_data[row]};
-            for (auto i : std::views::iota(0UL, entry.length))
+            for (auto&& i : std::views::iota(0UL, entry.length))
             {
                 const auto& token {child_data[entry.offset + i]};
                 content.emplace_back(token.GetData(), token.GetSize());
@@ -61,7 +61,7 @@ std::uint32_t SpellLogParser::parse(const std::string& log_file, const std::stri
     }
 
     templates.reserve(log_length);
-    for (const auto cluster : cluster_results)
+    for (auto&& cluster : cluster_results)
     {
         templates.push_back(cluster->get_template());
     }
@@ -109,7 +109,7 @@ SpellLogParser::LogCluster* SpellLogParser::_tree_subseq_match(const TContent& c
     // 这个值和也就是对应节点的深度-1
     std::uint16_t matched_const_count {0};
 
-    for (const auto& token : content)
+    for (auto&& token : content)
     {
         // 如果当前节点挂载了一个cluster，且常量token数量超过阈值，就直接返回这个cluster
         if (cur_node->cluster && matched_const_count >= required_length)
@@ -131,7 +131,7 @@ SpellLogParser::LogCluster* SpellLogParser::_subseq_match(const TContent& conten
 {
     auto required_length {this->m_sim_thr * content.size()};
 
-    for (const auto& cluster : this->m_cluster_pool)
+    for (auto&& cluster : this->m_cluster_pool)
     {
         if (cluster.content.size() < required_length)
         {
@@ -153,7 +153,7 @@ SpellLogParser::LogCluster* SpellLogParser::_lcs_match(const TContent& content)
     std::uint16_t max_lcs_length {0};
     LogCluster*   max_cluster {nullptr};
 
-    for (const auto& cluster : this->m_cluster_pool)
+    for (auto&& cluster : this->m_cluster_pool)
     {
         auto required_cluster_lcs {static_cast<std::uint16_t>(std::ceil(this->m_sim_thr * cluster.content.size()))};
         auto lcs_length {SpellLogParser::_lcs_length(content, cluster.content, std::max(required_content_lcs, required_cluster_lcs))};
@@ -177,7 +177,7 @@ void SpellLogParser::_add_seq_to_prefix_tree(LogCluster* cluster)
 {
     auto cur_node {this->m_root.get()};
 
-    for (const auto& token : cluster->content)
+    for (auto&& token : cluster->content)
     {
         if (token == WILDCARD)
         {
@@ -204,7 +204,7 @@ void SpellLogParser::_remove_seq_from_prefix_tree(const LogCluster* cluster)
 {
     auto cur_node {this->m_root.get()};
 
-    for (const auto& token : cluster->content)
+    for (auto&& token : cluster->content)
     {
         if (token == WILDCARD)
         {
@@ -242,7 +242,7 @@ bool SpellLogParser::_is_subsequence(const TContent& source, const TContent& tar
     }
 
     std::uint16_t target_idx {0};
-    for (const auto& token : source)
+    for (auto&& token : source)
     {
         if (token != target[target_idx])
         {
@@ -285,11 +285,11 @@ std::uint16_t SpellLogParser::_lcs_length(const TContent& content1, const TConte
 
     // 单行滚动数组
     std::vector<std::uint16_t> dp(short_length + 1);
-    for (auto i : std::views::iota(0UL, long_length))
+    for (auto&& i : std::views::iota(0UL, long_length))
     {
         std::uint16_t prev_diag {0};
 
-        for (auto j : std::views::iota(0UL, short_length))
+        for (auto&& j : std::views::iota(0UL, short_length))
         {
             auto prev_up {dp[j + 1]};
             if (long_content.get()[i] == short_content.get()[j])
@@ -322,9 +322,9 @@ TContent SpellLogParser::_lcs_content(const TContent& content1, const TContent& 
 
     std::vector<std::vector<std::uint16_t>> lengths(length1 + 1, std::vector<std::uint16_t>(length2 + 1));
 
-    for (auto i : std::views::iota(0UL, length1))
+    for (auto&& i : std::views::iota(0UL, length1))
     {
-        for (auto j : std::views::iota(0UL, length2))
+        for (auto&& j : std::views::iota(0UL, length2))
         {
             if (content1[i] == content2[j])
             {
@@ -384,7 +384,7 @@ TContent SpellLogParser::_create_template(const TContent& lcs, const TContent& c
     }
 
     std::uint32_t lcs_idx {0};
-    for (auto i : std::views::iota(0UL, content_length))
+    for (auto&& i : std::views::iota(0UL, content_length))
     {
         const auto& token {content[i]};
         if (lcs_idx < lcs_length && token == lcs[lcs_idx])
@@ -414,7 +414,7 @@ TContent SpellLogParser::_merge_wildcards(const TContent& content)
 {
     TContent merged_content;
 
-    for (const auto& token : content)
+    for (auto&& token : content)
     {
         if (token == WILDCARD && !merged_content.empty() && merged_content.back() == WILDCARD)
         {

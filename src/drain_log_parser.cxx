@@ -41,7 +41,7 @@ std::uint32_t DrainLogParser::parse(const std::string& log_file, const std::stri
 
     auto result {to_materialized_query_result(rel->Project("Tokens")->Execute())};
     auto log_length {result->RowCount()};
-    for (const auto& data_chunk : result->Collection().Chunks())
+    for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& tokens_col {data_chunk.data[0]};
         const auto& tokens_child {duckdb::ListVector::GetEntry(tokens_col)};
@@ -49,11 +49,11 @@ std::uint32_t DrainLogParser::parse(const std::string& log_file, const std::stri
         const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
         const auto child_data {duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child)};
 
-        for (auto row : std::views::iota(0UL, data_chunk.size()))
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
             TContent    content;
             const auto& entry {tokens_data[row]};
-            for (auto i : std::views::iota(0UL, entry.length))
+            for (auto&& i : std::views::iota(0UL, entry.length))
             {
                 const auto& token {child_data[entry.offset + i]};
                 content.emplace_back(token.GetData(), token.GetSize());
@@ -63,7 +63,7 @@ std::uint32_t DrainLogParser::parse(const std::string& log_file, const std::stri
     }
 
     templates.reserve(log_length);
-    for (const auto cluster : cluster_results)
+    for (auto&& cluster : cluster_results)
     {
         templates.push_back(cluster->get_template());
     }
@@ -103,7 +103,7 @@ DrainLogParser::LogCluster* DrainLogParser::_tree_search(const TContent& content
     auto length_token {std::to_string(length)};
     auto cur_node {this->m_root.get()};
 
-    for (auto [i, token] : std::views::enumerate(std::views::concat(std::views::single(length_token), content)))
+    for (auto&& [i, token] : std::views::enumerate(std::views::concat(std::views::single(length_token), content)))
     {
         auto cur_node_depth {i + 1};
 
@@ -136,7 +136,7 @@ DrainLogParser::LogCluster* DrainLogParser::_fast_match(const TContent& content,
     std::uint16_t max_param_count {0};
     LogCluster*   max_cluster {nullptr};
 
-    for (const auto cluster : node->clusters)
+    for (auto&& cluster : node->clusters)
     {
         auto [cur_sim, param_count] {this->_get_distance(content, cluster->content, include_params)};
         if (cur_sim > max_sim || (cur_sim == max_sim && param_count > max_param_count))
@@ -161,7 +161,7 @@ void DrainLogParser::_add_to_prefix_tree(LogCluster* cluster)
     auto length_token {std::to_string(length)};
     auto cur_node {this->m_root.get()};
 
-    for (auto [i, token] : std::views::enumerate(std::views::concat(std::views::single(length_token), cluster->content)))
+    for (auto&& [i, token] : std::views::enumerate(std::views::concat(std::views::single(length_token), cluster->content)))
     {
         auto cur_node_depth {i + 1};
 
@@ -208,7 +208,7 @@ std::pair<float, std::uint16_t> DrainLogParser::_get_distance(const TContent& co
     std::uint16_t sim_tokens {0};
     std::uint16_t param_count {0};
 
-    for (auto [token1, token2] : std::views::zip(content1, content2))
+    for (auto&& [token1, token2] : std::views::zip(content1, content2))
     {
         // 这里的 content2 是模板，所以这里要用 token2 来判断是否是参数位
         if (token2 == WILDCARD)
@@ -235,7 +235,7 @@ std::pair<float, std::uint16_t> DrainLogParser::_get_distance(const TContent& co
 TContent DrainLogParser::_create_template(const TContent& content1, const TContent& content2)
 {
     TContent new_content {content1};
-    for (auto [token1, token2] : std::views::zip(new_content, content2))
+    for (auto&& [token1, token2] : std::views::zip(new_content, content2))
     {
         if (token1 != token2)
         {

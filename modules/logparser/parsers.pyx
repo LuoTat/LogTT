@@ -12,6 +12,7 @@ from libcpp.vector cimport vector
 import formatparse
 from modules.logparser.parser cimport (
     AELLogParser as CXX_AELLogParser,
+    BrainLogParser as CXX_BrainLogParser,
     DrainLogParser as CXX_DrainLogParser,
     JaccardDrainLogParser as CXX_JaccardDrainLogParser,
     Mask,
@@ -389,7 +390,83 @@ cdef class SpellLogParser:
             ),
         ]
 
+# ========================== Brain ==========================
+
+cdef class BrainLogParser:
+    """Brain算法"""
+
+    cdef CXX_BrainLogParser log_parser
+
+    def __init__(
+        self,
+        string log_format,
+        vector[Mask] maskings,
+        object delimiters,
+        uint16_t var_thr=2,
+    ):
+        """
+        Args:
+            var_thr: Threshold for determining variable columns.
+        """
+
+        cdef object parser = formatparse.compile(log_format)
+
+        self.log_parser = CXX_BrainLogParser(
+            "^" + parser._expression + "$",
+            parser.named_fields,
+            maskings,
+            delimiters.encode("ascii"),
+            var_thr,
+        )
+
+    def parse(
+        self,
+        string log_file,
+        string structured_table_name,
+        string templates_table_name,
+        bint keep_para=False,
+    ) -> ParseResult:
+        cdef uint32_t log_length
+
+        with nogil:
+            log_length = self.log_parser.parse(
+                log_file,
+                structured_table_name,
+                templates_table_name,
+                keep_para,
+            )
+
+        return ParseResult(
+            log_file,
+            log_length,
+            structured_table_name,
+            templates_table_name,
+        )
+
+    @staticmethod
+    def name() -> str:
+        return "Brain"
+
+    @staticmethod
+    def description() -> str:
+        return QCoreApplication.translate("BrainLogParser", "Brain 是一种基于双向树结构的高效日志模板提取算法。")
+
+    @staticmethod
+    def get_param_descriptors() -> list[ParamDescriptor]:
+        return [
+            ParamDescriptor(
+                "var_thr",
+                "Variable Threshold",
+                QCoreApplication.translate("BrainLogParser", "判定变量列的最小不同词数量"),
+                ParamWidgetType.SpinBox,
+                2,
+                1,
+                100,
+            ),
+        ]
+
 parser_register(AELLogParser)
+parser_register(BrainLogParser)
 parser_register(DrainLogParser)
 parser_register(JaccardDrainLogParser)
 parser_register(SpellLogParser)

@@ -46,10 +46,10 @@ clean:
 
 lupdate:
 	@if [ -f "$(I18N_XML)" ]; then cp "$(I18N_XML)" "$(I18N_TS)"; fi
-	uv run pyside6-lupdate -no-obsolete -extensions py,pyx . -ts $(I18N_TS)
+	/usr/lib64/qt6/bin/lupdate -no-obsolete -extensions py,pyx . -ts $(I18N_TS)
 	mv $(I18N_TS) $(I18N_XML)
 
 lrelease:
 	cp $(I18N_XML) $(I18N_TS)
-	uv run pyside6-lrelease $(I18N_TS) -qm $(I18N_QM)
+	/usr/lib64/qt6/bin/lrelease $(I18N_TS) -qm $(I18N_QM)
 	rm -f $(I18N_TS)

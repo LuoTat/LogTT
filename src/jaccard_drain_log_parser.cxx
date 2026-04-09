@@ -41,7 +41,7 @@ std::uint32_t JaccardDrainLogParser::parse(const std::string& log_file, const st
 
     auto result {to_materialized_query_result(rel->Project("Tokens")->Execute())};
     auto log_length {result->RowCount()};
-    for (const auto& data_chunk : result->Collection().Chunks())
+    for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& tokens_col {data_chunk.data[0]};
         const auto& tokens_child {duckdb::ListVector::GetEntry(tokens_col)};
@@ -49,11 +49,11 @@ std::uint32_t JaccardDrainLogParser::parse(const std::string& log_file, const st
         const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
         const auto child_data {duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child)};
 
-        for (auto row : std::views::iota(0UL, data_chunk.size()))
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
             TContent    content;
             const auto& entry {tokens_data[row]};
-            for (auto i : std::views::iota(0UL, entry.length))
+            for (auto&& i : std::views::iota(0UL, entry.length))
             {
                 const auto& token {child_data[entry.offset + i]};
                 content.emplace_back(token.GetData(), token.GetSize());
@@ -63,7 +63,7 @@ std::uint32_t JaccardDrainLogParser::parse(const std::string& log_file, const st
     }
 
     templates.reserve(log_length);
-    for (const auto cluster : cluster_results)
+    for (auto&& cluster : cluster_results)
     {
         templates.push_back(cluster->get_template());
     }
@@ -102,7 +102,7 @@ JaccardDrainLogParser::LogCluster* JaccardDrainLogParser::_tree_search(const TCo
     auto length {content.size()};
     auto cur_node {this->m_root.get()};
 
-    for (auto [i, token] : std::views::enumerate(content))
+    for (auto&& [i, token] : std::views::enumerate(content))
     {
         auto cur_node_depth {i + 1};
 
@@ -135,7 +135,7 @@ JaccardDrainLogParser::LogCluster* JaccardDrainLogParser::_fast_match(const TCon
     std::uint16_t max_param_count {0};
     LogCluster*   max_cluster {nullptr};
 
-    for (const auto cluster : node->clusters)
+    for (auto&& cluster : node->clusters)
     {
         auto [cur_sim, param_count] {this->_get_distance(content, cluster->content, include_params)};
         if (cur_sim > max_sim || (cur_sim == max_sim && param_count > max_param_count))
@@ -159,7 +159,7 @@ void JaccardDrainLogParser::_add_to_prefix_tree(LogCluster* cluster)
     auto length {cluster->content.size()};
     auto cur_node {this->m_root.get()};
 
-    for (auto [i, token] : std::views::enumerate(cluster->content))
+    for (auto&& [i, token] : std::views::enumerate(cluster->content))
     {
         auto cur_node_depth {i + 1};
 
@@ -205,7 +205,7 @@ std::pair<float, std::uint16_t> JaccardDrainLogParser::_get_distance(const TCont
     }
 
     std::uint16_t param_count {0};
-    for (const auto& token : content2)
+    for (auto&& token : content2)
     {
         if (token == WILDCARD)
         {
@@ -221,7 +221,7 @@ std::pair<float, std::uint16_t> JaccardDrainLogParser::_get_distance(const TCont
         filtered_content1.reserve(content1.size() - param_count);
         filtered_content2.reserve(content2.size() - param_count);
 
-        for (auto [token1, token2] : std::views::zip(content1, content2))
+        for (auto&& [token1, token2] : std::views::zip(content1, content2))
         {
             if (token2 == WILDCARD)
             {
@@ -237,7 +237,7 @@ std::pair<float, std::uint16_t> JaccardDrainLogParser::_get_distance(const TCont
         filtered_content1 = content1;
         filtered_content2.reserve(content2.size());
 
-        for (const auto& token : content2)
+        for (auto&& token : content2)
         {
             if (token != WILDCARD)
             {
@@ -252,7 +252,7 @@ std::pair<float, std::uint16_t> JaccardDrainLogParser::_get_distance(const TCont
 
     if (set1.size() <= set2.size())
     {
-        for (const auto& token : set1)
+        for (auto&& token : set1)
         {
             if (set2.contains(token))
             {
@@ -262,7 +262,7 @@ std::pair<float, std::uint16_t> JaccardDrainLogParser::_get_distance(const TCont
     }
     else
     {
-        for (const auto& token : set2)
+        for (auto&& token : set2)
         {
             if (set1.contains(token))
             {
@@ -287,7 +287,7 @@ TContent JaccardDrainLogParser::_create_template(const TContent& content1, const
     if (length1 == length2)
     {
         new_content = content1;
-        for (auto [token1, token2] : std::views::zip(new_content, content2))
+        for (auto&& [token1, token2] : std::views::zip(new_content, content2))
         {
             if (token1 != token2)
             {
@@ -299,7 +299,7 @@ TContent JaccardDrainLogParser::_create_template(const TContent& content1, const
     {
         new_content = content1;
         std::unordered_set<Token> tmp_set {content2.begin(), content2.end()};
-        for (auto& token : new_content)
+        for (auto&& token : new_content)
         {
             if (!tmp_set.contains(token))
             {
@@ -311,7 +311,7 @@ TContent JaccardDrainLogParser::_create_template(const TContent& content1, const
     {
         new_content = content2;
         std::unordered_set<Token> tmp_set {content1.begin(), content1.end()};
-        for (auto& token : new_content)
+        for (auto&& token : new_content)
         {
             if (!tmp_set.contains(token))
             {

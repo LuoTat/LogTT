@@ -33,21 +33,21 @@ static std::vector<std::vector<std::string>> _to_df(duckdb::shared_ptr<duckdb::R
 
     std::vector<std::vector<std::string>> df;
     df.reserve(row_length);
-    for (const auto& data_chunk : result->Collection().Chunks())
+    for (auto&& data_chunk : result->Collection().Chunks())
     {
         std::vector<const duckdb::string_t*>     all_datas(col_length);
         std::vector<const duckdb::ValidityMask*> all_validities(col_length);
-        for (auto col : std::views::iota(0UL, col_length))
+        for (auto&& col : std::views::iota(0UL, col_length))
         {
             all_datas[col]      = duckdb::FlatVector::GetData<duckdb::string_t>(data_chunk.data[col]);
             all_validities[col] = &duckdb::FlatVector::Validity(data_chunk.data[col]);
         }
 
-        for (auto row : std::views::iota(0UL, data_chunk.size()))
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
             auto& row_data {df.emplace_back()};
             row_data.reserve(col_length);
-            for (auto col : std::views::iota(0UL, col_length))
+            for (auto&& col : std::views::iota(0UL, col_length))
             {
                 if (!all_validities[col]->RowIsValid(row))
                 {
@@ -69,13 +69,13 @@ static duckdb::unique_ptr<duckdb::ParsedExpression> _build_filter_expr(const Fil
 {
     std::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> in_exprs;
     in_exprs.reserve(filters.size());
-    for (const auto& [col, values] : filters)
+    for (auto&& [col, values] : filters)
     {
         // 单列多值 → IN 列表
         std::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
         arg_exprs.reserve(values.size() + 1);
         arg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>(col));
-        for (const auto& v : values)
+        for (auto&& v : values)
         {
             arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(v)));
         }
@@ -129,7 +129,7 @@ std::vector<LogEntry> get_log_table()
 
     std::vector<LogEntry> log_table;
     log_table.reserve(result->RowCount());
-    for (const auto& data_chunk : result->Collection().Chunks())
+    for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& id_col {data_chunk.data[0]};
         const auto& log_type_col {data_chunk.data[1]};
@@ -153,7 +153,7 @@ std::vector<LogEntry> get_log_table()
         const auto structured_table_name_data {duckdb::FlatVector::GetData<duckdb::string_t>(structured_table_name_col)};
         const auto templates_table_name_data {duckdb::FlatVector::GetData<duckdb::string_t>(templates_table_name_col)};
 
-        for (auto row : std::views::iota(0UL, data_chunk.size()))
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
             auto id {id_data[row]};
             auto log_type {log_type_data[row]};
@@ -207,7 +207,7 @@ std::vector<EXLogEntry> get_extracted_log_table()
 
     std::vector<EXLogEntry> log_table;
     log_table.reserve(result->RowCount());
-    for (const auto& data_chunk : result->Collection().Chunks())
+    for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& id_col {data_chunk.data[0]};
         const auto& log_uri_col {data_chunk.data[1]};
@@ -219,7 +219,7 @@ std::vector<EXLogEntry> get_extracted_log_table()
         const auto structured_table_name_data {duckdb::FlatVector::GetData<duckdb::string_t>(structured_table_name_col)};
         const auto templates_table_name_data {duckdb::FlatVector::GetData<duckdb::string_t>(templates_table_name_col)};
 
-        for (auto row : std::views::iota(0UL, data_chunk.size()))
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
             auto id {id_data[row]};
             auto log_uri {log_uri_data[row]};
@@ -470,7 +470,7 @@ std::vector<std::string> get_table_columns(const std::string& table_name)
 
     std::vector<std::string> columns;
     columns.reserve(rel->Columns().size());
-    for (const auto& col : rel->Columns())
+    for (auto&& col : rel->Columns())
     {
         columns.push_back(col.Name());
     }
