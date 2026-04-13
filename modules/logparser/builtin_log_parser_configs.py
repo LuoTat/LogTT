@@ -17,9 +17,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 5,
-            # },
+            "BrainLogParser": {
+                "var_thr": 5,
+            },
             "DrainLogParser": {
                 "depth": 6,
                 "sim_thr": 0.2,
@@ -41,9 +41,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 4,
-            # },
+            "BrainLogParser": {
+                "var_thr": 4,
+            },
             "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
@@ -76,9 +76,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.5,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 6,
-            # },
+            "BrainLogParser": {
+                "var_thr": 6,
+            },
             "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
@@ -107,9 +107,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.5,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 2,
-            # },
+            "BrainLogParser": {
+                "var_thr": 2,
+            },
             "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
@@ -132,9 +132,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 5,
                 "merge_thr": 0.4,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 5,
-            # },
+            "BrainLogParser": {
+                "var_thr": 5,
+            },
             "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
@@ -157,9 +157,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 6,
-            # },
+            "BrainLogParser": {
+                "var_thr": 6,
+            },
             "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
@@ -188,9 +188,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 4,
-            # },
+            "BrainLogParser": {
+                "var_thr": 4,
+            },
             "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.2,
@@ -213,9 +213,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 4,
-            # },
+            "BrainLogParser": {
+                "var_thr": 4,
+            },
             "DrainLogParser": {
                 "depth": 6,
                 "sim_thr": 0.39,
@@ -237,9 +237,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 5,
-            # },
+            "BrainLogParser": {
+                "var_thr": 5,
+            },
             "DrainLogParser": {
                 "depth": 6,
                 "sim_thr": 0.7,
@@ -261,9 +261,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 10,
                 "merge_thr": 0.7,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 6,
-            # },
+            "BrainLogParser": {
+                "var_thr": 6,
+            },
             "DrainLogParser": {
                 "depth": 5,
                 "sim_thr": 0.6,
@@ -295,9 +295,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 6,
                 "merge_thr": 0.5,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 5,
-            # },
+            "BrainLogParser": {
+                "var_thr": 5,
+            },
             "DrainLogParser": {
                 "depth": 5,
                 "sim_thr": 0.5,
@@ -325,9 +325,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            #     "BrainLogParser": {
-            #         "var_thr": 3,
-            #     },
+            "BrainLogParser": {
+                "var_thr": 3,
+            },
             "DrainLogParser": {
                 "depth": 3,
                 "sim_thr": 0.6,
@@ -350,9 +350,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 4,
-            # },
+            "BrainLogParser": {
+                "var_thr": 4,
+            },
             "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
@@ -375,9 +375,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 3,
-            # },
+            "BrainLogParser": {
+                "var_thr": 3,
+            },
             "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
@@ -400,9 +400,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 3,
-            # },
+            "BrainLogParser": {
+                "var_thr": 3,
+            },
             "DrainLogParser": {
                 "depth": 5,
                 "sim_thr": 0.7,
@@ -425,9 +425,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.4,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 3,
-            # },
+            "BrainLogParser": {
+                "var_thr": 3,
+            },
             "DrainLogParser": {
                 "depth": 4,
                 "sim_thr": 0.5,
@@ -449,9 +449,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
                 "cluster_thr": 2,
                 "merge_thr": 0.6,
             },
-            # "BrainLogParser": {
-            #     "var_thr": 5,
-            # },
+            "BrainLogParser": {
+                "var_thr": 5,
+            },
             "DrainLogParser": {
                 "depth": 3,
                 "sim_thr": 0.7,
