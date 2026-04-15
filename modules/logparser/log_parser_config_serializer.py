@@ -13,6 +13,8 @@ class LogParserConfigSerializer(ConfigSerializer):
             {
                 "name": config.name,
                 "log_format": config.log_format,
+                "timestamp_fields": config.timestamp_fields,
+                "timestamp_format": config.timestamp_format,
                 "user_maskings": config.user_maskings,
                 "delimiters": config.delimiters,
                 "use_builtin_maskings": config.use_builtin_maskings,

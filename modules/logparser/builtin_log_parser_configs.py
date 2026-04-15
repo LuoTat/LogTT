@@ -5,6 +5,8 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Android",
         log_format="{Date} {Time}  {Pid}  {Tid} {Level} {Component}: {Content}",
+        timestamp_fields=["Date", "Time"],
+        timestamp_format="%m-%d %H:%M:%S.%g",
         user_maskings=[
             (
                 r"(/[\w-]+)+",
@@ -35,7 +37,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="Apache",
-        log_format="[{Time}] [{Level}] {Content}",
+        log_format="[{DateTime}] [{Level}] {Content}",
+        timestamp_fields=["DateTime"],
+        timestamp_format="%a %b %d %H:%M:%S %Y",
         ex_args={
             "AELLogParser": {
                 "cluster_thr": 2,
@@ -59,7 +63,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="BGL",
-        log_format="{Label} {Timestamp} {Date} {Node} {Time} {NodeRepeat} {Type} {Component} {Level} {Content}",
+        log_format="{Label} {Timestamp} {Date} {Node} {DateTime} {NodeRepeat} {Type} {Component} {Level} {Content}",
+        timestamp_fields=["Timestamp", "Date", "DateTime"],
+        timestamp_format="epoch",
         user_maskings=[
             (
                 r"core\.\d+",
@@ -95,6 +101,8 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="HDFS",
         log_format="{Date} {Time} {Pid} {Level} {Component}: {Content}",
+        timestamp_fields=["Date", "Time"],
+        timestamp_format="%y%m%d %H%M%S",
         user_maskings=[
             (
                 r"blk_-?\d+",
@@ -125,7 +133,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="HPC",
-        log_format="{LogId} {Node} {Component} {State} {Time} {Flag} {Content}",
+        log_format="{LogId} {Node} {Component} {State} {Timestamp} {Flag} {Content}",
+        timestamp_fields=["Timestamp"],
+        timestamp_format="epoch",
         delimiters="=:-",
         ex_args={
             "AELLogParser": {
@@ -151,6 +161,8 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Hadoop",
         log_format="{Date} {Time} {Level} [{Process}] {Component}: {Content}",
+        timestamp_fields=["Date", "Time"],
+        timestamp_format="%Y-%m-%d %H:%M:%S,%g",
         delimiters="=:_()",
         ex_args={
             "AELLogParser": {
@@ -175,7 +187,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="HealthApp",
-        log_format="{Time}|{Component}|{Pid}|{Content}",
+        log_format="{DateTime}|{Component}|{Pid}|{Content}",
+        timestamp_fields=["DateTime"],
+        timestamp_format="%Y%m%d-%H:%M:%S:%g",
         user_maskings=[
             (
                 r"\d+##\d+##\d+##\d+##\d+##\d+",
@@ -206,7 +220,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="Linux",
-        log_format="{Month} {Date} {Time} {Level} {Component}: {Content}",
+        log_format="{Month} {Day} {Time} {Level} {Component}: {Content}",
+        timestamp_fields=["Month", "Day", "Time"],
+        timestamp_format="%b %d %H:%M:%S",
         delimiters="=:",
         ex_args={
             "AELLogParser": {
@@ -231,7 +247,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="Mac",
-        log_format="{Month}  {Date} {Time} {User} {Component}: {Content}",
+        log_format="{Month}  {Day} {Time} {User} {Component}: {Content}",
+        timestamp_fields=["Month", "Day", "Time"],
+        timestamp_format="%b %d %H:%M:%S",
         ex_args={
             "AELLogParser": {
                 "cluster_thr": 2,
@@ -255,7 +273,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="OpenSSH",
-        log_format="{Date} {Day} {Time} {Component} sshd[{Pid}]: {Content}",
+        log_format="{Month} {Day} {Time} {Component} sshd[{Pid}]: {Content}",
+        timestamp_fields=["Month", "Day", "Time"],
+        timestamp_format="%b %d %H:%M:%S",
         ex_args={
             "AELLogParser": {
                 "cluster_thr": 10,
@@ -280,6 +300,8 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="OpenStack",
         log_format="{Logrecord} {Date} {Time} {Pid} {Level} {Component} [{ADDR}] {Content}",
+        timestamp_fields=["Date", "Time"],
+        timestamp_format="%Y-%m-%d %H:%M:%S.%g",
         user_maskings=[
             (
                 r"\[instance:(.*?)\]",
@@ -313,7 +335,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="Proxifier",
-        log_format="[{Time}] {Program} - {Content}",
+        log_format="[{DateTime}] {Program} - {Content}",
+        timestamp_fields=["DateTime"],
+        timestamp_format="%m.%d %H:%M:%S",
         user_maskings=[
             (
                 r"<\d+\ssec",
@@ -344,6 +368,8 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Spark",
         log_format="{Date} {Time} {Level} {Component}: {Content}",
+        timestamp_fields=["Date", "Time"],
+        timestamp_format="%y/%m/%d %H:%M:%S",
         delimiters=":",
         ex_args={
             "AELLogParser": {
@@ -369,6 +395,8 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Thunderbird",
         log_format="{Label} {Timestamp} {Date} {User} {Month} {Day} {Time} {Location} {Component}: {Content}",
+        timestamp_fields=["Timestamp", "Date", "Month", "Day", "Time"],
+        timestamp_format="epoch",
         delimiters="=:",
         ex_args={
             "AELLogParser": {
@@ -394,6 +422,8 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Windows",
         log_format="{Date} {Time}, {Level}                  {Component}    {Content}",
+        timestamp_fields=["Date", "Time"],
+        timestamp_format="%c",
         delimiters="=:[]",
         ex_args={
             "AELLogParser": {
@@ -418,7 +448,9 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="Zookeeper",
-        log_format="{Date} {Time} - {Level}  [{Node}:{Component}@{Id}] - {Content}",
+        log_format="{Date} {Time} - {Level:<} [{Node}:{Component}@{Id}] - {Content}",
+        timestamp_fields=["Date", "Time"],
+        timestamp_format="%Y-%m-%d %H:%M:%S,%g",
         delimiters="=:",
         ex_args={
             "AELLogParser": {
@@ -444,6 +476,8 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Test",
         log_format="{Content}",
+        timestamp_fields=[],
+        timestamp_format="",
         ex_args={
             "AELLogParser": {
                 "cluster_thr": 2,

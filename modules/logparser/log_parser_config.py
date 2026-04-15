@@ -6,6 +6,8 @@ class LogParserConfig:
         self,
         name: str,
         log_format: str,
+        timestamp_fields: list[str],
+        timestamp_format: str,
         user_maskings: list[tuple[str, str]] | None = None,
         delimiters: str = "",
         use_builtin_maskings: bool = True,
@@ -13,6 +15,8 @@ class LogParserConfig:
     ):
         self.name = name
         self.log_format = log_format
+        self.timestamp_fields = timestamp_fields
+        self.timestamp_format = timestamp_format
         self.user_maskings = user_maskings or []
         self.delimiters = delimiters
         self.use_builtin_maskings = use_builtin_maskings

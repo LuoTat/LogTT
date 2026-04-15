@@ -18,6 +18,8 @@ public:
     BrainLogParser(
         std::string              log_regex,
         std::vector<std::string> named_fields,
+        std::vector<std::string> timestamp_fields,
+        std::string              timestamp_format,
         std::vector<Mask>        maskings,
         std::vector<char>        delimiters,
         std::uint16_t            var_thr

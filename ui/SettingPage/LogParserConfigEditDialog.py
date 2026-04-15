@@ -66,6 +66,23 @@ class LogParserConfigEditDialog(MessageBoxBase):
             self._show_warning(self.tr("日志格式不能为空"), self.tr("请输入日志格式"))
             return False
 
+        timestamp_fields = self._timestamp_fields_edit.text().strip()
+        if not timestamp_fields:
+            self._show_warning(self.tr("时间列不能为空"), self.tr("请输入时间列字段名"))
+            return False
+        for field in timestamp_fields.split(","):
+            if field not in log_format:
+                self._show_warning(
+                    self.tr("时间列字段名错误"),
+                    self.tr(f"时间列字段名 {field} 不在日志格式中"),
+                )
+                return False
+
+        timestamp_format = self._timestamp_format_edit.text().strip()
+        if not timestamp_format:
+            self._show_warning(self.tr("时间格式不能为空"), self.tr("请输入时间格式"))
+            return False
+
         # log_format 里面有没有 Content 字段
         if "Content" not in formatparse.compile(log_format).named_fields:
             self._show_warning(
@@ -174,6 +191,44 @@ class LogParserConfigEditDialog(MessageBoxBase):
         log_format_hint.setStyleSheet("color: #888; font-size: 12px;")
         card.viewLayout.addWidget(log_format_hint)
 
+        timestamp_fields_label = BodyLabel(self.tr("时间列："), card)
+        timestamp_fields_label.setStyleSheet("font-weight: 500;")
+        card.viewLayout.addWidget(timestamp_fields_label)
+
+        self._timestamp_fields_edit = LineEdit(card)
+        self._timestamp_fields_edit.setPlaceholderText(self.tr("例如：Date,Time"))
+        self._timestamp_fields_edit.setClearButtonEnabled(True)
+        card.viewLayout.addWidget(self._timestamp_fields_edit)
+
+        timestamp_fields_hint = BodyLabel(
+            self.tr(
+                "使用逗号分隔的字段名列表，指定哪些字段包含时间，如果有时间戳列，则放在第一位"
+            ),
+            card,
+        )
+        timestamp_fields_hint.setStyleSheet("color: #888; font-size: 12px;")
+        card.viewLayout.addWidget(timestamp_fields_hint)
+
+        timestamp_format_label = BodyLabel(self.tr("时间格式："), card)
+        timestamp_format_label.setStyleSheet("font-weight: 500;")
+        card.viewLayout.addWidget(timestamp_format_label)
+
+        self._timestamp_format_edit = LineEdit(card)
+        self._timestamp_format_edit.setPlaceholderText(
+            self.tr("例如：%Y-%m-%d %H:%M:%S")
+        )
+        self._timestamp_format_edit.setClearButtonEnabled(True)
+        card.viewLayout.addWidget(self._timestamp_format_edit)
+
+        timestamp_format_hint = BodyLabel(
+            self.tr(
+                "使用strptime时间格式字符串，指定时间字段的解析格式，如果有时间戳列，则输入epoch"
+            ),
+            card,
+        )
+        timestamp_format_hint.setStyleSheet("color: #888; font-size: 12px;")
+        card.viewLayout.addWidget(timestamp_format_hint)
+
         delimiters_label = BodyLabel(self.tr("分隔符："), card)
         delimiters_label.setStyleSheet("font-weight: 500;")
         card.viewLayout.addWidget(delimiters_label)
@@ -250,6 +305,8 @@ class LogParserConfigEditDialog(MessageBoxBase):
         """从已有配置填充表单"""
         self._name_edit.setText(config.name)
         self._log_format_edit.setText(config.log_format)
+        self._timestamp_fields_edit.setText(",".join(config.timestamp_fields))
+        self._timestamp_format_edit.setText(config.timestamp_format)
         self._delimiters_edit.setText(config.delimiters)
         self._use_builtin_masking_switch.setChecked(config.use_builtin_maskings)
         self._masking_edit.setPlainText(json.dumps(config.user_maskings, indent=4))
@@ -266,9 +323,11 @@ class LogParserConfigEditDialog(MessageBoxBase):
         """从表单构建 LogParserConfig 对象"""
         name = self._name_edit.text().strip()
         log_format = self._log_format_edit.text().strip()
+        timestamp_fields = self._timestamp_fields_edit.text().strip().split(",")
+        timestamp_format = self._timestamp_format_edit.text().strip()
 
         # masking
-        masking = None
+        masking = []
         masking_text = self._masking_edit.toPlainText().strip()
         if masking_text:
             raw = json.loads(masking_text)
@@ -292,6 +351,8 @@ class LogParserConfigEditDialog(MessageBoxBase):
         return LogParserConfig(
             name,
             log_format,
+            timestamp_fields,
+            timestamp_format,
             masking,
             delimiters,
             use_builtin_masking,

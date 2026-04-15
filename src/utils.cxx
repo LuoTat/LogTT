@@ -5,6 +5,55 @@
 namespace logtt
 {
 
+static duckdb::unique_ptr<duckdb::ParsedExpression> _build_timestamp_expr(const std::vector<std::string>& timestamp_fields, const std::string& timestamp_format)
+{
+    duckdb::unique_ptr<duckdb::ParsedExpression> func_expr;
+    if (timestamp_format == "epoch")
+    {
+        // Unix 时间戳
+        auto timestamp_s {duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::BIGINT, duckdb::make_uniq<duckdb::ColumnRefExpression>(timestamp_fields[0]))};
+        auto thousand {duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::BIGINT(1000))};
+
+        duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_1;
+        arg_exprs_1.push_back(std::move(timestamp_s));
+        arg_exprs_1.push_back(std::move(thousand));
+        auto timestamp_ms = duckdb::make_uniq<duckdb::FunctionExpression>("multiply", std::move(arg_exprs_1));
+
+        duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
+        arg_exprs_2.push_back(std::move(timestamp_ms));
+        func_expr = duckdb::make_uniq<duckdb::FunctionExpression>("make_timestamp_ms", std::move(arg_exprs_2));
+    }
+    else
+    {
+        // 拼接字段
+        duckdb::unique_ptr<duckdb::ParsedExpression> arg_exprs_1;
+        if (timestamp_fields.size() == 1)
+        {
+            arg_exprs_1 = duckdb::make_uniq<duckdb::ColumnRefExpression>(timestamp_fields[0]);
+        }
+        else
+        {
+            duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
+            arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(" ")));
+            for (auto&& field : timestamp_fields)
+            {
+                arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>(field));
+            }
+            arg_exprs_1 = duckdb::make_uniq<duckdb::FunctionExpression>("concat_ws", std::move(arg_exprs_2));
+        }
+
+        // strptime 解析
+        duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
+        arg_exprs_2.push_back(std::move(arg_exprs_1));
+        arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(timestamp_format)));
+        func_expr = duckdb::make_uniq<duckdb::FunctionExpression>("strptime", std::move(arg_exprs_2));
+    }
+
+    // 转为 TIMESTAMP_S 类型
+    auto cast_expr {duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::TIMESTAMP_S, std::move(func_expr))};
+    return cast_expr;
+}
+
 duckdb::unique_ptr<duckdb::MaterializedQueryResult> to_materialized_query_result(duckdb::unique_ptr<duckdb::QueryResult> result)
 {
     D_ASSERT(result->type == duckdb::QueryResultType::MATERIALIZED_RESULT);
@@ -17,7 +66,7 @@ duckdb::shared_ptr<duckdb::Relation> get_tmp(duckdb::Connection& conn, const duc
     return conn.Table("_tmp");
 }
 
-duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const std::string& log_file, const std::string& log_regex, const std::vector<std::string>& named_fields)
+duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const std::string& log_file, const std::string& log_regex, const std::vector<std::string>& named_fields, const std::vector<std::string>& timestamp_fields, const std::string& timestamp_format)
 {
     // 将日志文件作为CSV文件读取，使用特殊的分隔符和引号来避免解析错误
     // 使用 WITH ORDINALITY 生成一个从 1 开始的序列，作为日志行号
@@ -67,6 +116,21 @@ duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const s
     project_exprs_2.push_back(std::move(func_expr_2));
     rel = rel->Project(std::move(project_exprs_2), {});
 
+    // 提取时间戳字段，并将其转换为 TIMESTAMP 类型
+    // 同时过滤掉原始的时间戳字段，简化日志表的结构
+    auto func_expr_3 {_build_timestamp_expr(timestamp_fields, timestamp_format)};
+    func_expr_3->SetAlias("Timestamp");
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_3;
+    project_exprs_3.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
+    project_exprs_3.push_back(std::move(func_expr_3));
+    auto star_expr {duckdb::make_uniq<duckdb::StarExpression>()};
+    star_expr->exclude_list.emplace("LineID");
+    for (auto&& field : timestamp_fields)
+    {
+        star_expr->exclude_list.emplace(field);
+    }
+    project_exprs_3.push_back(std::move(star_expr));
+    rel = rel->Project(std::move(project_exprs_3), {});
     return rel;
 }
 

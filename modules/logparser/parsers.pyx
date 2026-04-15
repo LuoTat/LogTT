@@ -34,6 +34,8 @@ cdef class AELLogParser:
     def __init__(
         self,
         string log_format,
+        vector[string] timestamp_fields,
+        string timestamp_format,
         vector[Mask] maskings,
         object delimiters,
         uint32_t cluster_thr=2,
@@ -50,6 +52,8 @@ cdef class AELLogParser:
         self.log_parser = CXX_AELLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
+            timestamp_fields,
+            timestamp_format,
             maskings,
             delimiters.encode("ascii"),
             cluster_thr,
@@ -111,6 +115,85 @@ cdef class AELLogParser:
             ),
         ]
 
+# ========================== Brain ==========================
+
+cdef class BrainLogParser:
+    """Brain算法"""
+
+    cdef CXX_BrainLogParser log_parser
+
+    def __init__(
+        self,
+        string log_format,
+        vector[string] timestamp_fields,
+        string timestamp_format,
+        vector[Mask] maskings,
+        object delimiters,
+        uint16_t var_thr=2,
+    ):
+        """
+        Args:
+            var_thr: Threshold for determining variable columns.
+        """
+
+        cdef object parser = formatparse.compile(log_format)
+
+        self.log_parser = CXX_BrainLogParser(
+            "^" + parser._expression + "$",
+            parser.named_fields,
+            timestamp_fields,
+            timestamp_format,
+            maskings,
+            delimiters.encode("ascii"),
+            var_thr,
+        )
+
+    def parse(
+        self,
+        string log_file,
+        string structured_table_name,
+        string templates_table_name,
+        bint keep_para=False,
+    ) -> ParseResult:
+        cdef uint32_t log_length
+
+        with nogil:
+            log_length = self.log_parser.parse(
+                log_file,
+                structured_table_name,
+                templates_table_name,
+                keep_para,
+            )
+
+        return ParseResult(
+            log_file,
+            log_length,
+            structured_table_name,
+            templates_table_name,
+        )
+
+    @staticmethod
+    def name() -> str:
+        return "Brain"
+
+    @staticmethod
+    def description() -> str:
+        return QCoreApplication.translate("BrainLogParser", "Brain 是一种基于双向树结构的高效日志模板提取算法。")
+
+    @staticmethod
+    def get_param_descriptors() -> list[ParamDescriptor]:
+        return [
+            ParamDescriptor(
+                "var_thr",
+                "Variable Threshold",
+                QCoreApplication.translate("BrainLogParser", "判定变量列的最小不同词数量"),
+                ParamWidgetType.SpinBox,
+                2,
+                1,
+                100,
+            ),
+        ]
+
 # ========================== Drain ==========================
 
 cdef class DrainLogParser:
@@ -121,6 +204,8 @@ cdef class DrainLogParser:
     def __init__(
         self,
         string log_format,
+        vector[string] timestamp_fields,
+        string timestamp_format,
         vector[Mask] maskings,
         object delimiters,
         uint16_t depth=4,
@@ -142,6 +227,8 @@ cdef class DrainLogParser:
         self.log_parser = CXX_DrainLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
+            timestamp_fields,
+            timestamp_format,
             maskings,
             delimiters.encode("ascii"),
             depth,
@@ -223,6 +310,8 @@ cdef class JaccardDrainLogParser:
     def __init__(
         self,
         string log_format,
+        vector[string] timestamp_fields,
+        string timestamp_format,
         vector[Mask] maskings,
         object delimiters,
         uint16_t depth=4,
@@ -244,6 +333,8 @@ cdef class JaccardDrainLogParser:
         self.log_parser = CXX_JaccardDrainLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
+            timestamp_fields,
+            timestamp_format,
             maskings,
             delimiters.encode("ascii"),
             depth,
@@ -325,6 +416,8 @@ cdef class SpellLogParser:
     def __init__(
         self,
         string log_format,
+        vector[string] timestamp_fields,
+        string timestamp_format,
         vector[Mask] maskings,
         object delimiters,
         float sim_thr=0.5,
@@ -339,6 +432,8 @@ cdef class SpellLogParser:
         self.log_parser = CXX_SpellLogParser(
             "^" + parser._expression + "$",
             parser.named_fields,
+            timestamp_fields,
+            timestamp_format,
             maskings,
             delimiters.encode("ascii"),
             sim_thr,
@@ -387,81 +482,6 @@ cdef class SpellLogParser:
                 0.5,
                 0.0,
                 1.0,
-            ),
-        ]
-
-# ========================== Brain ==========================
-
-cdef class BrainLogParser:
-    """Brain算法"""
-
-    cdef CXX_BrainLogParser log_parser
-
-    def __init__(
-        self,
-        string log_format,
-        vector[Mask] maskings,
-        object delimiters,
-        uint16_t var_thr=2,
-    ):
-        """
-        Args:
-            var_thr: Threshold for determining variable columns.
-        """
-
-        cdef object parser = formatparse.compile(log_format)
-
-        self.log_parser = CXX_BrainLogParser(
-            "^" + parser._expression + "$",
-            parser.named_fields,
-            maskings,
-            delimiters.encode("ascii"),
-            var_thr,
-        )
-
-    def parse(
-        self,
-        string log_file,
-        string structured_table_name,
-        string templates_table_name,
-        bint keep_para=False,
-    ) -> ParseResult:
-        cdef uint32_t log_length
-
-        with nogil:
-            log_length = self.log_parser.parse(
-                log_file,
-                structured_table_name,
-                templates_table_name,
-                keep_para,
-            )
-
-        return ParseResult(
-            log_file,
-            log_length,
-            structured_table_name,
-            templates_table_name,
-        )
-
-    @staticmethod
-    def name() -> str:
-        return "Brain"
-
-    @staticmethod
-    def description() -> str:
-        return QCoreApplication.translate("BrainLogParser", "Brain 是一种基于双向树结构的高效日志模板提取算法。")
-
-    @staticmethod
-    def get_param_descriptors() -> list[ParamDescriptor]:
-        return [
-            ParamDescriptor(
-                "var_thr",
-                "Variable Threshold",
-                QCoreApplication.translate("BrainLogParser", "判定变量列的最小不同词数量"),
-                ParamWidgetType.SpinBox,
-                2,
-                1,
-                100,
             ),
         ]
 

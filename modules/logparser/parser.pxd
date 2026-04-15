@@ -12,10 +12,31 @@ cdef extern from "ael_log_parser.hxx" namespace "logtt" nogil:
         AELLogParser(
             string         log_format,
             vector[string] named_fields,
+            vector[string] timestamp_fields,
+            string         timestamp_format,
             vector[Mask]   maskings,
             vector[char]   delimiters,
             uint32_t       cluster_thr,
             float          merge_thr,
+        )
+        uint32_t parse(
+            const string& log_file,
+            const string& structured_table_name,
+            const string& templates_table_name,
+            bint          keep_para,
+        )
+
+cdef extern from "brain_log_parser.hxx" namespace "logtt" nogil:
+    cdef cppclass BrainLogParser:
+        BrainLogParser()
+        BrainLogParser(
+            string         log_format,
+            vector[string] named_fields,
+            vector[string] timestamp_fields,
+            string         timestamp_format,
+            vector[Mask]   maskings,
+            vector[char]   delimiters,
+            uint16_t       var_thr,
         )
         uint32_t parse(
             const string& log_file,
@@ -30,6 +51,8 @@ cdef extern from "drain_log_parser.hxx" namespace "logtt" nogil:
         DrainLogParser(
             string         log_format,
             vector[string] named_fields,
+            vector[string] timestamp_fields,
+            string         timestamp_format,
             vector[Mask]   maskings,
             vector[char]   delimiters,
             uint16_t       depth,
@@ -49,6 +72,8 @@ cdef extern from "jaccard_drain_log_parser.hxx" namespace "logtt" nogil:
         JaccardDrainLogParser(
             string         log_format,
             vector[string] named_fields,
+            vector[string] timestamp_fields,
+            string         timestamp_format,
             vector[Mask]   maskings,
             vector[char]   delimiters,
             uint16_t       depth,
@@ -68,26 +93,11 @@ cdef extern from "spell_log_parser.hxx" namespace "logtt" nogil:
         SpellLogParser(
             string         log_format,
             vector[string] named_fields,
+            vector[string] timestamp_fields,
+            string         timestamp_format,
             vector[Mask]   maskings,
             vector[char]   delimiters,
             float          sim_thr,
-        )
-        uint32_t parse(
-            const string& log_file,
-            const string& structured_table_name,
-            const string& templates_table_name,
-            bint          keep_para,
-        )
-
-cdef extern from "brain_log_parser.hxx" namespace "logtt" nogil:
-    cdef cppclass BrainLogParser:
-        BrainLogParser()
-        BrainLogParser(
-            string         log_format,
-            vector[string] named_fields,
-            vector[Mask]   maskings,
-            vector[char]   delimiters,
-            uint16_t       var_thr,
         )
         uint32_t parse(
             const string& log_file,

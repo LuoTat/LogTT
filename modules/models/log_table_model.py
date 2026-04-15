@@ -94,6 +94,8 @@ class LogExtractTask(QRunnable):
             )
             result = self._log_parser_type(
                 self._log_parser_config.log_format,
+                self._log_parser_config.timestamp_fields,
+                self._log_parser_config.timestamp_format,
                 self._log_parser_config.user_maskings,
                 self._log_parser_config.delimiters,
                 **ex_args,

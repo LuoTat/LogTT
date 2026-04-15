@@ -8,11 +8,19 @@ class LogParserProtocol(Protocol):
     def __init__(
         self,
         log_format: str,
+        timestamp_fields: list[str],
+        timestamp_format: str,
         maskings: list[tuple[str, str]],
         delimiters: str,
         **kwargs: Any,
     ): ...
-    def parse(self, *args: Any, **kwargs: Any) -> ParseResult: ...
+    def parse(
+        self,
+        log_file: str,
+        structured_table_name: str,
+        templates_table_name: str,
+        keep_para: bool,
+    ) -> ParseResult: ...
     @staticmethod
     def name() -> str: ...
     @staticmethod

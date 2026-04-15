@@ -9,13 +9,15 @@ namespace logtt
 DrainLogParser::DrainLogParser(
     std::string              log_regex,
     std::vector<std::string> named_fields,
+    std::vector<std::string> timestamp_fields,
+    std::string              timestamp_format,
     std::vector<Mask>        maskings,
     std::vector<char>        delimiters,
     std::uint16_t            depth,
     std::uint16_t            children,
     float                    sim_thr
 ):
-    BaseLogParser {std::move(log_regex), std::move(named_fields), std::move(maskings), std::move(delimiters)},
+    BaseLogParser {std::move(log_regex), std::move(named_fields), std::move(timestamp_fields), std::move(timestamp_format), std::move(maskings), std::move(delimiters)},
     m_depth {depth},
     m_children {children},
     m_sim_thr {sim_thr}
@@ -31,7 +33,7 @@ std::uint32_t DrainLogParser::parse(const std::string& log_file, const std::stri
     // 获取数据库连接
     auto& conn {get_connection()};
 
-    auto rel {load_data(conn, log_file, this->m_log_regex, this->m_named_fields)};
+    auto rel {load_data(conn, log_file, this->m_log_regex, this->m_named_fields, this->m_timestamp_fields, this->m_timestamp_format)};
     rel = mask_log_rel(rel, this->m_maskings);
     rel = split_log_rel(rel, this->m_delimiters);
 
