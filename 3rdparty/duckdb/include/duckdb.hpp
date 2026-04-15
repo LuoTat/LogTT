@@ -11,11 +11,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #pragma once
 #define DUCKDB_AMALGAMATION 1
 #define DUCKDB_AMALGAMATION_EXTENDED 1
-#define DUCKDB_SOURCE_ID "21b84304b6"
-#define DUCKDB_VERSION "v1.5.2-dev414"
+#define DUCKDB_SOURCE_ID "038fb6b79c"
+#define DUCKDB_VERSION "v1.5.3-dev53"
 #define DUCKDB_MAJOR_VERSION 1
 #define DUCKDB_MINOR_VERSION 5
-#define DUCKDB_PATCH_VERSION "2-dev414"
+#define DUCKDB_PATCH_VERSION "3-dev53"
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //
@@ -15631,6 +15631,8 @@ public:
 
 	//! Convert from WKT
 	DUCKDB_API static bool FromString(const string_t &wkt_text, string_t &result, Vector &result_vector, bool strict);
+	DUCKDB_API static bool FromString(const string_t &wkt_text, string_t &result, Vector &result_vector, bool strict,
+	                                  optional_idx query_location);
 
 	//! Convert to WKT
 	DUCKDB_API static string_t ToString(Vector &result, const string_t &geom);
@@ -50075,7 +50077,9 @@ public:
 
 	//! Deletes all data from the index. The lock obtained from InitializeLock must be held
 	virtual void CommitDrop(IndexLock &index_lock) = 0;
+
 	//! Deletes all data from the index
+	// FIXME: we can rename this to ResetStorage().
 	void CommitDrop() override;
 	//! Delete a chunk of entries from the index. The lock obtained from InitializeLock must be held.
 	//! Returns the amount of rows successfully deleted from the index.
@@ -50265,6 +50269,8 @@ public:
 		lock_guard<mutex> lock(index_entries_lock);
 		return unbound_count != 0;
 	}
+	//! Returns the set of distinct index types across all bound indexes.
+	unordered_set<string> DistinctIndexTypes() const;
 	//! Overwrite this list with the other list.
 	void Move(TableIndexList &other) {
 		D_ASSERT(index_entries.empty());
@@ -51228,6 +51234,9 @@ private:
 
 	void InitializeScanWithOffset(DuckTransaction &transaction, TableScanState &state,
 	                              const vector<StorageIndex> &column_ids, idx_t start_row, idx_t end_row);
+
+	//! Rebuild all indexes after vacuuming changed rowid's (used with vacuum_rebuild_indexes setting).
+	void RebuildIndexes();
 
 	void VerifyForeignKeyConstraint(optional_ptr<LocalTableStorage> storage,
 	                                const BoundForeignKeyConstraint &bound_foreign_key, ClientContext &context,
@@ -63908,65 +63917,6 @@ public:
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //
-// duckdb/parser/parsed_data/create_view_info.hpp
-//
-//
-//===----------------------------------------------------------------------===//
-
-
-
-
-
-
-namespace duckdb {
-class SchemaCatalogEntry;
-
-struct CreateViewInfo : public CreateInfo {
-public:
-	CreateViewInfo();
-	CreateViewInfo(SchemaCatalogEntry &schema, string view_name);
-	CreateViewInfo(string catalog_p, string schema_p, string view_name);
-
-public:
-	//! View name
-	string view_name;
-	//! Aliases of the view
-	vector<string> aliases;
-	//! Return types
-	vector<LogicalType> types;
-	//! Names of the query
-	vector<string> names;
-	//! Comments on columns of the query. Note: vector can be empty when no comments are set
-	unordered_map<string, Value> column_comments_map;
-	//! The SelectStatement of the view
-	unique_ptr<SelectStatement> query;
-
-public:
-	unique_ptr<CreateInfo> Copy() const override;
-
-	//! Gets a bound CreateViewInfo object from a SELECT statement and a view name, schema name, etc
-	DUCKDB_API static unique_ptr<CreateViewInfo> FromSelect(ClientContext &context, unique_ptr<CreateViewInfo> info);
-	//! Gets a bound CreateViewInfo object from a CREATE VIEW statement
-	DUCKDB_API static unique_ptr<CreateViewInfo> FromCreateView(ClientContext &context, SchemaCatalogEntry &schema,
-	                                                            const string &sql);
-	//! Parse a SELECT statement from a SQL string
-	DUCKDB_API static unique_ptr<SelectStatement> ParseSelect(const string &sql);
-
-	DUCKDB_API void Serialize(Serializer &serializer) const override;
-	DUCKDB_API static unique_ptr<CreateInfo> Deserialize(Deserializer &deserializer);
-
-	string ToString() const override;
-
-private:
-	CreateViewInfo(vector<string> names, vector<Value> comments, unordered_map<string, Value> column_comments);
-
-	vector<Value> GetColumnCommentsList() const;
-};
-
-} // namespace duckdb
-//===----------------------------------------------------------------------===//
-//                         DuckDB
-//
 // duckdb/parser/parsed_data/detach_info.hpp
 //
 //
@@ -64345,6 +64295,65 @@ public:
 
 	void Serialize(Serializer &serializer) const override;
 	static unique_ptr<ParseInfo> Deserialize(Deserializer &deserializer);
+};
+
+} // namespace duckdb
+//===----------------------------------------------------------------------===//
+//                         DuckDB
+//
+// duckdb/parser/parsed_data/create_view_info.hpp
+//
+//
+//===----------------------------------------------------------------------===//
+
+
+
+
+
+
+namespace duckdb {
+class SchemaCatalogEntry;
+
+struct CreateViewInfo : public CreateInfo {
+public:
+	CreateViewInfo();
+	CreateViewInfo(SchemaCatalogEntry &schema, string view_name);
+	CreateViewInfo(string catalog_p, string schema_p, string view_name);
+
+public:
+	//! View name
+	string view_name;
+	//! Aliases of the view
+	vector<string> aliases;
+	//! Return types
+	vector<LogicalType> types;
+	//! Names of the query
+	vector<string> names;
+	//! Comments on columns of the query. Note: vector can be empty when no comments are set
+	unordered_map<string, Value> column_comments_map;
+	//! The SelectStatement of the view
+	unique_ptr<SelectStatement> query;
+
+public:
+	unique_ptr<CreateInfo> Copy() const override;
+
+	//! Gets a bound CreateViewInfo object from a SELECT statement and a view name, schema name, etc
+	DUCKDB_API static unique_ptr<CreateViewInfo> FromSelect(ClientContext &context, unique_ptr<CreateViewInfo> info);
+	//! Gets a bound CreateViewInfo object from a CREATE VIEW statement
+	DUCKDB_API static unique_ptr<CreateViewInfo> FromCreateView(ClientContext &context, SchemaCatalogEntry &schema,
+	                                                            const string &sql);
+	//! Parse a SELECT statement from a SQL string
+	DUCKDB_API static unique_ptr<SelectStatement> ParseSelect(const string &sql);
+
+	DUCKDB_API void Serialize(Serializer &serializer) const override;
+	DUCKDB_API static unique_ptr<CreateInfo> Deserialize(Deserializer &deserializer);
+
+	string ToString() const override;
+
+private:
+	CreateViewInfo(vector<string> names, vector<Value> comments, unordered_map<string, Value> column_comments);
+
+	vector<Value> GetColumnCommentsList() const;
 };
 
 } // namespace duckdb
