@@ -151,6 +151,7 @@ class LogViewPage(QWidget):
         self._select_log_id = log_id
         self._csv_file_table_model = CsvFileTableModel(structured_table_name, self)
         self._table_view.setModel(self._csv_file_table_model)
+        self._table_view.scrollToTop()
         self._update_info_label()
 
     def _show_column_filter_menu(self, column_name: str, global_pos: QPoint):
