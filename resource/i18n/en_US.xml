@@ -4,17 +4,17 @@
 <context>
     <name>AELLogParser</name>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="89"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="93"/>
         <source>AEL 是一种通过分桶与相似度合并来自动抽取日志模板的解析方法。</source>
         <translation>AEL is a log parsing method that automatically extracts log templates through bucketing and similarity-based merging.</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="97"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="101"/>
         <source>日志簇数量触发日志簇的合并的最小值</source>
         <translation>Minimum number of log clusters to trigger reconciliation</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="106"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="110"/>
         <source>合并两个日志簇的最大差异百分比</source>
         <translation>Maximum percentage of difference to merge two log clusters</translation>
     </message>
@@ -22,62 +22,87 @@
 <context>
     <name>APPMainWindow</name>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="52"/>
+        <location filename="../../ui/APPMainWindow.py" line="69"/>
         <source>有任务正在提取</source>
         <translation>Tasks are being extracted</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="53"/>
+        <location filename="../../ui/APPMainWindow.py" line="70"/>
         <source>仍有日志模板正在提取，确认要关闭并终止所有任务吗？</source>
         <translation>Log templates are still being extracted. Do you want to close and terminate all tasks?</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="68"/>
+        <location filename="../../ui/APPMainWindow.py" line="85"/>
         <source>结构化日志分析与可视化系统</source>
         <translation>Structured Log Analysis and Visualization System</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="83"/>
+        <location filename="../../ui/APPMainWindow.py" line="100"/>
         <source>日志管理</source>
         <translation>Log Management</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="88"/>
+        <location filename="../../ui/APPMainWindow.py" line="105"/>
         <source>日志查看</source>
         <translation>Log View</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="93"/>
+        <location filename="../../ui/APPMainWindow.py" line="110"/>
         <source>模板查看</source>
         <translation>Template View</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="102"/>
+        <location filename="../../ui/APPMainWindow.py" line="115"/>
+        <source>日志分析</source>
+        <translation>Log Analysis</translation>
+    </message>
+    <message>
+        <location filename="../../ui/APPMainWindow.py" line="120"/>
+        <source>统计分析</source>
+        <translation>Statistical Analysis</translation>
+    </message>
+    <message>
+        <location filename="../../ui/APPMainWindow.py" line="126"/>
+        <source>时序分析</source>
+        <translation>Temporal Analysis</translation>
+    </message>
+    <message>
+        <location filename="../../ui/APPMainWindow.py" line="132"/>
+        <source>模板分析</source>
+        <translation>Template Analysis</translation>
+    </message>
+    <message>
+        <location filename="../../ui/APPMainWindow.py" line="138"/>
+        <source>聚类可视化</source>
+        <translation>Cluster Visualization</translation>
+    </message>
+    <message>
+        <location filename="../../ui/APPMainWindow.py" line="147"/>
         <source>主题切换</source>
         <translation>Theme Switch</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="118"/>
+        <location filename="../../ui/APPMainWindow.py" line="163"/>
         <source>设置</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="146"/>
+        <location filename="../../ui/APPMainWindow.py" line="191"/>
         <source>支持作者🥰</source>
         <translation>Support the Author 🥰</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="148"/>
+        <location filename="../../ui/APPMainWindow.py" line="193"/>
         <source>个人开发不易，如果这个项目帮助到了您，可以考虑请作者喝一瓶快乐水🥤。您的支持就是作者开发和维护项目的动力🚀</source>
         <translation>Individual development is not easy. If this project helps you, please consider supporting the author 🥤. Your support is the motivation for the author to develop and maintain the project 🚀</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="152"/>
+        <location filename="../../ui/APPMainWindow.py" line="197"/>
         <source>来啦老弟</source>
         <translation>Here we go</translation>
     </message>
     <message>
-        <location filename="../../ui/APPMainWindow.py" line="153"/>
+        <location filename="../../ui/APPMainWindow.py" line="198"/>
         <source>下次一定</source>
         <translation>Maybe next time</translation>
     </message>
@@ -149,12 +174,12 @@
 <context>
     <name>BrainLogParser</name>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="452"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="181"/>
         <source>Brain 是一种基于双向树结构的高效日志模板提取算法。</source>
         <translation>Brain is an efficient log template extraction algorithm based on a bidirectional tree structure.</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="460"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="189"/>
         <source>判定变量列的最小不同词数量</source>
         <translation>Threshold for determining variable columns</translation>
     </message>
@@ -188,22 +213,22 @@
 <context>
     <name>DrainLogParser</name>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="182"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="269"/>
         <source>Drain 是一种基于树结构的高效日志模板提取算法。</source>
         <translation>Drain is an efficient log template extraction algorithm based on a tree structure.</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="190"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="277"/>
         <source>前缀树的最大深度</source>
         <translation>Depth of prefix tree</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="199"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="286"/>
         <source>每个树节点的最大子节点数</source>
         <translation>Max children per tree node</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="208"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="295"/>
         <source>相似度阈值</source>
         <translation>Similarity threshold</translation>
     </message>
@@ -264,24 +289,45 @@
 <context>
     <name>JaccardDrainLogParser</name>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="284"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="375"/>
         <source>JaccardDrain 是一种基于 Drain 和 Jaccard 相似度的高效日志模板提取算法。</source>
         <translation>JaccardDrain is an efficient log template extraction algorithm based on Drain and Jaccard similarity.</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="292"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="383"/>
         <source>前缀树的最大深度</source>
         <translation>Depth of prefix tree</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="301"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="392"/>
         <source>每个树节点的最大子节点数</source>
         <translation>Max children per tree node</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="310"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="401"/>
         <source>相似度阈值</source>
         <translation>Similarity threshold</translation>
+    </message>
+</context>
+<context>
+    <name>LevelCountCard</name>
+    <message>
+        <location filename="../../ui/Widgets/LevelCountCard.py" line="20"/>
+        <source>日志级别分布</source>
+        <translation>Log Level Distribution</translation>
+    </message>
+</context>
+<context>
+    <name>LogCountCard</name>
+    <message>
+        <location filename="../../ui/Widgets/LogCountCard.py" line="58"/>
+        <source>日志总数</source>
+        <translation>Total Logs</translation>
+    </message>
+    <message>
+        <location filename="../../ui/Widgets/LogCountCard.py" line="84"/>
+        <source>模板数量</source>
+        <translation>Template Count</translation>
     </message>
 </context>
 <context>
@@ -406,119 +452,179 @@
         <translation>Please enter a log format</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="72"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="71"/>
+        <source>时间列不能为空</source>
+        <translation>Time column cannot be empty</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="71"/>
+        <source>请输入时间列字段名</source>
+        <translation>Please enter the time column field name</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="76"/>
+        <source>时间列字段名错误</source>
+        <translation>Invalid time column field name</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="77"/>
+        <source>时间列字段名 {field} 不在日志格式中</source>
+        <translation>Time column field name {field} is not in the log format</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="83"/>
+        <source>时间格式不能为空</source>
+        <translation>Time format cannot be empty</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="83"/>
+        <source>请输入时间格式</source>
+        <translation>Please enter the time format</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="89"/>
         <source>日志格式错误</source>
         <translation>Invalid log format</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="73"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="90"/>
         <source>日志格式必须包含 {Content} 字段</source>
         <translation>Log format must contain the {Content} field</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="97"/>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="103"/>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="115"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="114"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="120"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="132"/>
         <source>掩码格式错误</source>
         <translation>Invalid mask format</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="98"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="115"/>
         <source>请输入有效的 JSON 数组</source>
         <translation>Please enter a valid JSON array</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="104"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="121"/>
         <source>掩码规则只能包含 ASCII 字符</source>
         <translation>Masking rules can only contain ASCII characters</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="109"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="126"/>
         <source>掩码正则无效</source>
         <translation>Invalid mask regex</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="110"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="127"/>
         <source>掩码中包含无效的正则表达式</source>
         <translation>Mask contains invalid regular expressions</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="116"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="133"/>
         <source>格式须为 [[&quot;正则&quot;, &quot;替换&quot;], ...] 的二维数组</source>
         <translation>Format must be a 2D array like [[&quot;regex&quot;, &quot;replacement&quot;], ...]</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="127"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="144"/>
         <source>分隔符无效</source>
         <translation>Invalid delimiters</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="128"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="145"/>
         <source>分隔符只能包含 ASCII 字符</source>
         <translation>Delimiters can only contain ASCII characters</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="148"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="165"/>
         <source>基本信息</source>
         <translation>Basic Information</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="150"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="167"/>
         <source>配置名称：</source>
         <translation>Configuration Name:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="155"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="172"/>
         <source>例如：MyApp</source>
         <translation>For example: MyApp</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="159"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="176"/>
         <source>日志格式：</source>
         <translation>Log Format:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="165"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="182"/>
         <source>例如：{Date} {Time} {Level}: {Content}</source>
         <translation>For example: {Date} {Time} {Level}: {Content}</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="171"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="188"/>
         <source>使用 {字段名} 标记日志中的各个部分，必须包含 {Content}</source>
         <translation>Use {fieldName} to mark each part of the log, and it must include {Content}</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="177"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="194"/>
+        <source>时间列：</source>
+        <translation>Time Column:</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="199"/>
+        <source>例如：Date,Time</source>
+        <translation>For example: Date,Time</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="205"/>
+        <source>使用逗号分隔的字段名列表，指定哪些字段包含时间，如果有时间戳列，则放在第一位</source>
+        <translation>Comma-separated list of field names specifying which fields contain time. If there is a timestamp column, put it first</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="212"/>
+        <source>时间格式：</source>
+        <translation>Time Format:</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="218"/>
+        <source>例如：%Y-%m-%d %H:%M:%S</source>
+        <translation>For example: %Y-%m-%d %H:%M:%S</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="225"/>
+        <source>使用strptime时间格式字符串，指定时间字段的解析格式，如果有时间戳列，则输入epoch</source>
+        <translation>Use strptime format string to specify the parsing format of time fields. Enter epoch if there is a timestamp column</translation>
+    </message>
+    <message>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="232"/>
         <source>分隔符：</source>
         <translation>Delimiters:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="182"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="237"/>
         <source>例如：=:()</source>
         <translation>For example: =:()</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="187"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="242"/>
         <source>用于分词的额外分隔字符，直接拼接输入，可留空。仅支持 ASCII 字符</source>
         <translation>Additional delimiter characters for tokenization. Enter them directly with no separator; can be left empty. ASCII characters only</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="196"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="251"/>
         <source>使用内置掩码规则：</source>
         <translation>Use built-in masking rules:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="211"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="266"/>
         <source>自定义掩码规则</source>
         <translation>Custom Masking Rules</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="213"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="268"/>
         <source>掩码规则：</source>
         <translation>Masking Rules:</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="219"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="274"/>
         <source>
 例如：
 [
@@ -537,7 +643,7 @@ For example:
 ]</translation>
     </message>
     <message>
-        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="231"/>
+        <location filename="../../ui/SettingPage/LogParserConfigEditDialog.py" line="286"/>
         <source>每项为 [正则, 替换] 的数组</source>
         <translation>Each item should be an array of [regex, replacement]</translation>
     </message>
@@ -598,57 +704,57 @@ For example:
 <context>
     <name>LogTableModel</name>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="118"/>
+        <location filename="../../modules/models/log_table_model.py" line="120"/>
         <source>名称</source>
         <translation>Name</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="119"/>
+        <location filename="../../modules/models/log_table_model.py" line="121"/>
         <source>日志行数</source>
         <translation>Log Lines</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="120"/>
+        <location filename="../../modules/models/log_table_model.py" line="122"/>
         <source>日志类型</source>
         <translation>Log Type</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="121"/>
+        <location filename="../../modules/models/log_table_model.py" line="123"/>
         <source>日志格式</source>
         <translation>Log Format</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="122"/>
+        <location filename="../../modules/models/log_table_model.py" line="124"/>
         <source>创建时间</source>
         <translation>Creation Time</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="393"/>
+        <location filename="../../modules/models/log_table_model.py" line="395"/>
         <source>未知错误</source>
         <translation>Unknown error</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="123"/>
+        <location filename="../../modules/models/log_table_model.py" line="125"/>
         <source>状态</source>
         <translation>Status</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="124"/>
+        <location filename="../../modules/models/log_table_model.py" line="126"/>
         <source>提取方法</source>
         <translation>Extraction Method</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="151"/>
+        <location filename="../../modules/models/log_table_model.py" line="153"/>
         <source>已提取</source>
         <translation>Extracted</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="152"/>
+        <location filename="../../modules/models/log_table_model.py" line="154"/>
         <source>未提取</source>
         <translation>Not Extracted</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="153"/>
+        <location filename="../../modules/models/log_table_model.py" line="155"/>
         <source>提取中</source>
         <translation>Extracting</translation>
     </message>
@@ -686,17 +792,17 @@ For example:
         <translation>Structured table not found: {0}</translation>
     </message>
     <message>
-        <location filename="../../ui/LogViewPage/LogViewPage.py" line="163"/>
+        <location filename="../../ui/LogViewPage/LogViewPage.py" line="164"/>
         <source>设置 &apos;{0}&apos; 的筛选器</source>
         <translation>Set filter for &apos;{0}&apos;</translation>
     </message>
     <message>
-        <location filename="../../ui/LogViewPage/LogViewPage.py" line="172"/>
+        <location filename="../../ui/LogViewPage/LogViewPage.py" line="173"/>
         <source>清除 &apos;{0}&apos; 的筛选器</source>
         <translation>Clear filter for &apos;{0}&apos;</translation>
     </message>
     <message>
-        <location filename="../../ui/LogViewPage/LogViewPage.py" line="182"/>
+        <location filename="../../ui/LogViewPage/LogViewPage.py" line="183"/>
         <source>清除所有筛选器</source>
         <translation>Clear all filters</translation>
     </message>
@@ -787,14 +893,37 @@ For example:
 <context>
     <name>SpellLogParser</name>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="377"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="472"/>
         <source>Spell 是一种基于前缀树和LCS算法的日志解析方法。</source>
         <translation>Spell is a log parsing method based on a prefix tree and the LCS algorithm.</translation>
     </message>
     <message>
-        <location filename="../../modules/logparser/parsers.pyx" line="385"/>
+        <location filename="../../modules/logparser/parsers.pyx" line="480"/>
         <source>相似度阈值</source>
         <translation>Similarity threshold</translation>
+    </message>
+</context>
+<context>
+    <name>StatAnalysisPage</name>
+    <message>
+        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="62"/>
+        <source>选择日志：</source>
+        <translation>Select Log:</translation>
+    </message>
+    <message>
+        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="68"/>
+        <source>请选择已提取的日志文件</source>
+        <translation>Please select an extracted log file</translation>
+    </message>
+    <message>
+        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="105"/>
+        <source>数据未找到</source>
+        <translation>Data Not Found</translation>
+    </message>
+    <message>
+        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="106"/>
+        <source>未找到结构化表: {0}</source>
+        <translation>Structured table not found: {0}</translation>
     </message>
 </context>
 <context>
@@ -830,17 +959,17 @@ For example:
         <translation>Template table not found: {0}</translation>
     </message>
     <message>
-        <location filename="../../ui/TemplateViewPage/TemplateViewPage.py" line="171"/>
+        <location filename="../../ui/TemplateViewPage/TemplateViewPage.py" line="172"/>
         <source>设置 &apos;{0}&apos; 的筛选器</source>
         <translation>Set filter for &apos;{0}&apos;</translation>
     </message>
     <message>
-        <location filename="../../ui/TemplateViewPage/TemplateViewPage.py" line="180"/>
+        <location filename="../../ui/TemplateViewPage/TemplateViewPage.py" line="181"/>
         <source>清除 &apos;{0}&apos; 的筛选器</source>
         <translation>Clear filter for &apos;{0}&apos;</translation>
     </message>
     <message>
-        <location filename="../../ui/TemplateViewPage/TemplateViewPage.py" line="190"/>
+        <location filename="../../ui/TemplateViewPage/TemplateViewPage.py" line="191"/>
         <source>清除所有筛选器</source>
         <translation>Clear all filters</translation>
     </message>
