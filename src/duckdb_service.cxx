@@ -25,7 +25,11 @@ duckdb::Connection& get_connection()
 
 static std::vector<std::vector<std::string>> _to_df(duckdb::shared_ptr<duckdb::Relation> rel)
 {
-    rel = rel->Project("COLUMNS(*)::STRING");
+    auto star_expr {duckdb::make_uniq<duckdb::StarExpression>()};
+    star_expr->columns = true;
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs;
+    project_exprs.push_back(duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::VARCHAR, std::move(star_expr)));
+    rel = rel->Project(std::move(project_exprs), {});
 
     auto result {to_materialized_query_result(rel->Execute())};
     auto row_length {result->RowCount()};
@@ -388,8 +392,7 @@ std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_csv_table(
 
     rel = get_tmp(conn, rel);
 
-    auto result {conn.Query("SELECT count()::UINT64 FROM _tmp")};
-    auto log_length {result->GetValue<std::uint64_t>(0, 0)};
+    auto log_length {to_materialized_query_result(rel->Execute())->RowCount()};
 
     rel = rel->Limit(limit, offset);
     return {_to_df(rel), log_length};
@@ -435,8 +438,7 @@ std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_filter_tab
 
     rel = get_tmp(conn, rel);
 
-    auto result {conn.Query("SELECT count()::UINT64 FROM _tmp")};
-    auto log_length {result->GetValue<std::uint64_t>(0, 0)};
+    auto log_length {to_materialized_query_result(rel->Execute())->RowCount()};
 
     rel = rel->Limit(limit, offset);
     return {_to_df(rel), log_length};
@@ -459,8 +461,8 @@ void drop_table(const std::string& table_name)
 std::uint32_t get_table_row_count(const std::string& table_name)
 {
     auto& conn {get_connection()};
-    auto  result {conn.Query(std::format("SELECT count()::UINT64 FROM {}", table_name))};
-    return result->GetValue<std::uint32_t>(0, 0);
+    auto  rel {conn.Table(table_name)};
+    return to_materialized_query_result(rel->Execute())->RowCount();
 }
 
 std::vector<std::string> get_table_columns(const std::string& table_name)

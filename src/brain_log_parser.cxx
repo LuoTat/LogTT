@@ -71,11 +71,17 @@ std::uint32_t BrainLogParser::parse(const std::string& log_file, const std::stri
     rel = split_log_rel(rel, this->m_delimiters);
 
     // 缓存分词结果，避免重复计算
-    rel = rel->Project("* EXCLUDE MaskedContent");
+    auto star_expr_1 {duckdb::make_uniq<duckdb::StarExpression>()};
+    star_expr_1->exclude_list.emplace("MaskedContent");
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_1;
+    project_exprs_1.push_back(std::move(star_expr_1));
+    rel = rel->Project(std::move(project_exprs_1), {});
     rel = get_tmp(conn, rel);
 
     // 从 DuckDB 读取所有分词结果
-    auto                  result {to_materialized_query_result(rel->Project("Tokens")->Execute())};
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_2;
+    project_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
+    auto                  result {to_materialized_query_result(rel->Project(std::move(project_exprs_2), {})->Execute())};
     auto                  log_length {result->RowCount()};
     std::vector<TContent> contents;
     contents.reserve(log_length);
@@ -128,7 +134,11 @@ std::uint32_t BrainLogParser::parse(const std::string& log_file, const std::stri
     }
 
     // 移除多余列
-    rel = rel->Project("* EXCLUDE Tokens");
+    auto star_expr_2 {duckdb::make_uniq<duckdb::StarExpression>()};
+    star_expr_2->exclude_list.emplace("Tokens");
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_3;
+    project_exprs_3.push_back(std::move(star_expr_2));
+    rel = rel->Project(std::move(project_exprs_3), {});
     to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
 
     return log_length;

@@ -36,8 +36,7 @@ std::uint32_t AELLogParser::parse(const std::string& log_file, const std::string
     // 缓存分词结果，避免重复计算
     rel = get_tmp(conn, rel);
 
-    auto result {conn.Query("SELECT count()::UINT64 FROM _tmp")};
-    auto log_length {result->GetValue<std::uint64_t>(0, 0)};
+    auto log_length {to_materialized_query_result(rel->Execute())->RowCount()};
 
     auto log_bin {this->_get_log_bins(rel)};
     auto merged_clusters {this->_reconcile(log_bin)};
@@ -54,7 +53,12 @@ std::uint32_t AELLogParser::parse(const std::string& log_file, const std::string
     }
 
     // 移除多余列
-    rel = rel->Project("* EXCLUDE (MaskedContent, Tokens)");
+    auto star_expr {duckdb::make_uniq<duckdb::StarExpression>()};
+    star_expr->exclude_list.emplace("MaskedContent");
+    star_expr->exclude_list.emplace("Tokens");
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs;
+    project_exprs.push_back(std::move(star_expr));
+    rel = rel->Project(std::move(project_exprs), {});
     to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
 
     return log_length;
@@ -62,14 +66,39 @@ std::uint32_t AELLogParser::parse(const std::string& log_file, const std::string
 
 AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Relation> rel)
 {
-    rel = rel->Project(
-        {"LineID", "Tokens", "length(Tokens)::UINT8", "length(regexp_extract_all(MaskedContent, '<#.*#>'))::UINT8"},
-        {"LineID", "Tokens", "token_count", "para_count"}
-    );
-    rel = rel->Aggregate(
-        {"token_count", "para_count", "Tokens", "list(LineID)"},
-        {"token_count", "para_count", "Tokens"}
-    );
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_1;
+    arg_exprs_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
+    auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>("length", std::move(arg_exprs_1))};
+    auto cast_expr_1 {duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::UTINYINT, std::move(func_expr_1))};
+    cast_expr_1->SetAlias("token_count");
+
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
+    arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("MaskedContent"));
+    arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ConstantExpression>("<#.*#>"));
+    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("regexp_extract_all", std::move(arg_exprs_2))};
+
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_3;
+    arg_exprs_3.push_back(std::move(func_expr_2));
+    auto func_expr_3 {duckdb::make_uniq<duckdb::FunctionExpression>("length", std::move(arg_exprs_3))};
+    auto cast_expr_2 {duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::UTINYINT, std::move(func_expr_3))};
+    cast_expr_2->SetAlias("para_count");
+
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_1;
+    project_exprs_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
+    project_exprs_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
+    project_exprs_1.push_back(std::move(cast_expr_1));
+    project_exprs_1.push_back(std::move(cast_expr_2));
+
+    rel = rel->Project(std::move(project_exprs_1), {});
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_4;
+    arg_exprs_4.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
+    auto                                                         func_expr_4 {duckdb::make_uniq<duckdb::FunctionExpression>("list", std::move(arg_exprs_4))};
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
+    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("token_count"));
+    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("para_count"));
+    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
+    agg_exprs.push_back(std::move(func_expr_4));
+    rel = rel->Aggregate(std::move(agg_exprs), "token_count, para_count, Tokens");
 
     auto   result {to_materialized_query_result(rel->Execute())};
     LogBin log_bin;
