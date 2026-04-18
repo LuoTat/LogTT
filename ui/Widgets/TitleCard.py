@@ -13,7 +13,7 @@ class TitleCard(CardWidget):
     def __init__(self, icon: FluentIcon, title: str, parent=None):
         super().__init__(parent)
         self.viewLayout = QVBoxLayout(self)
-        self.viewLayout.setContentsMargins(18, 16, 18, 16)
+        self.viewLayout.setContentsMargins(24, 24, 24, 24)
         self.viewLayout.setSpacing(16)
 
         title_layout = QHBoxLayout()
