@@ -41,6 +41,15 @@ extensions = [
         runtime_library_dirs=["$ORIGIN/../lib"],
         language="c++",
     ),
+    Extension(
+        name="modules.log_analysis",
+        sources=["modules/log_analysis.pyx"],
+        include_dirs=["3rdparty/duckdb/include", "src"],
+        library_dirs=["lib"],
+        libraries=["core"],
+        runtime_library_dirs=["$ORIGIN/../lib"],
+        language="c++",
+    ),
 ]
 
 setup(

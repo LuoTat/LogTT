@@ -1,6 +1,6 @@
 from PySide6.QtCore import QUrl, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 from qfluentwidgets import (
     FluentIcon,
     FluentWindow,
@@ -13,10 +13,14 @@ from qfluentwidgets import (
     setTheme,
 )
 
+from .ClusterVisualizationPage import ClusterVisualizationPage
 from .LogManagePage import LogManagePage
 from .LogViewPage import LogViewPage
 from .SettingPage import SettingPage
+from .StatAnalysisPage import StatAnalysisPage
+from .TemplateAnalysisPage import TemplateAnalysisPage
 from .TemplateViewPage import TemplateViewPage
+from .TemporalAnalysisPage import TemporalAnalysisPage
 
 
 class APPMainWindow(FluentWindow):
@@ -31,6 +35,19 @@ class APPMainWindow(FluentWindow):
         self.log_view_page = LogViewPage(self)
         # 模板查看界面
         self.template_view_page = TemplateViewPage(self)
+
+        # 日志分析页面
+        self.log_analysis_page = QWidget(self)
+        self.log_analysis_page.setObjectName("LogAnalysisPage")
+        # 统计分析界面（待实现）
+        self.stat_analysis_page = StatAnalysisPage(self)
+        # 时序分析界面（待实现）
+        self.temporal_analysis_page = TemporalAnalysisPage(self)
+        # 模板分析界面（待实现）
+        self.template_analysis_page = TemplateAnalysisPage(self)
+        # 聚类可视化界面（待实现）
+        self.cluster_visualization_page = ClusterVisualizationPage(self)
+
         # 设置界面
         self.setting_page = SettingPage(self)
         self.setting_page.enableTransparentBackground()
@@ -92,7 +109,35 @@ class APPMainWindow(FluentWindow):
             FluentIcon.PIE_SINGLE,
             self.tr("模板查看"),
         )
-        # self.navigationInterface.addSeparator()
+        self.addSubInterface(
+            self.log_analysis_page,
+            FluentIcon.LINK,
+            self.tr("日志分析"),
+        )
+        self.addSubInterface(
+            self.stat_analysis_page,
+            FluentIcon.LINK,
+            self.tr("统计分析"),
+            parent=self.log_analysis_page,
+        )
+        self.addSubInterface(
+            self.temporal_analysis_page,
+            FluentIcon.LINK,
+            self.tr("时序分析"),
+            parent=self.log_analysis_page,
+        )
+        self.addSubInterface(
+            self.template_analysis_page,
+            FluentIcon.LINK,
+            self.tr("模板分析"),
+            parent=self.log_analysis_page,
+        )
+        self.addSubInterface(
+            self.cluster_visualization_page,
+            FluentIcon.LINK,
+            self.tr("聚类可视化"),
+            parent=self.log_analysis_page,
+        )
 
         # 主题切换按钮
         self.navigationInterface.addWidget(
