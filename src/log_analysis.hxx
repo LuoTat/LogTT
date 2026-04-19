@@ -14,4 +14,11 @@ bool has_column(const std::string& structured_table_name, const std::string& col
 
 std::vector<std::pair<std::string, std::uint32_t>> get_level_distribution(const std::string& structured_table_name);
 
+std::vector<std::pair<std::int64_t, std::uint32_t>> get_log_frequency_distribution(
+    const std::string& structured_table_name,
+    std::uint32_t       months,
+    std::uint32_t       days,
+    std::uint64_t       micros
+);
+
 }    // namespace logtt

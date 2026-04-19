@@ -22,8 +22,8 @@ class LevelCountCard(CardWidget):
 
         self._plot_widget = pg.PlotWidget(self, "transparent")
         self._plot_widget.setStyleSheet("background: transparent;")
-        self._plot_widget.getPlotItem().hideAxis("bottom")
-        self._plot_widget.getPlotItem().hideAxis("left")
+        self._plot_widget.hideAxis("bottom")
+        self._plot_widget.hideAxis("left")
         self._plot_widget.setMouseEnabled(x=False, y=False)
         self._main_layout.addWidget(self._plot_widget)
 
@@ -62,28 +62,25 @@ class LevelCountCard(CardWidget):
         counts = [item[1] for item in distribution]
 
         self._plot_widget.clear()
-        self._plot_widget.getPlotItem().showAxis("bottom")
-        self._plot_widget.getPlotItem().showAxis("left")
+        self._plot_widget.showAxis("bottom")
+        self._plot_widget.showAxis("left")
 
         x = range(len(levels))
-        colors = self._get_level_colors(levels)
-        brushes = [pg.mkBrush(c) for c in colors]
-
         self._bar_item = pg.BarGraphItem(
             x=x,
             height=counts,
             width=0.6,
-            brushes=brushes,
+            brushes=[pg.mkBrush(c) for c in self._get_level_colors(levels)],
         )
         self._plot_widget.addItem(self._bar_item)
 
         # 设置 x 轴刻度为日志级别名称
-        ax = self._plot_widget.getPlotItem().getAxis("bottom")
+        ax = self._plot_widget.getAxis("bottom")
         ax.setTicks([list(zip(x, levels))])
 
     def clear(self):
         """清空图表，恢复空框架"""
         self._plot_widget.clear()
         self._bar_item = None
-        self._plot_widget.getPlotItem().hideAxis("bottom")
-        self._plot_widget.getPlotItem().hideAxis("left")
+        self._plot_widget.hideAxis("bottom")
+        self._plot_widget.hideAxis("left")
