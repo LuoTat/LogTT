@@ -5,20 +5,6 @@
 namespace logtt
 {
 
-bool has_column(const std::string& structured_table_name, const std::string& column_name)
-{
-    auto& conn {get_connection()};
-    auto  rel {conn.Table(structured_table_name)};
-    for (auto&& col : rel->Columns())
-    {
-        if (col.Name() == column_name)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
 std::vector<std::pair<std::string, std::uint32_t>> get_level_distribution(const std::string& structured_table_name)
 {
     auto& conn {get_connection()};

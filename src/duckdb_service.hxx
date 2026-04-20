@@ -72,6 +72,7 @@ std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_filter_tab
 
 bool                                    table_exists(const std::string& table_name);
 void                                    drop_table(const std::string& table_name);
+bool                                    has_column(const std::string& table_name, const std::string& column_name);
 std::uint32_t                           get_table_row_count(const std::string& table_name);
 std::vector<std::string>                get_table_columns(const std::string& table_name);
 std::pair<std::uint64_t, std::uint64_t> compact_database();

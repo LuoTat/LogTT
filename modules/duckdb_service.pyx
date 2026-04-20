@@ -207,6 +207,15 @@ cdef class DuckDBService:
             cxx_drop_table(table_name)
 
     @staticmethod
+    def has_column(string table_name, string column_name) -> bool:
+        cdef bint result
+
+        with nogil:
+            result = cxx_has_column(table_name, column_name)
+
+        return result
+
+    @staticmethod
     def get_table_row_count(string table_name) -> int:
         cdef uint32_t row_count
 

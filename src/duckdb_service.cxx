@@ -458,6 +458,20 @@ void drop_table(const std::string& table_name)
     conn.Query(std::format("DROP TABLE IF EXISTS {}", table_name));
 }
 
+bool has_column(const std::string& table_name, const std::string& column_name)
+{
+    auto& conn {get_connection()};
+    auto  rel {conn.Table(table_name)};
+    for (auto&& col : rel->Columns())
+    {
+        if (col.Name() == column_name)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::uint32_t get_table_row_count(const std::string& table_name)
 {
     auto& conn {get_connection()};
