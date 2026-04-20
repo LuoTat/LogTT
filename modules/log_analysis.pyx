@@ -11,8 +11,8 @@ from modules.log_analysis cimport (
 
 cdef class LogAnalysis:
     @staticmethod
-    def get_level_distribution(string table_name) -> list[tuple[str, int]]:
-        cdef vector[pair[string, uint32_t]] result
+    def get_level_distribution(string table_name) -> tuple[list[str], list[int]]:
+        cdef pair[vector[string], vector[uint32_t]] result
 
         with nogil:
             result = cxx_get_level_distribution(table_name)
@@ -20,8 +20,8 @@ cdef class LogAnalysis:
         return result
 
     @staticmethod
-    def get_log_frequency_distribution(string table_name, int32_t months, int32_t days, int64_t micros) -> list[tuple[int, int]]:
-        cdef vector[pair[int64_t, uint32_t]] result
+    def get_log_frequency_distribution(string table_name, int32_t months, int32_t days, int64_t micros) -> tuple[list[int], list[int]]:
+        cdef pair[vector[int64_t], vector[uint32_t]] result
 
         with nogil:
             result = cxx_get_log_frequency_distribution(table_name, months, days, micros)

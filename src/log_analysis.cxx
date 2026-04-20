@@ -5,7 +5,7 @@
 namespace logtt
 {
 
-std::vector<std::pair<std::string, std::uint32_t>> get_level_distribution(const std::string& structured_table_name)
+std::pair<std::vector<std::string>, std::vector<std::uint32_t>> get_level_distribution(const std::string& structured_table_name)
 {
     auto& conn {get_connection()};
     auto  rel {conn.Table(structured_table_name)};
@@ -15,20 +15,22 @@ std::vector<std::pair<std::string, std::uint32_t>> get_level_distribution(const 
     agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Level"));
     agg_exprs.push_back(std::move(func_expr));
     rel = rel->Aggregate(std::move(agg_exprs), "Level");
+    rel = rel->Order("Level");
 
-    std::vector<std::pair<std::string, std::uint32_t>> distribution;
-    auto                                               result {to_materialized_query_result(rel->Execute())};
+    std::pair<std::vector<std::string>, std::vector<std::uint32_t>> distribution;
+    auto                                                            result {to_materialized_query_result(rel->Execute())};
     for (auto&& i : std::views::iota(0UL, result->RowCount()))
     {
         auto level {result->GetValue(0, i)};
         auto count {result->GetValue<std::uint32_t>(1, i)};
-        distribution.emplace_back(level.ToString(), count);
+        distribution.first.push_back(level.ToString());
+        distribution.second.push_back(count);
     }
 
     return distribution;
 }
 
-std::vector<std::pair<std::int64_t, std::uint32_t>> get_log_frequency_distribution(
+std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequency_distribution(
     const std::string& structured_table_name,
     std::uint32_t      months,
     std::uint32_t      days,
@@ -54,8 +56,9 @@ std::vector<std::pair<std::int64_t, std::uint32_t>> get_log_frequency_distributi
 
     auto result {to_materialized_query_result(rel->Execute())};
 
-    std::vector<std::pair<std::int64_t, std::uint32_t>> distribution;
-    distribution.reserve(result->RowCount());
+    std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> distribution;
+    distribution.first.reserve(result->RowCount());
+    distribution.second.reserve(result->RowCount());
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& timestamp_bucket_col {data_chunk.data[0]};
@@ -69,7 +72,8 @@ std::vector<std::pair<std::int64_t, std::uint32_t>> get_log_frequency_distributi
             auto timestamp_bucket {timestamp_bucket_data[row]};
             auto count {count_data[row]};
 
-            distribution.emplace_back(timestamp_bucket.value / 1000000, count);
+            distribution.first.push_back(timestamp_bucket.value / 1000000);
+            distribution.second.push_back(count);
         }
     }
 

@@ -10,8 +10,8 @@ namespace logtt
 
 // ==================== 日志分析相关函数 ====================
 
-std::vector<std::pair<std::string, std::uint32_t>>  get_level_distribution(const std::string& structured_table_name);
-std::vector<std::pair<std::int64_t, std::uint32_t>> get_log_frequency_distribution(
+std::pair<std::vector<std::string>, std::vector<std::uint32_t>>  get_level_distribution(const std::string& structured_table_name);
+std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequency_distribution(
     const std::string& structured_table_name,
     std::uint32_t      months,
     std::uint32_t      days,

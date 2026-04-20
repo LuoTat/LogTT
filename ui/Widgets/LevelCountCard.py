@@ -58,8 +58,8 @@ class LevelCountCard(CardWidget):
         """设置表名并绘制日志级别分布柱状图"""
         distribution = LogAnalysis.get_level_distribution(structured_table_name)
 
-        levels = [item[0] for item in distribution]
-        counts = [item[1] for item in distribution]
+        levels = distribution[0]
+        counts = distribution[1]
 
         self._plot_widget.clear()
         self._plot_widget.showAxis("bottom")

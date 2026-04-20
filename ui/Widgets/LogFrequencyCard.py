@@ -60,8 +60,8 @@ class LogFrequencyCard(CardWidget):
             micros,
         )
 
-        epochs = [item[0] for item in distribution]
-        counts = [item[1] for item in distribution]
+        epochs = distribution[0]
+        counts = distribution[1]
 
         self._plot_widget.plot(
             epochs,
