@@ -49,20 +49,17 @@ class LogFrequencyCard(CardWidget):
             micros,
         )
 
-        epochs = distribution[0]
-        counts = distribution[1]
-
-        self._plot_widget.plot(
-            epochs,
-            counts,
+        # 从 interval 计算柱宽（秒）
+        bar_width = months * 30 * 86400 + days * 86400 + micros / 1_000_000
+        self._plot_widget.clear()
+        bar = pg.BarGraphItem(
+            x=distribution[0],
+            height=distribution[1],
+            width=bar_width,
             pen=pg.mkPen("#4FC2F7"),
-            fillLevel=0,
-            fillBrush=pg.mkBrush("#4FC2F732"),
-            skipFiniteCheck=True,
-            clear=True,
+            brush=pg.mkBrush("#4FC2F788"),
         )
-        self._plot_widget.setDownsampling(auto=True, mode="peak")
-        self._plot_widget.setClipToView(True)
+        self._plot_widget.addItem(bar)
         self._plot_widget.enableAutoRange()
 
     def clear(self):

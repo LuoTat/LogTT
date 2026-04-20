@@ -1,5 +1,4 @@
 import pyqtgraph as pg
-from pyqtgraph.functions import mkBrush
 from modules.log_analysis import LogAnalysis
 from PySide6.QtWidgets import QVBoxLayout
 from qfluentwidgets import (
@@ -53,21 +52,20 @@ class LogLevelFrequencyCard(CardWidget):
             micros,
         )
 
+        # 从 interval 计算柱宽（秒）
+        bar_width = months * 30 * 86400 + days * 86400 + micros / 1_000_000
         self._plot_widget.clear()
         for level, (epochs, counts) in level_distribution.items():
-            curve = pg.PlotDataItem(
-                epochs,
-                counts,
-                pen=pg.mkPen(LEVEL_COLOR_MAP.get(level.upper(), "#78909C")),
-                fillLevel=0,
-                fillBrush=mkBrush(LEVEL_COLOR_MAP.get(level.upper(), "#78909C") + "32"),
-                skipFiniteCheck=True,
+            bar = pg.BarGraphItem(
+                x=epochs,
+                height=counts,
+                width=bar_width,
+                pen=pg.mkPen(LEVEL_COLOR_MAP.get(level.upper(), "#DDDDDD")),
+                brush=pg.mkBrush(LEVEL_COLOR_MAP.get(level.upper(), "#808080") + "88"),
                 name=level,
             )
-            self._plot_widget.addItem(curve)
+            self._plot_widget.addItem(bar)
 
-        self._plot_widget.setDownsampling(auto=True, mode="peak")
-        self._plot_widget.setClipToView(True)
         self._plot_widget.enableAutoRange()
 
     def clear(self):
