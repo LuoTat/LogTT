@@ -1,4 +1,5 @@
 import pyqtgraph as pg
+from pyqtgraph.functions import mkBrush
 from modules.log_analysis import LogAnalysis
 from PySide6.QtWidgets import QVBoxLayout
 from qfluentwidgets import (
@@ -6,9 +7,11 @@ from qfluentwidgets import (
     CardWidget,
 )
 
+from modules.constants import LEVEL_COLOR_MAP
 
-class LogFrequencyCard(CardWidget):
-    """日志频率时间线折线图卡片"""
+
+class LogLevelFrequencyCard(CardWidget):
+    """日志级别频率时间线折线图卡片"""
 
     def __init__(self, structured_table_name: str | None = None, parent=None):
         super().__init__(parent)
@@ -17,7 +20,7 @@ class LogFrequencyCard(CardWidget):
         self._main_layout.setContentsMargins(24, 24, 24, 24)
         self._main_layout.setSpacing(16)
 
-        self._title_label = BodyLabel(self.tr("日志频率时间线"), self)
+        self._title_label = BodyLabel(self.tr("日志级别频率时间线"), self)
         self._main_layout.addWidget(self._title_label)
 
         self._plot_widget = pg.PlotWidget(
@@ -27,6 +30,7 @@ class LogFrequencyCard(CardWidget):
         )
         self._plot_widget.setStyleSheet("background: transparent;")
         self._plot_widget.showGrid(x=True, y=True, alpha=0.3)
+        self._plot_widget.addLegend()
         self._main_layout.addWidget(self._plot_widget)
 
         if structured_table_name is not None:
@@ -42,25 +46,26 @@ class LogFrequencyCard(CardWidget):
         """设置表名并绘制日志频率时间线"""
 
         months, days, micros = interval
-        distribution = LogAnalysis.get_log_frequency_distribution(
+        level_distribution = LogAnalysis.get_log_level_frequency_distribution(
             structured_table_name,
             months,
             days,
             micros,
         )
 
-        epochs = distribution[0]
-        counts = distribution[1]
+        self._plot_widget.clear()
+        for level, (epochs, counts) in level_distribution.items():
+            curve = pg.PlotDataItem(
+                epochs,
+                counts,
+                pen=pg.mkPen(LEVEL_COLOR_MAP.get(level.upper(), "#78909C")),
+                fillLevel=0,
+                fillBrush=mkBrush(LEVEL_COLOR_MAP.get(level.upper(), "#78909C") + "32"),
+                skipFiniteCheck=True,
+                name=level,
+            )
+            self._plot_widget.addItem(curve)
 
-        self._plot_widget.plot(
-            epochs,
-            counts,
-            pen=pg.mkPen("#4FC2F7"),
-            fillLevel=0,
-            fillBrush=pg.mkBrush("#4FC2F732"),
-            skipFiniteCheck=True,
-            clear=True,
-        )
         self._plot_widget.setDownsampling(auto=True, mode="peak")
         self._plot_widget.setClipToView(True)
         self._plot_widget.enableAutoRange()

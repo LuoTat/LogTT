@@ -1,5 +1,4 @@
 from modules.duckdb_service import DuckDBService
-from modules.log_analysis import LogAnalysis
 from PySide6.QtCore import (
     Qt,
     Slot,
@@ -11,11 +10,11 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from qfluentwidgets import BodyLabel, ComboBox, InfoBar, InfoBarPosition
+from qfluentwidgets import BodyLabel, InfoBar, InfoBarPosition
 from qfluentwidgets.components import ModelComboBox
 
-from modules.models import ExtractedLogListModel
-from ui.Widgets import GRANULARITIES, LogFrequencyCard
+from modules.models import ExtractedLogListModel, GranularityListModel
+from ui.Widgets import LogFrequencyCard, LogLevelFrequencyCard
 
 
 class TemporalAnalysisPage(QWidget):
@@ -32,6 +31,7 @@ class TemporalAnalysisPage(QWidget):
 
         # 初始化日志列表模型
         self._extracted_log_list_model = ExtractedLogListModel(self)
+        self._granularity_list_model = GranularityListModel(self)
         self._select_log_id = -1
         self._init_toolbar()
         self._init_chart()
@@ -73,9 +73,9 @@ class TemporalAnalysisPage(QWidget):
         granularity_label = BodyLabel(self.tr("时间粒度："), self)
         tool_bar_layout.addWidget(granularity_label)
 
-        self._granularity_combo_box = ComboBox(self)
+        self._granularity_combo_box = ModelComboBox(self)
         self._granularity_combo_box.setMinimumWidth(120)
-        self._granularity_combo_box.addItems([g[0] for g in GRANULARITIES])
+        self._granularity_combo_box.setModel(self._granularity_list_model)
         self._granularity_combo_box.setCurrentIndex(2)  # 默认1分钟
         self._granularity_combo_box.currentIndexChanged.connect(
             self._on_granularity_changed
@@ -92,37 +92,10 @@ class TemporalAnalysisPage(QWidget):
         self._frequency_card = LogFrequencyCard(parent=self)
         self._card_layout.addWidget(self._frequency_card, 0, 0)
 
+        self._level_frequency_card = LogLevelFrequencyCard(parent=self)
+        self._card_layout.addWidget(self._level_frequency_card, 1, 0)
+
         self._main_layout.addLayout(self._card_layout)
-
-    def _refresh_chart(self):
-        """根据当前选择刷新图表"""
-        if self._select_log_id < 0:
-            return
-
-        model_index = self._extracted_log_list_model.index(
-            self._log_combo_box.currentIndex()
-        )
-        structured_table_name = model_index.data(
-            ExtractedLogListModel.STRUCTURED_TABLE_NAME_ROLE
-        )
-
-        if not structured_table_name or not DuckDBService.table_exists(
-            structured_table_name
-        ):
-            return
-
-        if not LogAnalysis.has_column(structured_table_name, "Timestamp"):
-            InfoBar.warning(
-                title=self.tr("缺少时间戳"),
-                content=self.tr("该日志未包含 Timestamp 列，无法进行时序分析"),
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=5000,
-                parent=self,
-            )
-            self._frequency_card.clear()
-            return
 
     # ==================== 槽函数 ====================
 
@@ -149,17 +122,39 @@ class TemporalAnalysisPage(QWidget):
             return
 
         self._select_log_id = log_id
-        granularity_index = self._granularity_combo_box.currentIndex()
-        self._frequency_card.setTable(structured_table_name, granularity_index)
+        interval = self._granularity_list_model.index(
+            self._granularity_combo_box.currentIndex()
+        ).data(GranularityListModel.INTERVAL_ROLE)
+        self._frequency_card.setTable(structured_table_name, interval)
+
+        # 检查是否有 Level 列，有则绘制日志级别分布
+        if DuckDBService.has_column(structured_table_name, "Level"):
+            self._level_frequency_card.setTable(
+                structured_table_name,
+                interval,
+            )
+        else:
+            self._level_frequency_card.clear()
 
     @Slot(int)
     def _on_granularity_changed(self, index: int):
-        log_combo_box_index = self._log_combo_box.currentIndex()
-        if log_combo_box_index < 0:
+        log_index = self._log_combo_box.currentIndex()
+        if log_index < 0:
             return
 
-        model_index = self._extracted_log_list_model.index(log_combo_box_index)
-        structured_table_name = model_index.data(
+        structured_table_name = self._extracted_log_list_model.index(log_index).data(
             ExtractedLogListModel.STRUCTURED_TABLE_NAME_ROLE
         )
-        self._frequency_card.setTable(structured_table_name, index)
+        interval = self._granularity_list_model.index(index).data(
+            GranularityListModel.INTERVAL_ROLE
+        )
+        self._frequency_card.setTable(structured_table_name, interval)
+
+        # 检查是否有 Level 列，有则绘制日志级别分布
+        if DuckDBService.has_column(structured_table_name, "Level"):
+            self._level_frequency_card.setTable(
+                structured_table_name,
+                interval,
+            )
+        else:
+            self._level_frequency_card.clear()

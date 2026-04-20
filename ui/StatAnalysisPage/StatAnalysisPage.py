@@ -1,5 +1,4 @@
 from modules.duckdb_service import DuckDBService
-from modules.log_analysis import LogAnalysis
 from PySide6.QtCore import (
     Qt,
     Slot,
