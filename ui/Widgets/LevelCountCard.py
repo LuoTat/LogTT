@@ -6,6 +6,8 @@ from qfluentwidgets import (
     CardWidget,
 )
 
+from modules.constants import LEVEL_COLOR_MAP
+
 
 class LevelCountCard(CardWidget):
     """日志级别分布柱状图卡片"""
@@ -30,28 +32,6 @@ class LevelCountCard(CardWidget):
         if structured_table_name is not None:
             self.setTable(structured_table_name)
 
-    # ==================== 私有方法 ====================
-
-    @staticmethod
-    def _get_level_colors(levels: list[str]) -> list[str]:
-        """根据日志级别名称返回对应颜色"""
-        color_map = {
-            "FATAL": "#DC143C",
-            "EMERG": "#DC143C",
-            "ALERT": "#FF4500",
-            "CRIT": "#FF4500",
-            "CRITICAL": "#FF4500",
-            "ERROR": "#FF6347",
-            "ERR": "#FF6347",
-            "WARN": "#FFA500",
-            "WARNING": "#FFA500",
-            "NOTICE": "#4682B4",
-            "INFO": "#4CAF50",
-            "DEBUG": "#9E9E9E",
-            "TRACE": "#BDBDBD",
-        }
-        return [color_map.get(level.upper(), "#78909C") for level in levels]
-
     # ==================== 公共方法 ====================
 
     def setTable(self, structured_table_name: str):
@@ -70,7 +50,10 @@ class LevelCountCard(CardWidget):
             x=x,
             height=counts,
             width=0.6,
-            brushes=[pg.mkBrush(c) for c in self._get_level_colors(levels)],
+            brushes=[
+                pg.mkBrush(LEVEL_COLOR_MAP.get(level.upper(), "#78909C"))
+                for level in levels
+            ],
         )
         self._plot_widget.addItem(self._bar_item)
 
