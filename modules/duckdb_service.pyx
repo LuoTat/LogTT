@@ -17,6 +17,7 @@ from modules.duckdb_service cimport (
     get_log_table as cxx_get_log_table,
     get_table_columns as cxx_get_table_columns,
     get_table_row_count as cxx_get_table_row_count,
+    has_column as cxx_has_column,
     insert_log as cxx_insert_log,
     table_exists as cxx_table_exists,
     update_log_extract_method as cxx_update_log_extract_method,
