@@ -116,7 +116,7 @@ class StatAnalysisPage(QWidget):
         self._stat_card.setTable(structured_table_name, templates_table_name)
 
         # 检查是否有 Level 列，有则绘制日志级别分布
-        if LogAnalysis.has_column(structured_table_name, "Level"):
+        if DuckDBService.has_column(structured_table_name, "Level"):
             self._level_card.setTable(structured_table_name)
         else:
             self._level_card.clear()
