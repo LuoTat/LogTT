@@ -72,7 +72,6 @@ class LogFrequencyCard(CardWidget):
             pen=pg.mkPen("#4FC2F7"),
             fillLevel=0,
             fillBrush=pg.mkBrush("#4FC3F732"),
-            useCache=False,
             skipFiniteCheck=True,
             clear=True,
         )
