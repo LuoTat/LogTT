@@ -11,11 +11,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #pragma once
 #define DUCKDB_AMALGAMATION 1
 #define DUCKDB_AMALGAMATION_EXTENDED 1
-#define DUCKDB_SOURCE_ID "038fb6b79c"
-#define DUCKDB_VERSION "v1.5.3-dev53"
+#define DUCKDB_SOURCE_ID "62e7f0dddf"
+#define DUCKDB_VERSION "v1.5.3-dev115"
 #define DUCKDB_MAJOR_VERSION 1
 #define DUCKDB_MINOR_VERSION 5
-#define DUCKDB_PATCH_VERSION "3-dev53"
+#define DUCKDB_PATCH_VERSION "3-dev115"
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //
@@ -24493,6 +24493,8 @@ enum class RequestType : uint8_t;
 
 enum class ResultModifierType : uint8_t;
 
+enum class RowGroupAppendMode : uint8_t;
+
 enum class SampleMethod : uint8_t;
 
 enum class SampleType : uint8_t;
@@ -25138,6 +25140,9 @@ const char* EnumUtil::ToChars<RequestType>(RequestType value);
 
 template<>
 const char* EnumUtil::ToChars<ResultModifierType>(ResultModifierType value);
+
+template<>
+const char* EnumUtil::ToChars<RowGroupAppendMode>(RowGroupAppendMode value);
 
 template<>
 const char* EnumUtil::ToChars<SampleMethod>(SampleMethod value);
@@ -25847,6 +25852,9 @@ RequestType EnumUtil::FromString<RequestType>(const char *value);
 
 template<>
 ResultModifierType EnumUtil::FromString<ResultModifierType>(const char *value);
+
+template<>
+RowGroupAppendMode EnumUtil::FromString<RowGroupAppendMode>(const char *value);
 
 template<>
 SampleMethod EnumUtil::FromString<SampleMethod>(const char *value);
@@ -29722,6 +29730,8 @@ typedef enum DUCKDB_TYPE {
 	DUCKDB_TYPE_TIME_NS = 39,
 	// GEOMETRY type, WKB blob
 	DUCKDB_TYPE_GEOMETRY = 40,
+	// VARIANT type
+	DUCKDB_TYPE_VARIANT = 41,
 } duckdb_type;
 
 //! An enum over the returned state of different functions.
@@ -35853,6 +35863,13 @@ Result must be freed with `duckdb_free`.
 * @return The CRS of the GEOMETRY type, or NULL if the type is not a GEOMETRY type.
 */
 DUCKDB_C_API char *duckdb_geometry_type_get_crs(duckdb_logical_type type);
+
+//----------------------------------------------------------------------------------------------------------------------
+// Variant Helpers
+//----------------------------------------------------------------------------------------------------------------------
+// DESCRIPTION:
+// Functions to operate on VARIANT types.
+//----------------------------------------------------------------------------------------------------------------------
 
 #endif
 
@@ -46403,7 +46420,7 @@ struct CSVStateMachineOptions {
 	//! Quote used for columns that contain reserved characters, e.g '
 	CSVOption<char> quote = '\"';
 	//! Escape character to escape quote character
-	CSVOption<char> escape = '\0';
+	CSVOption<char> escape = '\"';
 	//! Comment character to skip a line
 	CSVOption<char> comment = '\0';
 	//! New Line separator
@@ -50457,6 +50474,33 @@ enum class IndexRemovalType {
 
 } // namespace duckdb
 
+//===----------------------------------------------------------------------===//
+//                         DuckDB
+//
+// duckdb/common/enums/row_group_append_mode.hpp
+//
+//
+//===----------------------------------------------------------------------===//
+
+
+
+#include <cstdint>
+
+namespace duckdb {
+
+//! Controls whether an append creates a new row group or reuses an existing one.
+//! Values are ordered so that higher values take priority (ratchet semantics).
+enum class RowGroupAppendMode : uint8_t {
+	//! Append to the last existing row group if possible (default)
+	APPEND_TO_EXISTING = 0,
+	//! Suggest creating a new row group — may be ignored for tables with indexes
+	SUGGEST_NEW = 1,
+	//! Require creating a new row group — cannot be ignored
+	REQUIRE_NEW = 2
+};
+
+} // namespace duckdb
+
 
 namespace duckdb {
 
@@ -50601,7 +50645,7 @@ public:
 	idx_t GetRowGroupSize() const {
 		return row_group_size;
 	}
-	void SetAppendRequiresNewRowGroup();
+	void SetRowGroupAppendMode(RowGroupAppendMode mode);
 	//! Returns the total amount of segments - use sparingly, as this forces all segments to be loaded
 	idx_t GetSegmentCount();
 
@@ -50635,8 +50679,8 @@ private:
 	MetaBlockPointer metadata_pointer;
 	//! Other metadata pointers
 	vector<MetaBlockPointer> metadata_pointers;
-	//! Whether or not we need to append a new row group prior to appending
-	bool requires_new_row_group;
+	//! Controls whether the next append creates a new row group or reuses the existing one
+	RowGroupAppendMode row_group_append_mode;
 };
 
 class RowGroupIterationHelper {
@@ -57038,6 +57082,12 @@ public:
 		auto created = duckdb_appender(nullptr);
 		if (duckdb_appender_create_ext(conn, catalog, schema, table, &created) != DuckDBSuccess) {
 			if (created) {
+				auto error_data = duckdb_appender_error_data(created);
+				auto error_message = duckdb_error_data_message(error_data);
+				if (error_message) {
+					create_error = error_message;
+				}
+				duckdb_destroy_error_data(&error_data);
 				duckdb_appender_destroy(&created);
 			}
 			return;
@@ -57056,9 +57106,13 @@ public:
 	bool Valid() const {
 		return appender != nullptr;
 	}
+	const std::string &CreateError() const {
+		return create_error;
+	}
 
 private:
 	duckdb_appender appender;
+	std::string create_error;
 };
 
 class DataChunkWrapper {
