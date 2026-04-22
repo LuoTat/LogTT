@@ -17,7 +17,7 @@ class BuildExtWithCompilerFlags(build_ext):
         ]
 
         for extension in self.extensions:
-            extension.extra_compile_args = compile_args
+            extension.extra_compile_args.extend(compile_args)
 
         super().build_extensions()
 
@@ -48,6 +48,8 @@ extensions = [
         library_dirs=["lib"],
         libraries=["core"],
         runtime_library_dirs=["$ORIGIN/../lib"],
+        extra_compile_args=["-fopenmp"],
+        extra_link_args=["-fopenmp"],
         language="c++",
     ),
 ]

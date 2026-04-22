@@ -26,6 +26,7 @@ from modules.duckdb_service cimport (
     update_log_line_count as cxx_update_log_line_count,
 )
 
+
 cdef class DuckDBService:
     @staticmethod
     def create_log_table_if_not_exists():

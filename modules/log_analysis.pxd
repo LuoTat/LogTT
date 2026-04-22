@@ -7,4 +7,5 @@ from libcpp.vector cimport vector
 cdef extern from "log_analysis.hxx" namespace "logtt" nogil:
     pair[vector[string], vector[uint32_t]] get_level_distribution(const string& structured_table_name)
     pair[vector[int64_t], vector[uint32_t]] get_log_frequency_distribution(const string& structured_table_name, int32_t months, int32_t days, int64_t micros)
+    pair[vector[int64_t], vector[uint32_t]] get_template_frequency_distribution(const string& structured_table_name, int32_t months, int32_t days, int64_t micros)
     unordered_map[string, pair[vector[int64_t], vector[uint32_t]]] get_log_level_frequency_distribution(const string& structured_table_name, int32_t months, int32_t days, int64_t micros)

@@ -64,7 +64,60 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
         const auto& timestamp_bucket_col {data_chunk.data[0]};
         const auto& count_col {data_chunk.data[1]};
 
-        const auto timestamp_bucket_data {duckdb::FlatVector::GetData<duckdb::timestamp_sec_t>(timestamp_bucket_col)};
+        const auto timestamp_bucket_data {duckdb::FlatVector::GetData<duckdb::timestamp_t>(timestamp_bucket_col)};
+        const auto count_data {duckdb::FlatVector::GetData<std::int64_t>(count_col)};
+
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
+        {
+            auto timestamp_bucket {timestamp_bucket_data[row]};
+            auto count {count_data[row]};
+
+            distribution.first.push_back(timestamp_bucket.value / 1000000);
+            distribution.second.push_back(count);
+        }
+    }
+
+    return distribution;
+}
+
+std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_frequency_distribution(
+    const std::string& structured_table_name,
+    std::uint32_t      months,
+    std::uint32_t      days,
+    std::uint64_t      micros
+)
+{
+    auto& conn {get_connection()};
+    auto  rel {conn.Table(structured_table_name)};
+
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_expr_1;
+    arg_expr_1.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::INTERVAL(months, days, micros)));
+    arg_expr_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Timestamp"));
+    auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>("time_bucket", std::move(arg_expr_1))};
+    func_expr_1->SetAlias("Timestamp_bucket");
+
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_expr_2;
+    arg_expr_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Template"));
+    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("count", std::move(arg_expr_2))};
+    func_expr_2->distinct = true;
+
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
+    agg_exprs.push_back(std::move(func_expr_1));
+    agg_exprs.push_back(std::move(func_expr_2));
+    rel = rel->Aggregate(std::move(agg_exprs), "Timestamp_bucket");
+    rel = rel->Order("Timestamp_bucket");
+
+    auto result {to_materialized_query_result(rel->Execute())};
+
+    std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> distribution;
+    distribution.first.reserve(result->RowCount());
+    distribution.second.reserve(result->RowCount());
+    for (auto&& data_chunk : result->Collection().Chunks())
+    {
+        const auto& timestamp_bucket_col {data_chunk.data[0]};
+        const auto& count_col {data_chunk.data[1]};
+
+        const auto timestamp_bucket_data {duckdb::FlatVector::GetData<duckdb::timestamp_t>(timestamp_bucket_col)};
         const auto count_data {duckdb::FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
@@ -115,7 +168,7 @@ std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector
         const auto& count_col {data_chunk.data[2]};
 
         const auto level_data {duckdb::FlatVector::GetData<duckdb::string_t>(level_col)};
-        const auto timestamp_bucket_data {duckdb::FlatVector::GetData<duckdb::timestamp_sec_t>(timestamp_bucket_col)};
+        const auto timestamp_bucket_data {duckdb::FlatVector::GetData<duckdb::timestamp_t>(timestamp_bucket_col)};
         const auto count_data {duckdb::FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
@@ -131,5 +184,7 @@ std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector
 
     return level_distribution;
 }
+
+
 
 }    // namespace logtt

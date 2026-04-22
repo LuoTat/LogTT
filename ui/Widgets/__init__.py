@@ -4,6 +4,7 @@ from .LogCountCard import LogCountCard
 from .LogFrequencyCard import LogFrequencyCard
 from .LogLevelFrequencyCard import LogLevelFrequencyCard
 from .ParserParamCard import ParserParamCard
+from .TemplateFrequencyCard import TemplateFrequencyCard
 from .TitleCard import TitleCard
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "LogFrequencyCard",
     "LogLevelFrequencyCard",
     "ParserParamCard",
+    "TemplateFrequencyCard",
     "TitleCard",
 ]

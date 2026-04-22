@@ -18,6 +18,12 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
     std::uint32_t      days,
     std::uint64_t      micros
 );
+std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_frequency_distribution(
+    const std::string& structured_table_name,
+    std::uint32_t      months,
+    std::uint32_t      days,
+    std::uint64_t      micros
+);
 std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>> get_log_level_frequency_distribution(
     const std::string& structured_table_name,
     std::uint32_t      months,

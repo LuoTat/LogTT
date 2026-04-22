@@ -14,7 +14,7 @@ from qfluentwidgets import BodyLabel, InfoBar, InfoBarPosition
 from qfluentwidgets.components import ModelComboBox
 
 from modules.models import ExtractedLogListModel, GranularityListModel
-from ui.Widgets import LogFrequencyCard, LogLevelFrequencyCard
+from ui.Widgets import LogFrequencyCard, LogLevelFrequencyCard, TemplateFrequencyCard
 
 
 class TemporalAnalysisPage(QWidget):
@@ -92,8 +92,11 @@ class TemporalAnalysisPage(QWidget):
         self._frequency_card = LogFrequencyCard(parent=self)
         self._card_layout.addWidget(self._frequency_card, 0, 0)
 
+        self._template_frequency_card = TemplateFrequencyCard(parent=self)
+        self._card_layout.addWidget(self._template_frequency_card, 1, 0)
+
         self._level_frequency_card = LogLevelFrequencyCard(parent=self)
-        self._card_layout.addWidget(self._level_frequency_card, 1, 0)
+        self._card_layout.addWidget(self._level_frequency_card, 2, 0)
 
         self._main_layout.addLayout(self._card_layout)
 
@@ -125,7 +128,10 @@ class TemporalAnalysisPage(QWidget):
         interval = self._granularity_list_model.index(
             self._granularity_combo_box.currentIndex()
         ).data(GranularityListModel.INTERVAL_ROLE)
+
         self._frequency_card.setTable(structured_table_name, interval)
+
+        self._template_frequency_card.setTable(structured_table_name)
 
         # 检查是否有 Level 列，有则绘制日志级别分布
         if DuckDBService.has_column(structured_table_name, "Level"):
@@ -148,7 +154,9 @@ class TemporalAnalysisPage(QWidget):
         interval = self._granularity_list_model.index(index).data(
             GranularityListModel.INTERVAL_ROLE
         )
+
         self._frequency_card.setTable(structured_table_name, interval)
+        self._template_frequency_card.setTable(structured_table_name, interval)
 
         # 检查是否有 Level 列，有则绘制日志级别分布
         if DuckDBService.has_column(structured_table_name, "Level"):

@@ -100,7 +100,7 @@ class LogCountCard(CardWidget):
         structured_table_name: str,
         templates_table_name: str,
     ):
-        """设置或更新表名并刷新数值"""
+        """设置表名并刷新数值"""
         log_count = DuckDBService.get_table_row_count(structured_table_name)
         template_count = DuckDBService.get_table_row_count(templates_table_name)
         self._log_value_label.setText(f"{log_count:,}")

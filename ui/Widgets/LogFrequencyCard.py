@@ -8,7 +8,7 @@ from qfluentwidgets import (
 
 
 class LogFrequencyCard(CardWidget):
-    """日志频率时间线折线图卡片"""
+    """日志频数直方图卡片"""
 
     def __init__(self, structured_table_name: str | None = None, parent=None):
         super().__init__(parent)
@@ -17,7 +17,7 @@ class LogFrequencyCard(CardWidget):
         self._main_layout.setContentsMargins(24, 24, 24, 24)
         self._main_layout.setSpacing(16)
 
-        self._title_label = BodyLabel(self.tr("日志频率时间线"), self)
+        self._title_label = BodyLabel(self.tr("日志频数"), self)
         self._main_layout.addWidget(self._title_label)
 
         self._plot_widget = pg.PlotWidget(
@@ -39,10 +39,9 @@ class LogFrequencyCard(CardWidget):
         structured_table_name: str,
         interval: tuple[int, int, int] = (0, 0, 60_000_000),
     ):
-        """设置表名并绘制日志频率时间线"""
-
+        """设置表名并绘制日志频数直方图"""
         months, days, micros = interval
-        distribution = LogAnalysis.get_log_frequency_distribution(
+        epochs, counts = LogAnalysis.get_log_frequency_distribution(
             structured_table_name,
             months,
             days,
@@ -53,8 +52,8 @@ class LogFrequencyCard(CardWidget):
         bar_width = months * 30 * 86400 + days * 86400 + micros / 1_000_000
         self._plot_widget.clear()
         bar = pg.BarGraphItem(
-            x=distribution[0],
-            height=distribution[1],
+            x=epochs,
+            height=counts,
             width=bar_width,
             pen=pg.mkPen("#4FC2F7"),
             brush=pg.mkBrush("#4FC2F788"),
