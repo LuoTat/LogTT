@@ -5,7 +5,7 @@
 namespace logtt
 {
 
-std::pair<std::vector<std::string>, std::vector<std::uint32_t>>
+std::pair<std::vector<std::string>, std::vector<std::int64_t>>
 get_level_distribution(const std::string& structured_table_name)
 {
     auto& conn {get_connection()};
@@ -18,8 +18,9 @@ get_level_distribution(const std::string& structured_table_name)
 
     auto rel {conn.Table(structured_table_name)->Aggregate(std::move(project_exprs), "Level")->Order("Level")};
 
-    std::pair<std::vector<std::string>, std::vector<std::uint32_t>> distribution;
-    auto                                                            result {to_m_result(rel->Execute())};
+    std::pair<std::vector<std::string>, std::vector<std::int64_t>> distribution;
+    auto                                                           result {to_m_result(rel->Execute())};
+    result->Print();
     for (auto&& i : std::views::iota(0UL, result->RowCount()))
     {
         auto level {result->GetValue(0, i)};
@@ -31,8 +32,8 @@ get_level_distribution(const std::string& structured_table_name)
     return distribution;
 }
 
-std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequency_distribution(
-    const std::string& structured_table_name, std::uint32_t months, std::uint32_t days, std::uint64_t micros
+std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> get_log_frequency_distribution(
+    const std::string& structured_table_name, std::int32_t months, std::int32_t days, std::int64_t micros
 )
 {
     auto& conn {get_connection()};
@@ -54,8 +55,8 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
                   ->Aggregate(std::move(project_exprs), "Timestamp_bucket")
                   ->Order("Timestamp_bucket")};
 
-    auto                                                             result {to_m_result(rel->Execute())};
-    std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> distribution;
+    auto                                                            result {to_m_result(rel->Execute())};
+    std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> distribution;
     distribution.first.reserve(result->RowCount());
     distribution.second.reserve(result->RowCount());
     for (auto&& data_chunk : result->Collection().Chunks())
@@ -79,8 +80,8 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
     return distribution;
 }
 
-std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_frequency_distribution(
-    const std::string& structured_table_name, std::uint32_t months, std::uint32_t days, std::uint64_t micros
+std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> get_template_frequency_distribution(
+    const std::string& structured_table_name, std::int32_t months, std::int32_t days, std::int64_t micros
 )
 {
     auto& conn {get_connection()};
@@ -106,8 +107,8 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_fr
                   ->Aggregate(std::move(project_exprs), "Timestamp_bucket")
                   ->Order("Timestamp_bucket")};
 
-    auto                                                             result {to_m_result(rel->Execute())};
-    std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> distribution;
+    auto                                                            result {to_m_result(rel->Execute())};
+    std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> distribution;
     distribution.first.reserve(result->RowCount());
     distribution.second.reserve(result->RowCount());
     for (auto&& data_chunk : result->Collection().Chunks())
@@ -131,9 +132,9 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_fr
     return distribution;
 }
 
-std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>>
+std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>>>
 get_log_level_frequency_distribution(
-    const std::string& structured_table_name, std::uint32_t months, std::uint32_t days, std::uint64_t micros
+    const std::string& structured_table_name, std::int32_t months, std::int32_t days, std::int64_t micros
 )
 {
     auto& conn {get_connection()};
@@ -157,8 +158,7 @@ get_log_level_frequency_distribution(
                   ->Order("Timestamp_bucket")};
 
     auto result {to_m_result(rel->Execute())};
-    std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>>
-        level_distribution;
+    std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>>> level_distribution;
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& level_col {data_chunk.data[0]};
@@ -183,7 +183,7 @@ get_log_level_frequency_distribution(
     return level_distribution;
 }
 
-std::pair<std::uint32_t, std::vector<std::vector<int64_t>>>
+std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>>
 get_template_transition_matrix(const std::string& structured_table_name, const std::string& template_table_name)
 {
     auto& conn {get_connection()};

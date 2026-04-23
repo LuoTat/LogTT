@@ -2,7 +2,7 @@ cdef object np
 
 import numpy as np
 from cython.parallel import prange
-from libc.stdint cimport int32_t, int64_t, uint32_t
+from libc.stdint cimport int32_t, int64_t
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
@@ -19,7 +19,7 @@ from modules.log_analysis cimport (
 cdef class LogAnalysis:
     @staticmethod
     def get_level_distribution(string table_name) -> tuple[list[str], list[int]]:
-        cdef pair[vector[string], vector[uint32_t]] result
+        cdef pair[vector[string], vector[int64_t]] result
 
         with nogil:
             result = cxx_get_level_distribution(table_name)
@@ -28,7 +28,7 @@ cdef class LogAnalysis:
 
     @staticmethod
     def get_log_frequency_distribution(string table_name, int32_t months, int32_t days, int64_t micros) -> tuple[np.ndarray, np.ndarray]:
-        cdef pair[vector[int64_t], vector[uint32_t]] cxx_result
+        cdef pair[vector[int64_t], vector[int64_t]] cxx_result
 
         with nogil:
             cxx_result = cxx_get_log_frequency_distribution(table_name, months, days, micros)
@@ -36,7 +36,7 @@ cdef class LogAnalysis:
         cdef object epochs = np.empty(cxx_result.first.size(), dtype=np.int64)
         cdef object counts = np.empty(cxx_result.second.size(), dtype=np.uint32)
         cdef int64_t [::1] epochs_view = epochs
-        cdef uint32_t [::1] counts_view = counts
+        cdef int64_t [::1] counts_view = counts
 
         cdef size_t i
         with nogil:
@@ -48,7 +48,7 @@ cdef class LogAnalysis:
 
     @staticmethod
     def get_template_frequency_distribution(string table_name, int32_t months, int32_t days, int64_t micros) -> tuple[np.ndarray, np.ndarray]:
-        cdef pair[vector[int64_t], vector[uint32_t]] cxx_result
+        cdef pair[vector[int64_t], vector[int64_t]] cxx_result
 
         with nogil:
             cxx_result = cxx_get_template_frequency_distribution(table_name, months, days, micros)
@@ -56,7 +56,7 @@ cdef class LogAnalysis:
         cdef object epochs = np.empty(cxx_result.first.size(), dtype=np.int64)
         cdef object counts = np.empty(cxx_result.second.size(), dtype=np.uint32)
         cdef int64_t [::1] epochs_view = epochs
-        cdef uint32_t [::1] counts_view = counts
+        cdef int64_t [::1] counts_view = counts
 
         cdef size_t i
         with nogil:
@@ -68,17 +68,17 @@ cdef class LogAnalysis:
 
     @staticmethod
     def get_log_level_frequency_distribution(string table_name, int32_t months, int32_t days, int64_t micros) -> dict[str, tuple[np.ndarray, np.ndarray]]:
-        cdef unordered_map[string, pair[vector[int64_t], vector[uint32_t]]] cxx_result
+        cdef unordered_map[string, pair[vector[int64_t], vector[int64_t]]] cxx_result
 
         with nogil:
             cxx_result = cxx_get_log_level_frequency_distribution(table_name, months, days, micros)
 
         cdef dict result = {}
-        cdef pair[string, pair[vector[int64_t], vector[uint32_t]]] pair
+        cdef pair[string, pair[vector[int64_t], vector[int64_t]]] pair
         cdef object epochs
         cdef object counts
         cdef int64_t [::1] epochs_view
-        cdef uint32_t [::1] counts_view
+        cdef int64_t [::1] counts_view
         cdef size_t i
         for pair in cxx_result:
             epochs = np.empty(pair.second.first.size(), dtype=np.int64)
@@ -97,14 +97,14 @@ cdef class LogAnalysis:
 
     @staticmethod
     def get_template_transition_matrix(string structured_table_name, string template_table_name) -> np.ndarray:
-        cdef pair[uint32_t, vector[vector[int64_t]]] cxx_result
+        cdef pair[int64_t, vector[vector[int64_t]]] cxx_result
 
         with nogil:
             cxx_result = cxx_get_template_transition_matrix(structured_table_name, template_table_name)
 
-        cdef uint32_t dim = cxx_result.first
+        cdef int64_t dim = cxx_result.first
         cdef object matrix = np.zeros((dim, dim), dtype=np.uint32)
-        cdef uint32_t [:,::1] matrix_view = matrix
+        cdef int64_t [:,::1] matrix_view = matrix
 
         cdef size_t i
         with nogil:
