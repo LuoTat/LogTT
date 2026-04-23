@@ -24,8 +24,6 @@ class LevelCountCard(CardWidget):
 
         self._plot_widget = pg.PlotWidget(self, "transparent")
         self._plot_widget.setStyleSheet("background: transparent;")
-        self._plot_widget.hideAxis("bottom")
-        self._plot_widget.hideAxis("left")
         self._plot_widget.setMouseEnabled(x=False, y=False)
         self._main_layout.addWidget(self._plot_widget)
 
@@ -42,11 +40,9 @@ class LevelCountCard(CardWidget):
         counts = distribution[1]
 
         self._plot_widget.clear()
-        self._plot_widget.showAxis("bottom")
-        self._plot_widget.showAxis("left")
 
         x = range(len(levels))
-        self._bar_item = pg.BarGraphItem(
+        bar = pg.BarGraphItem(
             x=x,
             height=counts,
             width=0.6,
@@ -55,7 +51,7 @@ class LevelCountCard(CardWidget):
                 for level in levels
             ],
         )
-        self._plot_widget.addItem(self._bar_item)
+        self._plot_widget.addItem(bar)
 
         # 设置 x 轴刻度为日志级别名称
         ax = self._plot_widget.getAxis("bottom")
@@ -64,6 +60,3 @@ class LevelCountCard(CardWidget):
     def clear(self):
         """清空图表，恢复空框架"""
         self._plot_widget.clear()
-        self._bar_item = None
-        self._plot_widget.hideAxis("bottom")
-        self._plot_widget.hideAxis("left")

@@ -34,7 +34,7 @@ cdef class LogAnalysis:
             cxx_result = cxx_get_log_frequency_distribution(table_name, months, days, micros)
 
         cdef object epochs = np.empty(cxx_result.first.size(), dtype=np.int64)
-        cdef object counts = np.empty(cxx_result.second.size(), dtype=np.uint32)
+        cdef object counts = np.empty(cxx_result.second.size(), dtype=np.int64)
         cdef int64_t [::1] epochs_view = epochs
         cdef int64_t [::1] counts_view = counts
 
@@ -54,7 +54,7 @@ cdef class LogAnalysis:
             cxx_result = cxx_get_template_frequency_distribution(table_name, months, days, micros)
 
         cdef object epochs = np.empty(cxx_result.first.size(), dtype=np.int64)
-        cdef object counts = np.empty(cxx_result.second.size(), dtype=np.uint32)
+        cdef object counts = np.empty(cxx_result.second.size(), dtype=np.int64)
         cdef int64_t [::1] epochs_view = epochs
         cdef int64_t [::1] counts_view = counts
 
@@ -82,7 +82,7 @@ cdef class LogAnalysis:
         cdef size_t i
         for pair in cxx_result:
             epochs = np.empty(pair.second.first.size(), dtype=np.int64)
-            counts = np.empty(pair.second.second.size(), dtype=np.uint32)
+            counts = np.empty(pair.second.second.size(), dtype=np.int64)
             epochs_view = epochs
             counts_view = counts
 
@@ -103,7 +103,7 @@ cdef class LogAnalysis:
             cxx_result = cxx_get_template_transition_matrix(structured_table_name, template_table_name)
 
         cdef int64_t dim = cxx_result.first
-        cdef object matrix = np.zeros((dim, dim), dtype=np.uint32)
+        cdef object matrix = np.zeros((dim, dim), dtype=np.int64)
         cdef int64_t [:,::1] matrix_view = matrix
 
         cdef size_t i

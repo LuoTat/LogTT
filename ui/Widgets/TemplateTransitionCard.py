@@ -35,6 +35,8 @@ class TemplateTransitionCard(CardWidget):
         self._plot_widget.setAspectLocked(True)
         self._main_layout.addWidget(self._plot_widget)
 
+        self._color_bar = None
+
         if structured_table_name is not None and template_table_name is not None:
             self.setTable(structured_table_name, template_table_name)
 
@@ -50,34 +52,39 @@ class TemplateTransitionCard(CardWidget):
             structured_table_name,
             template_table_name,
         )
-        compact_matrix, row_count, col_count = self._compact_transition_matrix(matrix)
-
-        self._plot_widget.setTitle(
-            f"Template i -> Template j | raw={matrix.shape[0]}x{matrix.shape[1]}, "
-            f"compact={compact_matrix.shape[0]}x{compact_matrix.shape[1]}, "
-            f"nonzero rows/cols={row_count}/{col_count}"
-        )
 
         self._plot_widget.clear()
-        img = pg.ImageItem(compact_matrix, axisOrder="row-major")
+        if self._color_bar is not None:
+            self._plot_widget.plotItem.layout.removeItem(self._color_bar)
+            self._color_bar.scene().removeItem(self._color_bar)
+
+        # 计算 99% 分位数
+        nonzero = matrix[matrix > 0]
+        vmax = np.percentile(nonzero, 99)
+        # 自动计算 rounding
+        order = 10 ** np.floor(np.log10(vmax))
+        rounding = order / 10
+        # log 变换
+        log_matrix = np.log1p(matrix)
+        log_vmax = np.log1p(vmax)
+        log_max = np.log1p(np.max(matrix))
+
+        img = pg.ImageItem(log_matrix, axisOrder="row-major")
         self._plot_widget.addItem(img)
-        self._plot_widget.addColorBar(img, colorMap="CET-L8")
+        self._color_bar = self._plot_widget.addColorBar(
+            img,
+            values=(0, log_vmax),
+            colorMap="CET-L8",
+            limits=(0, log_max),
+            rounding=rounding,
+        )
+
         self._plot_widget.enableAutoRange()
-
-    def _compact_transition_matrix(
-        self, matrix: np.ndarray
-    ) -> tuple[np.ndarray, int, int]:
-        """删除所有全零行列，只保留出现过转移的模板。"""
-        nonzero_rows = np.any(matrix != 0, axis=1)
-        nonzero_cols = np.any(matrix != 0, axis=0)
-        row_count = int(np.count_nonzero(nonzero_rows))
-        col_count = int(np.count_nonzero(nonzero_cols))
-
-        if row_count == 0 or col_count == 0:
-            return matrix[:1, :1], row_count, col_count
-
-        return matrix[np.ix_(nonzero_rows, nonzero_cols)], row_count, col_count
 
     def clear(self):
         """清空图表"""
         self._plot_widget.clear()
+        if self._color_bar is not None:
+            self._plot_widget.plotItem.layout.removeItem(self._color_bar)
+            self._color_bar.scene().removeItem(self._color_bar)
+            self._color_bar = None

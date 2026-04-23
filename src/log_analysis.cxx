@@ -18,9 +18,8 @@ get_level_distribution(const std::string& structured_table_name)
 
     auto rel {conn.Table(structured_table_name)->Aggregate(std::move(project_exprs), "Level")->Order("Level")};
 
-    std::pair<std::vector<std::string>, std::vector<std::int64_t>> distribution;
     auto                                                           result {to_m_result(rel->Execute())};
-    result->Print();
+    std::pair<std::vector<std::string>, std::vector<std::int64_t>> distribution;
     for (auto&& i : std::views::iota(0UL, result->RowCount()))
     {
         auto level {result->GetValue(0, i)};
@@ -51,9 +50,7 @@ std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> get_log_frequenc
     project_exprs.push_back(std::move(func_expr_1));
     project_exprs.push_back(std::move(func_expr_2));
 
-    auto rel {conn.Table(structured_table_name)
-                  ->Aggregate(std::move(project_exprs), "Timestamp_bucket")
-                  ->Order("Timestamp_bucket")};
+    auto rel {conn.Table(structured_table_name)->Aggregate(std::move(project_exprs), "Timestamp_bucket")};
 
     auto                                                            result {to_m_result(rel->Execute())};
     std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> distribution;
@@ -103,9 +100,7 @@ std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> get_template_fre
     project_exprs.push_back(std::move(func_expr_1));
     project_exprs.push_back(std::move(func_expr_2));
 
-    auto rel {conn.Table(structured_table_name)
-                  ->Aggregate(std::move(project_exprs), "Timestamp_bucket")
-                  ->Order("Timestamp_bucket")};
+    auto rel {conn.Table(structured_table_name)->Aggregate(std::move(project_exprs), "Timestamp_bucket")};
 
     auto                                                            result {to_m_result(rel->Execute())};
     std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> distribution;
@@ -153,9 +148,7 @@ get_log_level_frequency_distribution(
     project_exprs.push_back(std::move(func_expr_1));
     project_exprs.push_back(std::move(func_expr_2));
 
-    auto rel {conn.Table(structured_table_name)
-                  ->Aggregate(std::move(project_exprs), "Timestamp_bucket, Level")
-                  ->Order("Timestamp_bucket")};
+    auto rel {conn.Table(structured_table_name)->Aggregate(std::move(project_exprs), "Timestamp_bucket, Level")};
 
     auto result {to_m_result(rel->Execute())};
     std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>>> level_distribution;
