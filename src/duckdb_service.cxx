@@ -24,7 +24,7 @@ Connection& get_connection()
 
 // ==================== 辅助函数 ====================
 
-static std::vector<std::vector<std::string>> _to_df(shared_ptr<Relation> rel)
+static std::vector<std::vector<std::string>> _to_df(const shared_ptr<Relation>& rel)
 {
     auto star_expr {make_uniq<StarExpression>()};
     star_expr->columns = true;
@@ -32,10 +32,7 @@ static std::vector<std::vector<std::string>> _to_df(shared_ptr<Relation> rel)
     ParsedExprVec project_exprs;
     project_exprs.push_back(make_uniq<CastExpression>(LogicalType::VARCHAR, std::move(star_expr)));
 
-    rel = rel->Project(std::move(project_exprs), {});
-
-    auto result {to_m_result(rel->Execute())};
-
+    auto                                  result {to_m_result(rel->Project(std::move(project_exprs), {})->Execute())};
     auto                                  row_length {result->RowCount()};
     auto                                  col_length {result->ColumnCount()};
     std::vector<std::vector<std::string>> df;
@@ -131,9 +128,7 @@ std::vector<LogEntry> get_log_table()
     auto& conn {get_connection()};
     auto  rel {conn.Table("log")};
 
-    auto result {to_m_result(rel->Execute())};
-    result->Print();
-
+    auto                  result {to_m_result(rel->Execute())};
     std::vector<LogEntry> log_table;
     log_table.reserve(result->RowCount());
     for (auto&& data_chunk : result->Collection().Chunks())
@@ -211,8 +206,7 @@ std::vector<EXLogEntry> get_extracted_log_table()
     project_exprs.push_back(make_uniq<ColumnRefExpression>("templates_table_name"));
     rel = rel->Project(std::move(project_exprs), {});
 
-    auto result {to_m_result(rel->Execute())};
-
+    auto                    result {to_m_result(rel->Execute())};
     std::vector<EXLogEntry> log_table;
     log_table.reserve(result->RowCount());
     for (auto&& data_chunk : result->Collection().Chunks())
@@ -433,14 +427,12 @@ std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_filter_tab
     project_exprs.push_back(make_uniq<ColumnRefExpression>(column_name));
     project_exprs.push_back(std::move(func_expr));
 
-    rel = rel->Aggregate(std::move(project_exprs), column_name);
-
     vector<OrderByNode> order_exprs;
     order_exprs.emplace_back(
         OrderType::DESCENDING, OrderByNullType::ORDER_DEFAULT, make_uniq<ColumnRefExpression>("Count")
     );
 
-    rel = rel->Order(std::move(order_exprs));
+    rel = rel->Aggregate(std::move(project_exprs), column_name)->Order(std::move(order_exprs));
 
     rel = get_tmp(conn, rel);
 
@@ -468,6 +460,7 @@ bool has_column(const std::string& table_name, const std::string& column_name)
 {
     auto& conn {get_connection()};
     auto  rel {conn.Table(table_name)};
+
     for (auto&& col : rel->Columns())
     {
         if (col.Name() == column_name)

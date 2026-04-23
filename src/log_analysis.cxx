@@ -9,7 +9,6 @@ std::pair<std::vector<std::string>, std::vector<std::uint32_t>>
 get_level_distribution(const std::string& structured_table_name)
 {
     auto& conn {get_connection()};
-    auto  rel {conn.Table(structured_table_name)};
 
     auto func_expr {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
 
@@ -17,8 +16,7 @@ get_level_distribution(const std::string& structured_table_name)
     project_exprs.push_back(make_uniq<ColumnRefExpression>("Level"));
     project_exprs.push_back(std::move(func_expr));
 
-    rel = rel->Aggregate(std::move(project_exprs), "Level");
-    rel = rel->Order("Level");
+    auto rel {conn.Table(structured_table_name)->Aggregate(std::move(project_exprs), "Level")->Order("Level")};
 
     std::pair<std::vector<std::string>, std::vector<std::uint32_t>> distribution;
     auto                                                            result {to_m_result(rel->Execute())};
@@ -38,7 +36,6 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
 )
 {
     auto& conn {get_connection()};
-    auto  rel {conn.Table(structured_table_name)};
 
     ParsedExprVec arg_expr;
     arg_expr.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
@@ -53,11 +50,11 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
     project_exprs.push_back(std::move(func_expr_1));
     project_exprs.push_back(std::move(func_expr_2));
 
-    rel = rel->Aggregate(std::move(project_exprs), "Timestamp_bucket");
-    rel = rel->Order("Timestamp_bucket");
+    auto rel {conn.Table(structured_table_name)
+                  ->Aggregate(std::move(project_exprs), "Timestamp_bucket")
+                  ->Order("Timestamp_bucket")};
 
-    auto result {to_m_result(rel->Execute())};
-
+    auto                                                             result {to_m_result(rel->Execute())};
     std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> distribution;
     distribution.first.reserve(result->RowCount());
     distribution.second.reserve(result->RowCount());
@@ -87,7 +84,6 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_fr
 )
 {
     auto& conn {get_connection()};
-    auto  rel {conn.Table(structured_table_name)};
 
     ParsedExprVec arg_expr_1;
     arg_expr_1.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
@@ -106,11 +102,11 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_fr
     project_exprs.push_back(std::move(func_expr_1));
     project_exprs.push_back(std::move(func_expr_2));
 
-    rel = rel->Aggregate(std::move(project_exprs), "Timestamp_bucket");
-    rel = rel->Order("Timestamp_bucket");
+    auto rel {conn.Table(structured_table_name)
+                  ->Aggregate(std::move(project_exprs), "Timestamp_bucket")
+                  ->Order("Timestamp_bucket")};
 
-    auto result {to_m_result(rel->Execute())};
-
+    auto                                                             result {to_m_result(rel->Execute())};
     std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> distribution;
     distribution.first.reserve(result->RowCount());
     distribution.second.reserve(result->RowCount());
@@ -141,7 +137,6 @@ get_log_level_frequency_distribution(
 )
 {
     auto& conn {get_connection()};
-    auto  rel {conn.Table(structured_table_name)};
 
     ParsedExprVec arg_expr;
     arg_expr.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
@@ -157,12 +152,13 @@ get_log_level_frequency_distribution(
     project_exprs.push_back(std::move(func_expr_1));
     project_exprs.push_back(std::move(func_expr_2));
 
-    rel = rel->Aggregate(std::move(project_exprs), "Timestamp_bucket, Level");
-    rel = rel->Order("Timestamp_bucket");
+    auto rel {conn.Table(structured_table_name)
+                  ->Aggregate(std::move(project_exprs), "Timestamp_bucket, Level")
+                  ->Order("Timestamp_bucket")};
 
-    std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>>
-         level_distribution;
     auto result {to_m_result(rel->Execute())};
+    std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>>
+        level_distribution;
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& level_col {data_chunk.data[0]};
@@ -191,10 +187,10 @@ std::pair<std::uint32_t, std::vector<std::vector<int64_t>>>
 get_template_transition_matrix(const std::string& structured_table_name, const std::string& template_table_name)
 {
     auto& conn {get_connection()};
-    auto  s_rel = conn.Table(structured_table_name);
-    auto  t_rel = conn.Table(template_table_name);
+    auto  s_rel {conn.Table(structured_table_name)};
+    auto  t_rel {conn.Table(template_table_name)};
 
-    auto template_count {to_m_result(t_rel->Execute())->RowCount()};
+    auto template_count {get_row_count(t_rel)};
 
     ParsedExprVec arg_exprs;
     arg_exprs.push_back(
@@ -204,8 +200,6 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
             make_uniq<ColumnRefExpression>("Template", template_table_name)
         )
     );
-
-    auto rel = s_rel->Join(t_rel, std::move(arg_exprs));
 
     auto col_expr {make_uniq<ColumnRefExpression>("rowid", template_table_name)};
     col_expr->SetAlias("curr_id");
@@ -221,16 +215,6 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
     project_exprs_1.push_back(std::move(col_expr));
     project_exprs_1.push_back(std::move(window_expr));
 
-    rel = rel->Project(std::move(project_exprs_1), {});
-
-    rel = rel->Filter(
-        make_uniq<ComparisonExpression>(
-            ExpressionType::COMPARE_NOTEQUAL,
-            make_uniq<ColumnRefExpression>("next_id"),
-            make_uniq<ConstantExpression>(Value::BIGINT(-1))
-        )
-    );
-
     auto func_expr {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
 
     ParsedExprVec project_exprs_2;
@@ -238,10 +222,18 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
     project_exprs_2.push_back(make_uniq<ColumnRefExpression>("next_id"));
     project_exprs_2.push_back(std::move(func_expr));
 
-    rel = rel->Aggregate(std::move(project_exprs_2), "curr_id, next_id");
+    auto rel {s_rel->Join(t_rel, std::move(arg_exprs))
+                  ->Project(std::move(project_exprs_1), {})
+                  ->Filter(
+                      make_uniq<ComparisonExpression>(
+                          ExpressionType::COMPARE_NOTEQUAL,
+                          make_uniq<ColumnRefExpression>("next_id"),
+                          make_uniq<ConstantExpression>(Value::BIGINT(-1))
+                      )
+                  )
+                  ->Aggregate(std::move(project_exprs_2), "curr_id, next_id")};
 
-    auto result {to_m_result(rel->Execute())};
-
+    auto                              result {to_m_result(rel->Execute())};
     std::vector<std::vector<int64_t>> transition_counts;
     transition_counts.reserve(result->RowCount());
     for (auto&& data_chunk : result->Collection().Chunks())

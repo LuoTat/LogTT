@@ -128,7 +128,6 @@ shared_ptr<Relation> load_data(
     project_exprs_1.push_back(make_uniq<ColumnRefExpression>("LineID"));
     project_exprs_1.push_back(std::move(func_expr_1));
 
-    rel = rel->Project(std::move(project_exprs_1), {});
 
     ParsedExprVec arg_exprs_2;
     arg_exprs_2.push_back(make_uniq<ColumnRefExpression>("_cap"));
@@ -138,8 +137,6 @@ shared_ptr<Relation> load_data(
     ParsedExprVec project_exprs_2;
     project_exprs_2.push_back(make_uniq<ColumnRefExpression>("LineID"));
     project_exprs_2.push_back(std::move(func_expr_2));
-
-    rel = rel->Project(std::move(project_exprs_2), {});
 
     // 提取时间戳字段，并将其转换为 TIMESTAMP 类型
     // 同时过滤掉原始的时间戳字段，简化日志表的结构
@@ -158,7 +155,9 @@ shared_ptr<Relation> load_data(
     project_exprs_3.push_back(std::move(func_expr_3));
     project_exprs_3.push_back(std::move(star_expr));
 
-    return rel->Project(std::move(project_exprs_3), {});
+    return rel->Project(std::move(project_exprs_1), {})
+        ->Project(std::move(project_exprs_2), {})
+        ->Project(std::move(project_exprs_3), {});
 }
 
 shared_ptr<Relation> mask_log_rel(shared_ptr<Relation>& rel, const std::vector<Mask>& maskings)
