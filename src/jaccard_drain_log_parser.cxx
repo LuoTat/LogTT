@@ -50,24 +50,30 @@ std::uint32_t JaccardDrainLogParser::parse(
     rel = split_log_rel(rel, this->m_delimiters);
 
     // 缓存分词结果，避免重复计算
-    auto star_expr_1 {duckdb::make_uniq<duckdb::StarExpression>()};
+    auto star_expr_1 {make_uniq<StarExpression>()};
     star_expr_1->exclude_list.emplace("MaskedContent");
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_1;
+
+    ParsedExprVec project_exprs_1;
     project_exprs_1.push_back(std::move(star_expr_1));
+
     rel = rel->Project(std::move(project_exprs_1), {});
+
     rel = get_tmp(conn, rel);
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_2;
-    project_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
-    auto result {to_m_result(rel->Project(std::move(project_exprs_2), {})->Execute())};
+    ParsedExprVec project_exprs_2;
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("Tokens"));
+
+    rel = rel->Project(std::move(project_exprs_2), {});
+
+    auto result {to_m_result(rel->Execute())};
     auto log_length {result->RowCount()};
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& tokens_col {data_chunk.data[0]};
-        const auto& tokens_child {duckdb::ListVector::GetEntry(tokens_col)};
+        const auto& tokens_child {ListVector::GetEntry(tokens_col)};
 
-        const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
-        const auto child_data {duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child)};
+        const auto tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
+        const auto tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -75,24 +81,29 @@ std::uint32_t JaccardDrainLogParser::parse(
             const auto& entry {tokens_data[row]};
             for (auto&& i : std::views::iota(0UL, entry.length))
             {
-                const auto& token {child_data[entry.offset + i]};
-                content.emplace_back(token.GetData(), token.GetSize());
+                const auto& token {tokens_child_data[entry.offset + i]};
+                content.emplace_back(token.GetString());
             }
             cluster_results.push_back(this->_add_content(content));
         }
     }
 
     templates.reserve(log_length);
-    for (auto&& cluster : cluster_results) { templates.push_back(cluster->get_template()); }
+    for (auto&& cluster : cluster_results)
+    {
+        templates.push_back(cluster->get_template());
+    }
 
     // 移除多余列
-    auto star_expr_2 {duckdb::make_uniq<duckdb::StarExpression>()};
+    auto star_expr_2 {make_uniq<StarExpression>()};
     star_expr_2->exclude_list.emplace("Tokens");
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_3;
-    project_exprs_3.push_back(std::move(star_expr_2));
-    rel = rel->Project(std::move(project_exprs_3), {});
-    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
 
+    ParsedExprVec project_exprs_3;
+    project_exprs_3.push_back(std::move(star_expr_2));
+
+    rel = rel->Project(std::move(project_exprs_3), {});
+
+    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
     return log_length;
 }
 
@@ -109,7 +120,10 @@ JaccardDrainLogParser::LogCluster* JaccardDrainLogParser::_add_content(const TCo
     else
     {
         auto new_content {JaccardDrainLogParser::_create_template(content, match_cluster->content)};
-        if (new_content != match_cluster->content) { match_cluster->content = std::move(new_content); }
+        if (new_content != match_cluster->content)
+        {
+            match_cluster->content = std::move(new_content);
+        }
     }
 
     return match_cluster;
@@ -124,12 +138,18 @@ JaccardDrainLogParser::LogCluster* JaccardDrainLogParser::_tree_search(const TCo
     {
         auto cur_node_depth {i + 1};
 
-        if (cur_node_depth == this->m_depth || std::cmp_equal(cur_node_depth, length + 1)) { break; }
+        if (cur_node_depth == this->m_depth || std::cmp_equal(cur_node_depth, length + 1))
+        {
+            break;
+        }
 
         if (auto it {cur_node->children_node.find(token)}; it == cur_node->children_node.end())
         {
             it = cur_node->children_node.find(WILDCARD);
-            if (it == cur_node->children_node.end()) { return nullptr; }
+            if (it == cur_node->children_node.end())
+            {
+                return nullptr;
+            }
             cur_node = it->second.get();
         }
         else
@@ -159,7 +179,10 @@ JaccardDrainLogParser::_fast_match(const TContent& content, const Node* node, bo
         }
     }
 
-    if (max_sim > this->m_sim_thr) { return max_cluster; }
+    if (max_sim > this->m_sim_thr)
+    {
+        return max_cluster;
+    }
 
     return nullptr;
 }
@@ -210,12 +233,18 @@ std::pair<float, std::uint16_t>
 JaccardDrainLogParser::_get_distance(const TContent& content1, const TContent& content2, bool include_params)
 {
     // content1 是原始日志内容，content2 是模板内容
-    if (content1.empty()) { return {1.0F, 0}; }
+    if (content1.empty())
+    {
+        return {1.0F, 0};
+    }
 
     std::uint16_t param_count {0};
     for (auto&& token : content2)
     {
-        if (token == WILDCARD) { ++param_count; }
+        if (token == WILDCARD)
+        {
+            ++param_count;
+        }
     }
 
     TContent filtered_content1;
@@ -228,7 +257,10 @@ JaccardDrainLogParser::_get_distance(const TContent& content1, const TContent& c
 
         for (auto&& [token1, token2] : std::views::zip(content1, content2))
         {
-            if (token2 == WILDCARD) { continue; }
+            if (token2 == WILDCARD)
+            {
+                continue;
+            }
 
             filtered_content1.push_back(token1);
             filtered_content2.push_back(token2);
@@ -241,7 +273,10 @@ JaccardDrainLogParser::_get_distance(const TContent& content1, const TContent& c
 
         for (auto&& token : content2)
         {
-            if (token != WILDCARD) { filtered_content2.push_back(token); }
+            if (token != WILDCARD)
+            {
+                filtered_content2.push_back(token);
+            }
         }
     }
 
@@ -253,14 +288,20 @@ JaccardDrainLogParser::_get_distance(const TContent& content1, const TContent& c
     {
         for (auto&& token : set1)
         {
-            if (set2.contains(token)) { ++inter_size; }
+            if (set2.contains(token))
+            {
+                ++inter_size;
+            }
         }
     }
     else
     {
         for (auto&& token : set2)
         {
-            if (set1.contains(token)) { ++inter_size; }
+            if (set1.contains(token))
+            {
+                ++inter_size;
+            }
         }
     }
 
@@ -282,7 +323,10 @@ TContent JaccardDrainLogParser::_create_template(const TContent& content1, const
         new_content = content1;
         for (auto&& [token1, token2] : std::views::zip(new_content, content2))
         {
-            if (token1 != token2) { token1 = WILDCARD; }
+            if (token1 != token2)
+            {
+                token1 = WILDCARD;
+            }
         }
     }
     else if (length1 > length2)
@@ -291,7 +335,10 @@ TContent JaccardDrainLogParser::_create_template(const TContent& content1, const
         std::unordered_set<Token> tmp_set {content2.begin(), content2.end()};
         for (auto&& token : new_content)
         {
-            if (!tmp_set.contains(token)) { token = WILDCARD; }
+            if (!tmp_set.contains(token))
+            {
+                token = WILDCARD;
+            }
         }
     }
     else
@@ -300,7 +347,10 @@ TContent JaccardDrainLogParser::_create_template(const TContent& content1, const
         std::unordered_set<Token> tmp_set {content1.begin(), content1.end()};
         for (auto&& token : new_content)
         {
-            if (!tmp_set.contains(token)) { token = WILDCARD; }
+            if (!tmp_set.contains(token))
+            {
+                token = WILDCARD;
+            }
         }
     }
 
@@ -308,6 +358,8 @@ TContent JaccardDrainLogParser::_create_template(const TContent& content1, const
 }
 
 std::string JaccardDrainLogParser::LogCluster::get_template() const
-{ return this->content | std::views::join_with(' ') | std::ranges::to<std::string>(); }
+{
+    return this->content | std::views::join_with(' ') | std::ranges::to<std::string>();
+}
 
 }    // namespace logtt

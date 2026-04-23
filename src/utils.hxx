@@ -1,6 +1,5 @@
 #pragma once
 
-#include "duckdb.hpp"
 #include "precomp.hxx"
 #include <string>
 #include <vector>
@@ -8,30 +7,28 @@
 namespace logtt
 {
 
-duckdb::unique_ptr<duckdb::MaterializedQueryResult> to_m_result(duckdb::unique_ptr<duckdb::QueryResult> result);
-duckdb::shared_ptr<duckdb::Relation> get_tmp(duckdb::Connection& conn, const duckdb::shared_ptr<duckdb::Relation>& rel);
-std::int64_t                         get_row_count(const duckdb::shared_ptr<duckdb::Relation>& rel);
+unique_ptr<MaterializedQueryResult> to_m_result(unique_ptr<QueryResult> result);
+shared_ptr<Relation>                get_tmp(Connection& conn, const shared_ptr<Relation>& rel);
+std::int64_t                        get_row_count(const shared_ptr<Relation>& rel);
 
-duckdb::shared_ptr<duckdb::Relation> load_data(
-    duckdb::Connection&             conn,
+shared_ptr<Relation> load_data(
+    Connection&                     conn,
     const std::string&              log_file,
     const std::string&              log_regex,
     const std::vector<std::string>& named_fields,
     const std::vector<std::string>& timestamp_fields,
     const std::string&              timestamp_format
 );
-duckdb::shared_ptr<duckdb::Relation>
-mask_log_rel(duckdb::shared_ptr<duckdb::Relation>& rel, const std::vector<Mask>& maskings);
-duckdb::shared_ptr<duckdb::Relation>
-split_log_rel(duckdb::shared_ptr<duckdb::Relation>& rel, const std::vector<char>& delimiters);
+shared_ptr<Relation> mask_log_rel(shared_ptr<Relation>& rel, const std::vector<Mask>& maskings);
+shared_ptr<Relation> split_log_rel(shared_ptr<Relation>& rel, const std::vector<char>& delimiters);
 
 void to_table(
-    duckdb::Connection&                   conn,
-    duckdb::shared_ptr<duckdb::Relation>& rel,
-    const std::vector<std::string>&       templates,
-    const std::string&                    structured_table_name,
-    const std::string&                    templates_table_name,
-    bool                                  keep_para
+    Connection&                     conn,
+    shared_ptr<Relation>&           rel,
+    const std::vector<std::string>& templates,
+    const std::string&              structured_table_name,
+    const std::string&              templates_table_name,
+    bool                            keep_para
 );
 
 }    // namespace logtt

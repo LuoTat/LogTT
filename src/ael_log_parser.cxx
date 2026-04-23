@@ -50,89 +50,96 @@ std::uint32_t AELLogParser::parse(
     rel = get_tmp(conn, rel);
 
     auto log_length {get_row_count(rel)};
+    templates.resize(log_length);
 
     auto log_bin {this->_get_log_bins(rel)};
     auto merged_clusters {this->_reconcile(log_bin)};
-
-    templates.resize(log_length);
     for (auto&& cluster : merged_clusters)
     {
         auto log_template {cluster->get_template()};
 
-        for (auto&& row : cluster->rows) { templates[row - 1] = log_template; }
+        for (auto&& row : cluster->rows)
+        {
+            templates[row - 1] = log_template;
+        }
     }
 
     // 移除多余列
-    auto star_expr {duckdb::make_uniq<duckdb::StarExpression>()};
+    auto star_expr {make_uniq<StarExpression>()};
     star_expr->exclude_list.emplace("MaskedContent");
     star_expr->exclude_list.emplace("Tokens");
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs;
-    project_exprs.push_back(std::move(star_expr));
-    rel = rel->Project(std::move(project_exprs), {});
-    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
 
+    ParsedExprVec project_exprs;
+    project_exprs.push_back(std::move(star_expr));
+
+    rel = rel->Project(std::move(project_exprs), {});
+
+    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
     return log_length;
 }
 
-AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Relation> rel)
+AELLogParser::LogBin AELLogParser::_get_log_bins(const shared_ptr<Relation>& rel)
 {
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_1;
-    arg_exprs_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
-    auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>("length", std::move(arg_exprs_1))};
-    auto cast_expr_1 {duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::UTINYINT, std::move(func_expr_1))};
-    cast_expr_1->SetAlias("token_count");
+    ParsedExprVec arg_exprs_1;
+    arg_exprs_1.push_back(make_uniq<ColumnRefExpression>("Tokens"));
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
-    arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("MaskedContent"));
-    arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ConstantExpression>("<#.*#>"));
-    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("regexp_extract_all", std::move(arg_exprs_2))};
+    auto func_expr_1 {make_uniq<FunctionExpression>("length", std::move(arg_exprs_1))};
+    func_expr_1->SetAlias("token_count");
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_3;
+    ParsedExprVec arg_exprs_2;
+    arg_exprs_2.push_back(make_uniq<ColumnRefExpression>("MaskedContent"));
+    arg_exprs_2.push_back(make_uniq<ConstantExpression>("<#.*#>"));
+
+    auto func_expr_2 {make_uniq<FunctionExpression>("regexp_extract_all", std::move(arg_exprs_2))};
+
+    ParsedExprVec arg_exprs_3;
     arg_exprs_3.push_back(std::move(func_expr_2));
-    auto func_expr_3 {duckdb::make_uniq<duckdb::FunctionExpression>("length", std::move(arg_exprs_3))};
-    auto cast_expr_2 {duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::UTINYINT, std::move(func_expr_3))};
-    cast_expr_2->SetAlias("para_count");
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_1;
-    project_exprs_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
-    project_exprs_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
-    project_exprs_1.push_back(std::move(cast_expr_1));
-    project_exprs_1.push_back(std::move(cast_expr_2));
+    auto func_expr_3 {make_uniq<FunctionExpression>("length", std::move(arg_exprs_3))};
+    func_expr_3->SetAlias("para_count");
 
-    rel = rel->Project(std::move(project_exprs_1), {});
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_4;
-    arg_exprs_4.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
-    auto func_expr_4 {duckdb::make_uniq<duckdb::FunctionExpression>("list", std::move(arg_exprs_4))};
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
-    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("token_count"));
-    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("para_count"));
-    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
-    agg_exprs.push_back(std::move(func_expr_4));
-    rel = rel->Aggregate(std::move(agg_exprs), "token_count, para_count, Tokens");
+    ParsedExprVec project_exprs_1;
+    project_exprs_1.push_back(make_uniq<ColumnRefExpression>("LineID"));
+    project_exprs_1.push_back(make_uniq<ColumnRefExpression>("Tokens"));
+    project_exprs_1.push_back(std::move(func_expr_1));
+    project_exprs_1.push_back(std::move(func_expr_3));
 
-    auto   result {to_m_result(rel->Execute())};
+    auto tmp_rel {rel->Project(std::move(project_exprs_1), {})};
+
+    ParsedExprVec arg_exprs_4;
+    arg_exprs_4.push_back(make_uniq<ColumnRefExpression>("LineID"));
+
+    auto func_expr_4 {make_uniq<FunctionExpression>("list", std::move(arg_exprs_4))};
+
+    ParsedExprVec project_exprs_2;
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("token_count"));
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("para_count"));
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("Tokens"));
+    project_exprs_2.push_back(std::move(func_expr_4));
+
+    tmp_rel = tmp_rel->Aggregate(std::move(project_exprs_2), "token_count, para_count, Tokens");
+
     LogBin log_bin;
-
-    for (auto&& data_chunk : result->Collection().Chunks())
+    for (auto&& data_chunk : to_m_result(tmp_rel->Execute())->Collection().Chunks())
     {
         const auto& token_count_col {data_chunk.data[0]};
         const auto& para_count_col {data_chunk.data[1]};
         const auto& tokens_col {data_chunk.data[2]};
-        const auto& tokens_child {duckdb::ListVector::GetEntry(tokens_col)};
+        const auto& tokens_child {ListVector::GetEntry(tokens_col)};
         const auto& line_ids_col {data_chunk.data[3]};
-        const auto& line_ids_child {duckdb::ListVector::GetEntry(line_ids_col)};
+        const auto& line_ids_child {ListVector::GetEntry(line_ids_col)};
 
-        const auto token_count_data {duckdb::FlatVector::GetData<std::uint8_t>(token_count_col)};
-        const auto para_count_data {duckdb::FlatVector::GetData<std::uint8_t>(para_count_col)};
-        const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
-        const auto tokens_child_data {duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child)};
-        const auto line_ids_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(line_ids_col)};
-        const auto line_ids_child_data {duckdb::FlatVector::GetData<std::int64_t>(line_ids_child)};
+        const auto token_count_data {FlatVector::GetData<std::int64_t>(token_count_col)};
+        const auto para_count_data {FlatVector::GetData<std::int64_t>(para_count_col)};
+        const auto tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
+        const auto tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
+        const auto line_ids_data {FlatVector::GetData<list_entry_t>(line_ids_col)};
+        const auto line_ids_child_data {FlatVector::GetData<std::int64_t>(line_ids_child)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
-            TContent                   content;
-            std::vector<std::uint32_t> rows;
+            TContent                  content;
+            std::vector<std::int64_t> rows;
 
             auto        token_count {token_count_data[row]};
             auto        para_count {para_count_data[row]};
@@ -142,7 +149,7 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
             for (auto&& i : std::views::iota(0UL, tokens_entry.length))
             {
                 const auto& token {tokens_child_data[tokens_entry.offset + i]};
-                content.emplace_back(token.GetData(), token.GetSize());
+                content.emplace_back(token.GetString());
             }
             for (auto&& i : std::views::iota(0UL, line_ids_entry.length))
             {
@@ -154,7 +161,10 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
             auto cluster {&this->m_cluster_pool.back()};
 
             auto [it, inserted] {log_bin.try_emplace(LogBinKey {token_count, para_count}, 1, cluster)};
-            if (!inserted) { it->second.push_back(cluster); }
+            if (!inserted)
+            {
+                it->second.push_back(cluster);
+            }
         }
     }
 
@@ -178,7 +188,10 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
         for (auto&& i : std::views::iota(0UL, clusters.size()))
         {
             auto cluster1 {clusters[i]};
-            if (cluster1->merged) { continue; }
+            if (cluster1->merged)
+            {
+                continue;
+            }
 
             cluster1->merged = true;
             cluster_groups.emplace_back(1, cluster1);
@@ -186,7 +199,10 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
             for (auto&& j : std::views::iota(i + 1, clusters.size()))
             {
                 auto cluster2 {clusters[j]};
-                if (cluster2->merged) { continue; }
+                if (cluster2->merged)
+                {
+                    continue;
+                }
 
                 if (this->_has_diff(cluster1, cluster2))
                 {
@@ -214,7 +230,10 @@ bool AELLogParser::_has_diff(const LogCluster* cluster1, const LogCluster* clust
 
     for (auto&& [token1, token2] : std::views::zip(cluster1->content, cluster2->content))
     {
-        if (token1 != token2) { ++diff; }
+        if (token1 != token2)
+        {
+            ++diff;
+        }
     }
 
     auto ratio {static_cast<float>(diff) / cluster1->content.size()};
@@ -225,7 +244,10 @@ AELLogParser::LogCluster* AELLogParser::_merge_log_cluster(LogCluster* cluster1,
 {
     for (auto&& [token1, token2] : std::views::zip(cluster1->content, cluster2->content))
     {
-        if (token1 != token2) { token1 = WILDCARD; }
+        if (token1 != token2)
+        {
+            token1 = WILDCARD;
+        }
     }
 
     cluster1->rows.insert(cluster1->rows.end(), cluster2->rows.begin(), cluster2->rows.end());
@@ -233,6 +255,8 @@ AELLogParser::LogCluster* AELLogParser::_merge_log_cluster(LogCluster* cluster1,
 }
 
 std::string AELLogParser::LogCluster::get_template() const
-{ return this->content | std::views::join_with(' ') | std::ranges::to<std::string>(); }
+{
+    return this->content | std::views::join_with(' ') | std::ranges::to<std::string>();
+}
 
 }    // namespace logtt

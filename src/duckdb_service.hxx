@@ -1,15 +1,14 @@
 #pragma once
 
-#include "duckdb.hpp"
+#include "precomp.hxx"
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace logtt
 {
 
-duckdb::Connection& get_connection();
+Connection& get_connection();
 
 using Filters = std::unordered_map<std::string, std::vector<std::string>>;
 

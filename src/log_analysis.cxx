@@ -11,13 +11,13 @@ get_level_distribution(const std::string& structured_table_name)
     auto& conn {get_connection()};
     auto  rel {conn.Table(structured_table_name)};
 
-    auto func_expr {duckdb::make_uniq<duckdb::FunctionExpression>(
-        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
-    )};
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
-    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Level"));
-    agg_exprs.push_back(std::move(func_expr));
-    rel = rel->Aggregate(std::move(agg_exprs), "Level");
+    auto func_expr {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
+
+    ParsedExprVec project_exprs;
+    project_exprs.push_back(make_uniq<ColumnRefExpression>("Level"));
+    project_exprs.push_back(std::move(func_expr));
+
+    rel = rel->Aggregate(std::move(project_exprs), "Level");
     rel = rel->Order("Level");
 
     std::pair<std::vector<std::string>, std::vector<std::uint32_t>> distribution;
@@ -40,20 +40,20 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
     auto& conn {get_connection()};
     auto  rel {conn.Table(structured_table_name)};
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_expr;
-    arg_expr.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::INTERVAL(months, days, micros)));
-    arg_expr.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Timestamp"));
-    auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>("time_bucket", std::move(arg_expr))};
+    ParsedExprVec arg_expr;
+    arg_expr.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
+    arg_expr.push_back(make_uniq<ColumnRefExpression>("Timestamp"));
+
+    auto func_expr_1 {make_uniq<FunctionExpression>("time_bucket", std::move(arg_expr))};
     func_expr_1->SetAlias("Timestamp_bucket");
 
-    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>(
-        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
-    )};
+    auto func_expr_2 {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
-    agg_exprs.push_back(std::move(func_expr_1));
-    agg_exprs.push_back(std::move(func_expr_2));
-    rel = rel->Aggregate(std::move(agg_exprs), "Timestamp_bucket");
+    ParsedExprVec project_exprs;
+    project_exprs.push_back(std::move(func_expr_1));
+    project_exprs.push_back(std::move(func_expr_2));
+
+    rel = rel->Aggregate(std::move(project_exprs), "Timestamp_bucket");
     rel = rel->Order("Timestamp_bucket");
 
     auto result {to_m_result(rel->Execute())};
@@ -66,8 +66,8 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
         const auto& timestamp_bucket_col {data_chunk.data[0]};
         const auto& count_col {data_chunk.data[1]};
 
-        const auto timestamp_bucket_data {duckdb::FlatVector::GetData<duckdb::timestamp_t>(timestamp_bucket_col)};
-        const auto count_data {duckdb::FlatVector::GetData<std::int64_t>(count_col)};
+        const auto timestamp_bucket_data {FlatVector::GetData<timestamp_t>(timestamp_bucket_col)};
+        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -89,21 +89,24 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_fr
     auto& conn {get_connection()};
     auto  rel {conn.Table(structured_table_name)};
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_expr_1;
-    arg_expr_1.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::INTERVAL(months, days, micros)));
-    arg_expr_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Timestamp"));
-    auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>("time_bucket", std::move(arg_expr_1))};
+    ParsedExprVec arg_expr_1;
+    arg_expr_1.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
+    arg_expr_1.push_back(make_uniq<ColumnRefExpression>("Timestamp"));
+
+    auto func_expr_1 {make_uniq<FunctionExpression>("time_bucket", std::move(arg_expr_1))};
     func_expr_1->SetAlias("Timestamp_bucket");
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_expr_2;
-    arg_expr_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Template"));
-    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("count", std::move(arg_expr_2))};
+    ParsedExprVec arg_expr_2;
+    arg_expr_2.push_back(make_uniq<ColumnRefExpression>("Template"));
+
+    auto func_expr_2 {make_uniq<FunctionExpression>("count", std::move(arg_expr_2))};
     func_expr_2->distinct = true;
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
-    agg_exprs.push_back(std::move(func_expr_1));
-    agg_exprs.push_back(std::move(func_expr_2));
-    rel = rel->Aggregate(std::move(agg_exprs), "Timestamp_bucket");
+    ParsedExprVec project_exprs;
+    project_exprs.push_back(std::move(func_expr_1));
+    project_exprs.push_back(std::move(func_expr_2));
+
+    rel = rel->Aggregate(std::move(project_exprs), "Timestamp_bucket");
     rel = rel->Order("Timestamp_bucket");
 
     auto result {to_m_result(rel->Execute())};
@@ -116,8 +119,8 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_fr
         const auto& timestamp_bucket_col {data_chunk.data[0]};
         const auto& count_col {data_chunk.data[1]};
 
-        const auto timestamp_bucket_data {duckdb::FlatVector::GetData<duckdb::timestamp_t>(timestamp_bucket_col)};
-        const auto count_data {duckdb::FlatVector::GetData<std::int64_t>(count_col)};
+        const auto timestamp_bucket_data {FlatVector::GetData<timestamp_t>(timestamp_bucket_col)};
+        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -140,21 +143,21 @@ get_log_level_frequency_distribution(
     auto& conn {get_connection()};
     auto  rel {conn.Table(structured_table_name)};
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_expr;
-    arg_expr.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::INTERVAL(months, days, micros)));
-    arg_expr.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Timestamp"));
-    auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>("time_bucket", std::move(arg_expr))};
+    ParsedExprVec arg_expr;
+    arg_expr.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
+    arg_expr.push_back(make_uniq<ColumnRefExpression>("Timestamp"));
+
+    auto func_expr_1 {make_uniq<FunctionExpression>("time_bucket", std::move(arg_expr))};
     func_expr_1->SetAlias("Timestamp_bucket");
 
-    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>(
-        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
-    )};
+    auto func_expr_2 {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
-    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Level"));
-    agg_exprs.push_back(std::move(func_expr_1));
-    agg_exprs.push_back(std::move(func_expr_2));
-    rel = rel->Aggregate(std::move(agg_exprs), "Timestamp_bucket, Level");
+    ParsedExprVec project_exprs;
+    project_exprs.push_back(make_uniq<ColumnRefExpression>("Level"));
+    project_exprs.push_back(std::move(func_expr_1));
+    project_exprs.push_back(std::move(func_expr_2));
+
+    rel = rel->Aggregate(std::move(project_exprs), "Timestamp_bucket, Level");
     rel = rel->Order("Timestamp_bucket");
 
     std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>>
@@ -166,9 +169,9 @@ get_log_level_frequency_distribution(
         const auto& timestamp_bucket_col {data_chunk.data[1]};
         const auto& count_col {data_chunk.data[2]};
 
-        const auto level_data {duckdb::FlatVector::GetData<duckdb::string_t>(level_col)};
-        const auto timestamp_bucket_data {duckdb::FlatVector::GetData<duckdb::timestamp_t>(timestamp_bucket_col)};
-        const auto count_data {duckdb::FlatVector::GetData<std::int64_t>(count_col)};
+        const auto level_data {FlatVector::GetData<string_t>(level_col)};
+        const auto timestamp_bucket_data {FlatVector::GetData<timestamp_t>(timestamp_bucket_col)};
+        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -193,48 +196,49 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
 
     auto template_count {to_m_result(t_rel->Execute())->RowCount()};
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> condition_exprs;
-    condition_exprs.push_back(
-        duckdb::make_uniq<duckdb::ComparisonExpression>(
-            duckdb::ExpressionType::COMPARE_EQUAL,
-            duckdb::make_uniq<duckdb::ColumnRefExpression>("Template", structured_table_name),
-            duckdb::make_uniq<duckdb::ColumnRefExpression>("Template", template_table_name)
+    ParsedExprVec arg_exprs;
+    arg_exprs.push_back(
+        make_uniq<ComparisonExpression>(
+            ExpressionType::COMPARE_EQUAL,
+            make_uniq<ColumnRefExpression>("Template", structured_table_name),
+            make_uniq<ColumnRefExpression>("Template", template_table_name)
         )
     );
-    auto rel = s_rel->Join(t_rel, std::move(condition_exprs));
 
-    auto col_expr {duckdb::make_uniq<duckdb::ColumnRefExpression>("rowid", template_table_name)};
+    auto rel = s_rel->Join(t_rel, std::move(arg_exprs));
+
+    auto col_expr {make_uniq<ColumnRefExpression>("rowid", template_table_name)};
     col_expr->SetAlias("curr_id");
 
-    auto window_expr {duckdb::make_uniq<duckdb::WindowExpression>(duckdb::ExpressionType::WINDOW_LEAD, "", "", "lead")};
-    window_expr->children.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("rowid", template_table_name));
-    window_expr->default_expr = duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::BIGINT(-1));
-    window_expr->start        = duckdb::WindowBoundary::UNBOUNDED_PRECEDING;
-    window_expr->end          = duckdb::WindowBoundary::UNBOUNDED_FOLLOWING;
+    auto window_expr {make_uniq<WindowExpression>(ExpressionType::WINDOW_LEAD, "", "", "lead")};
+    window_expr->children.push_back(make_uniq<ColumnRefExpression>("rowid", template_table_name));
+    window_expr->default_expr = make_uniq<ConstantExpression>(Value::BIGINT(-1));
+    window_expr->start        = WindowBoundary::UNBOUNDED_PRECEDING;
+    window_expr->end          = WindowBoundary::UNBOUNDED_FOLLOWING;
     window_expr->SetAlias("next_id");
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs;
-    project_exprs.push_back(std::move(col_expr));
-    project_exprs.push_back(std::move(window_expr));
-    rel = rel->Project(std::move(project_exprs), {});
+    ParsedExprVec project_exprs_1;
+    project_exprs_1.push_back(std::move(col_expr));
+    project_exprs_1.push_back(std::move(window_expr));
+
+    rel = rel->Project(std::move(project_exprs_1), {});
 
     rel = rel->Filter(
-        duckdb::make_uniq<duckdb::ComparisonExpression>(
-            duckdb::ExpressionType::COMPARE_NOTEQUAL,
-            duckdb::make_uniq<duckdb::ColumnRefExpression>("next_id"),
-            duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::BIGINT(-1))
+        make_uniq<ComparisonExpression>(
+            ExpressionType::COMPARE_NOTEQUAL,
+            make_uniq<ColumnRefExpression>("next_id"),
+            make_uniq<ConstantExpression>(Value::BIGINT(-1))
         )
     );
 
-    auto func_expr {duckdb::make_uniq<duckdb::FunctionExpression>(
-        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
-    )};
+    auto func_expr {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
-    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("curr_id"));
-    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("next_id"));
-    agg_exprs.push_back(std::move(func_expr));
-    rel = rel->Aggregate(std::move(agg_exprs), "curr_id, next_id");
+    ParsedExprVec project_exprs_2;
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("curr_id"));
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("next_id"));
+    project_exprs_2.push_back(std::move(func_expr));
+
+    rel = rel->Aggregate(std::move(project_exprs_2), "curr_id, next_id");
 
     auto result {to_m_result(rel->Execute())};
 
@@ -246,9 +250,9 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
         const auto& next_id_col {data_chunk.data[1]};
         const auto& count_col {data_chunk.data[2]};
 
-        const auto curr_id_data {duckdb::FlatVector::GetData<std::int64_t>(curr_id_col)};
-        const auto next_id_data {duckdb::FlatVector::GetData<std::int64_t>(next_id_col)};
-        const auto count_data {duckdb::FlatVector::GetData<std::int64_t>(count_col)};
+        const auto curr_id_data {FlatVector::GetData<std::int64_t>(curr_id_col)};
+        const auto next_id_data {FlatVector::GetData<std::int64_t>(next_id_col)};
+        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {

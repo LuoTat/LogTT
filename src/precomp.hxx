@@ -1,5 +1,6 @@
 #pragma once
 
+#include "duckdb.hpp"
 #include <string>
 #include <vector>
 
@@ -11,5 +12,8 @@ using Token    = std::string;
 using TContent = std::vector<Token>;
 
 inline constexpr std::string WILDCARD {"<#*#>"};
+
+using namespace duckdb;
+using ParsedExprVec = vector<unique_ptr<ParsedExpression>>;
 
 }    // namespace logtt

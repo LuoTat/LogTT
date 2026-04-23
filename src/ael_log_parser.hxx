@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base_log_parser.hxx"
-#include "duckdb.hpp"
 #include "precomp.hxx"
 #include <boost/container_hash/hash.hpp>
 #include <deque>
@@ -43,17 +42,17 @@ public:
 private:
     struct LogCluster
     {
-        TContent                   content;
-        std::vector<std::uint32_t> rows;
-        bool                       merged {false};
+        TContent                  content;
+        std::vector<std::int64_t> rows;
+        bool                      merged {false};
 
         std::string get_template() const;
     };
 
     struct LogBinKey
     {
-        std::uint8_t m_token_count {0};
-        std::uint8_t m_para_count {0};
+        std::int64_t m_token_count {0};
+        std::int64_t m_para_count {0};
 
         bool operator==(const LogBinKey&) const = default;
     };
@@ -68,7 +67,7 @@ private:
 
     using LogBin = std::unordered_map<LogBinKey, std::vector<LogCluster*>, boost::hash<LogBinKey>>;
 
-    LogBin                   _get_log_bins(duckdb::shared_ptr<duckdb::Relation> rel);
+    LogBin                   _get_log_bins(const shared_ptr<Relation>& rel);
     std::vector<LogCluster*> _reconcile(LogBin& log_bin);
     bool                     _has_diff(const LogCluster* cluster1, const LogCluster* cluster2);
     static LogCluster*       _merge_log_cluster(LogCluster* cluster1, const LogCluster* cluster2);

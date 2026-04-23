@@ -14,16 +14,25 @@ BrainLogParser::FCounter::FCounter(const FContent& fcontent)
 {
     // 用桶计数代替哈希表：freq 值的上界 = 同组行数，通常不大，连续内存访问更快
     std::uint32_t max_freq {0};
-    for (auto&& ftoken : fcontent) { max_freq = std::max(max_freq, ftoken.freq); }
+    for (auto&& ftoken : fcontent)
+    {
+        max_freq = std::max(max_freq, ftoken.freq);
+    }
 
     // bucket[f] = freq 值为 f 的 token 数量
     std::vector<std::uint16_t> bucket(max_freq + 1, 0);
-    for (auto&& ftoken : fcontent) { ++bucket[ftoken.freq]; }
+    for (auto&& ftoken : fcontent)
+    {
+        ++bucket[ftoken.freq];
+    }
 
     // 收集非零项
     for (auto&& [freq, count] : std::views::enumerate(bucket))
     {
-        if (count > 0) { freq_counter.emplace_back(freq, count); }
+        if (count > 0)
+        {
+            freq_counter.emplace_back(freq, count);
+        }
     }
 }
 
@@ -34,7 +43,9 @@ void BrainLogParser::FCounter::sort_by_count()
 }
 
 std::uint32_t BrainLogParser::FCounter::get_max_freq() const
-{ return std::ranges::max(freq_counter, {}, &FTuple::freq).freq; }
+{
+    return std::ranges::max(freq_counter, {}, &FTuple::freq).freq;
+}
 
 BrainLogParser::BrainLogParser(
     std::string              log_regex,
@@ -74,27 +85,33 @@ std::uint32_t BrainLogParser::parse(
     rel = split_log_rel(rel, this->m_delimiters);
 
     // 缓存分词结果，避免重复计算
-    auto star_expr_1 {duckdb::make_uniq<duckdb::StarExpression>()};
+    auto star_expr_1 {make_uniq<StarExpression>()};
     star_expr_1->exclude_list.emplace("MaskedContent");
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_1;
+
+    ParsedExprVec project_exprs_1;
     project_exprs_1.push_back(std::move(star_expr_1));
+
     rel = rel->Project(std::move(project_exprs_1), {});
+
     rel = get_tmp(conn, rel);
 
     // 从 DuckDB 读取所有分词结果
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_2;
-    project_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
-    auto                  result {to_m_result(rel->Project(std::move(project_exprs_2), {})->Execute())};
+    ParsedExprVec project_exprs_2;
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("Tokens"));
+
+    rel = rel->Project(std::move(project_exprs_2), {});
+
+    auto                  result {to_m_result(rel->Execute())};
     auto                  log_length {result->RowCount()};
     std::vector<TContent> contents;
     contents.reserve(log_length);
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& tokens_col {data_chunk.data[0]};
-        const auto& tokens_child {duckdb::ListVector::GetEntry(tokens_col)};
+        const auto& tokens_child {ListVector::GetEntry(tokens_col)};
 
-        const auto tokens_data {duckdb::FlatVector::GetData<duckdb::list_entry_t>(tokens_col)};
-        const auto child_data {duckdb::FlatVector::GetData<duckdb::string_t>(tokens_child)};
+        const auto tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
+        const auto tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -102,8 +119,8 @@ std::uint32_t BrainLogParser::parse(
             const auto& entry {tokens_data[row]};
             for (auto&& i : std::views::iota(0UL, entry.length))
             {
-                const auto& token {child_data[entry.offset + i]};
-                content.emplace_back(token.GetData(), token.GetSize());
+                const auto& token {tokens_child_data[entry.offset + i]};
+                content.emplace_back(token.GetString());
             }
             contents.push_back(std::move(content));
         }
@@ -135,13 +152,15 @@ std::uint32_t BrainLogParser::parse(
     }
 
     // 移除多余列
-    auto star_expr_2 {duckdb::make_uniq<duckdb::StarExpression>()};
+    auto star_expr_2 {make_uniq<StarExpression>()};
     star_expr_2->exclude_list.emplace("Tokens");
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_3;
-    project_exprs_3.push_back(std::move(star_expr_2));
-    rel = rel->Project(std::move(project_exprs_3), {});
-    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
 
+    ParsedExprVec project_exprs_3;
+    project_exprs_3.push_back(std::move(star_expr_2));
+
+    rel = rel->Project(std::move(project_exprs_3), {});
+
+    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
     return log_length;
 }
 
@@ -174,10 +193,16 @@ BrainLogParser::FContentsGroup BrainLogParser::_get_fcontents_group(const std::v
             std::unordered_map<std::string_view, std::uint32_t> col_counter;
             col_counter.reserve(num_rows);
 
-            for (auto&& fcontent : fcontents) { ++col_counter[fcontent[col].token]; }
+            for (auto&& fcontent : fcontents)
+            {
+                ++col_counter[fcontent[col].token];
+            }
 
             // 将频率写回每个 FToken
-            for (auto&& fcontent : fcontents) { fcontent[col].freq = col_counter[fcontent[col].token]; }
+            for (auto&& fcontent : fcontents)
+            {
+                fcontent[col].freq = col_counter[fcontent[col].token];
+            }
         }
     }
 
@@ -192,7 +217,10 @@ BrainLogParser::FCountersGroup BrainLogParser::_get_fcounters_group(const FConte
     {
         auto& fcounters {fcounters_group[length]};
         fcounters.reserve(fcontents.size());
-        for (auto&& fcontent : fcontents) { fcounters.emplace_back(fcontent); }
+        for (auto&& fcontent : fcontents)
+        {
+            fcounters.emplace_back(fcontent);
+        }
     }
 
     return fcounters_group;
@@ -244,7 +272,10 @@ void BrainLogParser::_up_split(const RootRows& root_rows, std::vector<FContent>&
         for (auto&& [col, max_freq] : col_max_freq)
         {
             // 父节点列中有多个不同词的列 → 变量列
-            if (max_freq > root.freq && col_tokens[col].size() > 1) { variable_parent_cols.insert(col); }
+            if (max_freq > root.freq && col_tokens[col].size() > 1)
+            {
+                variable_parent_cols.insert(col);
+            }
         }
 
         // 将变量列的词置为 <#*#>
@@ -252,7 +283,10 @@ void BrainLogParser::_up_split(const RootRows& root_rows, std::vector<FContent>&
         {
             for (auto&& ftoken : fcontents[row])
             {
-                if (variable_parent_cols.contains(ftoken.col)) { ftoken.token = WILDCARD; }
+                if (variable_parent_cols.contains(ftoken.col))
+                {
+                    ftoken.token = WILDCARD;
+                }
             }
         }
     }
@@ -278,7 +312,10 @@ void BrainLogParser::_down_split(const RootRows& root_rows, std::vector<FContent
         std::vector<std::uint16_t> child_cols;
         for (auto&& [col, max_freq] : col_max_freq)
         {
-            if (max_freq < root.freq) { child_cols.push_back(col); }
+            if (max_freq < root.freq)
+            {
+                child_cols.push_back(col);
+            }
         }
 
         // 按不同词数量降序排列子节点列，优先处理不同词数量多的列，更快达到变量列条件
@@ -296,7 +333,10 @@ void BrainLogParser::_down_split(const RootRows& root_rows, std::vector<FContent
         std::unordered_set<std::uint16_t> variable_child_cols;
         for (auto&& col : child_cols)
         {
-            if (col_tokens[col].size() >= var_thr) { variable_child_cols.insert(col); }
+            if (col_tokens[col].size() >= var_thr)
+            {
+                variable_child_cols.insert(col);
+            }
         }
 
         // 将变量列的词置为 <#*#>
@@ -304,7 +344,10 @@ void BrainLogParser::_down_split(const RootRows& root_rows, std::vector<FContent
         {
             for (auto&& ftoken : fcontents[row])
             {
-                if (variable_child_cols.contains(ftoken.col)) { ftoken.token = WILDCARD; }
+                if (variable_child_cols.contains(ftoken.col))
+                {
+                    ftoken.token = WILDCARD;
+                }
             }
         }
     }

@@ -5,81 +5,79 @@
 namespace logtt
 {
 
-static duckdb::unique_ptr<duckdb::ParsedExpression>
+static unique_ptr<ParsedExpression>
 _build_timestamp_expr(const std::vector<std::string>& timestamp_fields, const std::string& timestamp_format)
 {
-    duckdb::unique_ptr<duckdb::ParsedExpression> func_expr;
+    unique_ptr<ParsedExpression> func_expr;
     if (timestamp_format == "epoch")
     {
         // Unix 时间戳
-        duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_1;
+        ParsedExprVec arg_exprs_1;
         arg_exprs_1.push_back(
-            duckdb::make_uniq<duckdb::CastExpression>(
-                duckdb::LogicalType::BIGINT, duckdb::make_uniq<duckdb::ColumnRefExpression>(timestamp_fields[0])
-            )
+            make_uniq<CastExpression>(LogicalType::BIGINT, make_uniq<ColumnRefExpression>(timestamp_fields[0]))
         );
-        arg_exprs_1.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::BIGINT(1000)));
-        auto timestamp_ms {duckdb::make_uniq<duckdb::FunctionExpression>("multiply", std::move(arg_exprs_1))};
+        arg_exprs_1.push_back(make_uniq<ConstantExpression>(Value::BIGINT(1000)));
 
-        duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
+        auto timestamp_ms {make_uniq<FunctionExpression>("multiply", std::move(arg_exprs_1))};
+
+        ParsedExprVec arg_exprs_2;
         arg_exprs_2.push_back(std::move(timestamp_ms));
-        func_expr = duckdb::make_uniq<duckdb::FunctionExpression>("make_timestamp_ms", std::move(arg_exprs_2));
+
+        func_expr = make_uniq<FunctionExpression>("make_timestamp_ms", std::move(arg_exprs_2));
     }
     else
     {
         // 拼接字段
-        duckdb::unique_ptr<duckdb::ParsedExpression> arg_exprs_1;
+        unique_ptr<ParsedExpression> arg_exprs_1;
         if (timestamp_fields.size() == 1)
         {
-            arg_exprs_1 = duckdb::make_uniq<duckdb::ColumnRefExpression>(timestamp_fields[0]);
+            arg_exprs_1 = make_uniq<ColumnRefExpression>(timestamp_fields[0]);
         }
         else
         {
-            duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
-            arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(" ")));
+            ParsedExprVec arg_exprs_2;
+            arg_exprs_2.push_back(make_uniq<ConstantExpression>(Value(" ")));
             for (auto&& field : timestamp_fields)
             {
-                arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>(field));
+                arg_exprs_2.push_back(make_uniq<ColumnRefExpression>(field));
             }
-            arg_exprs_1 = duckdb::make_uniq<duckdb::FunctionExpression>("concat_ws", std::move(arg_exprs_2));
+            arg_exprs_1 = make_uniq<FunctionExpression>("concat_ws", std::move(arg_exprs_2));
         }
 
         // strptime 解析
-        duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
+        ParsedExprVec arg_exprs_2;
         arg_exprs_2.push_back(std::move(arg_exprs_1));
-        arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(timestamp_format)));
-        func_expr = duckdb::make_uniq<duckdb::FunctionExpression>("strptime", std::move(arg_exprs_2));
+        arg_exprs_2.push_back(make_uniq<ConstantExpression>(Value(timestamp_format)));
+
+        func_expr = make_uniq<FunctionExpression>("strptime", std::move(arg_exprs_2));
     }
 
     // 转为 TIMESTAMP_S 类型
-    return duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::TIMESTAMP_S, std::move(func_expr));
+    return make_uniq<CastExpression>(LogicalType::TIMESTAMP_S, std::move(func_expr));
 }
 
-duckdb::unique_ptr<duckdb::MaterializedQueryResult> to_m_result(duckdb::unique_ptr<duckdb::QueryResult> result)
+unique_ptr<MaterializedQueryResult> to_m_result(unique_ptr<QueryResult> result)
 {
-    D_ASSERT(result->type == duckdb::QueryResultType::MATERIALIZED_RESULT);
-    return duckdb::unique_ptr_cast<duckdb::QueryResult, duckdb::MaterializedQueryResult>(std::move(result));
+    D_ASSERT(result->type == QueryResultType::MATERIALIZED_RESULT);
+    return unique_ptr_cast<QueryResult, MaterializedQueryResult>(std::move(result));
 }
 
-duckdb::shared_ptr<duckdb::Relation> get_tmp(duckdb::Connection& conn, const duckdb::shared_ptr<duckdb::Relation>& rel)
+shared_ptr<Relation> get_tmp(Connection& conn, const shared_ptr<Relation>& rel)
 {
-    rel->Create("_tmp", true, duckdb::OnCreateConflict::REPLACE_ON_CONFLICT);
+    rel->Create("_tmp", true, OnCreateConflict::REPLACE_ON_CONFLICT);
     return conn.Table("_tmp");
 }
 
-std::int64_t get_row_count(const duckdb::shared_ptr<duckdb::Relation>& rel)
+std::int64_t get_row_count(const shared_ptr<Relation>& rel)
 {
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
-    agg_exprs.push_back(
-        duckdb::make_uniq<duckdb::FunctionExpression>(
-            "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
-        )
-    );
-    return to_m_result(rel->Aggregate(std::move(agg_exprs))->Execute())->GetValue<std::int64_t>(0, 0);
+    ParsedExprVec project_exprs;
+    project_exprs.push_back(make_uniq<FunctionExpression>("count", ParsedExprVec {}));
+
+    return to_m_result(rel->Aggregate(std::move(project_exprs))->Execute())->GetValue<std::int64_t>(0, 0);
 }
 
-duckdb::shared_ptr<duckdb::Relation> load_data(
-    duckdb::Connection&             conn,
+shared_ptr<Relation> load_data(
+    Connection&                     conn,
     const std::string&              log_file,
     const std::string&              log_regex,
     const std::vector<std::string>& named_fields,
@@ -107,152 +105,165 @@ duckdb::shared_ptr<duckdb::Relation> load_data(
     )};
 
     auto named_fields_values {
-        named_fields | std::views::transform([](const std::string& s) { return duckdb::Value(s); }) |
-        std::ranges::to<duckdb::vector<duckdb::Value>>()
+        named_fields |
+        std::views::transform(
+            [](const std::string& s)
+            {
+                return Value(s);
+            }
+        ) |
+        std::ranges::to<vector<Value>>()
     };
 
     // 使用正则表达式提取日志字段，并将其展开成多行
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_1;
-    arg_exprs_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("_raw"));
-    arg_exprs_1.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(log_regex));
-    arg_exprs_1.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::LIST(named_fields_values)));
-    auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>("regexp_extract", std::move(arg_exprs_1))};
+    ParsedExprVec arg_exprs_1;
+    arg_exprs_1.push_back(make_uniq<ColumnRefExpression>("_raw"));
+    arg_exprs_1.push_back(make_uniq<ConstantExpression>(log_regex));
+    arg_exprs_1.push_back(make_uniq<ConstantExpression>(Value::LIST(named_fields_values)));
+
+    auto func_expr_1 {make_uniq<FunctionExpression>("regexp_extract", std::move(arg_exprs_1))};
     func_expr_1->SetAlias("_cap");
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_1;
-    project_exprs_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
+
+    ParsedExprVec project_exprs_1;
+    project_exprs_1.push_back(make_uniq<ColumnRefExpression>("LineID"));
     project_exprs_1.push_back(std::move(func_expr_1));
+
     rel = rel->Project(std::move(project_exprs_1), {});
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
-    arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("_cap"));
-    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("unnest", std::move(arg_exprs_2))};
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_2;
-    project_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
+    ParsedExprVec arg_exprs_2;
+    arg_exprs_2.push_back(make_uniq<ColumnRefExpression>("_cap"));
+
+    auto func_expr_2 {make_uniq<FunctionExpression>("unnest", std::move(arg_exprs_2))};
+
+    ParsedExprVec project_exprs_2;
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("LineID"));
     project_exprs_2.push_back(std::move(func_expr_2));
+
     rel = rel->Project(std::move(project_exprs_2), {});
 
     // 提取时间戳字段，并将其转换为 TIMESTAMP 类型
     // 同时过滤掉原始的时间戳字段，简化日志表的结构
     auto func_expr_3 {_build_timestamp_expr(timestamp_fields, timestamp_format)};
     func_expr_3->SetAlias("Timestamp");
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_3;
-    project_exprs_3.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
-    project_exprs_3.push_back(std::move(func_expr_3));
-    auto star_expr {duckdb::make_uniq<duckdb::StarExpression>()};
-    star_expr->exclude_list.emplace("LineID");
-    for (auto&& field : timestamp_fields) { star_expr->exclude_list.emplace(field); }
-    project_exprs_3.push_back(std::move(star_expr));
-    rel = rel->Project(std::move(project_exprs_3), {});
-    return rel;
-}
 
-duckdb::shared_ptr<duckdb::Relation>
-mask_log_rel(duckdb::shared_ptr<duckdb::Relation>& rel, const std::vector<Mask>& maskings)
-{
-    // 从 ColumnRefExpression("Content") 开始，逐层嵌套 regexp_replace
-    duckdb::unique_ptr<duckdb::ParsedExpression> func_expr {duckdb::make_uniq<duckdb::ColumnRefExpression>("Content")};
-    for (auto&& [regex, replacement] : maskings)
+    auto star_expr {make_uniq<StarExpression>()};
+    star_expr->exclude_list.emplace("LineID");
+    for (auto&& field : timestamp_fields)
     {
-        duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
-        arg_exprs.push_back(std::move(func_expr));
-        arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(regex)));
-        arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(replacement)));
-        arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value("g")));
-        func_expr = duckdb::make_uniq<duckdb::FunctionExpression>("regexp_replace", std::move(arg_exprs));
+        star_expr->exclude_list.emplace(field);
     }
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs;
-    project_exprs.push_back(duckdb::make_uniq<duckdb::StarExpression>());
-    project_exprs.push_back(std::move(func_expr));
-    rel = rel->Project(std::move(project_exprs), {"", "MaskedContent"});
+    ParsedExprVec project_exprs_3;
+    project_exprs_3.push_back(make_uniq<ColumnRefExpression>("LineID"));
+    project_exprs_3.push_back(std::move(func_expr_3));
+    project_exprs_3.push_back(std::move(star_expr));
 
-    return rel;
+    return rel->Project(std::move(project_exprs_3), {});
 }
 
-duckdb::shared_ptr<duckdb::Relation>
-split_log_rel(duckdb::shared_ptr<duckdb::Relation>& rel, const std::vector<char>& delimiters)
+shared_ptr<Relation> mask_log_rel(shared_ptr<Relation>& rel, const std::vector<Mask>& maskings)
+{
+    // 从 ColumnRefExpression("Content") 开始，逐层嵌套 regexp_replace
+    unique_ptr<ParsedExpression> func_expr {make_uniq<ColumnRefExpression>("Content")};
+    for (auto&& [regex, replacement] : maskings)
+    {
+        ParsedExprVec arg_exprs;
+        arg_exprs.push_back(std::move(func_expr));
+        arg_exprs.push_back(make_uniq<ConstantExpression>(Value(regex)));
+        arg_exprs.push_back(make_uniq<ConstantExpression>(Value(replacement)));
+        arg_exprs.push_back(make_uniq<ConstantExpression>(Value("g")));
+
+        func_expr = make_uniq<FunctionExpression>("regexp_replace", std::move(arg_exprs));
+    }
+
+    ParsedExprVec project_exprs;
+    project_exprs.push_back(make_uniq<StarExpression>());
+    project_exprs.push_back(std::move(func_expr));
+
+    return rel->Project(std::move(project_exprs), {"", "MaskedContent"});
+}
+
+shared_ptr<Relation> split_log_rel(shared_ptr<Relation>& rel, const std::vector<char>& delimiters)
 {
     // 从 ColumnRefExpression("MaskedContent") 开始，逐层嵌套 replace
-    duckdb::unique_ptr<duckdb::ParsedExpression> func_expr {
-        duckdb::make_uniq<duckdb::ColumnRefExpression>("MaskedContent")
-    };
+    unique_ptr<ParsedExpression> func_expr {make_uniq<ColumnRefExpression>("MaskedContent")};
     for (auto&& delim : delimiters)
     {
-        duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
+        ParsedExprVec arg_exprs;
         arg_exprs.push_back(std::move(func_expr));
-        arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(std::string {delim})));
-        arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(std::format("{} ", delim))));
-        func_expr = duckdb::make_uniq<duckdb::FunctionExpression>("replace", std::move(arg_exprs));
+        arg_exprs.push_back(make_uniq<ConstantExpression>(Value(std::string {delim})));
+        arg_exprs.push_back(make_uniq<ConstantExpression>(Value(std::format("{} ", delim))));
+
+        func_expr = make_uniq<FunctionExpression>("replace", std::move(arg_exprs));
     }
 
     // 在每个分隔符后添加一个空格，以便后续的 str_split 可以正确地将字段分开
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
+    ParsedExprVec arg_exprs;
     arg_exprs.push_back(std::move(func_expr));
-    arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(" ")));
-    func_expr = duckdb::make_uniq<duckdb::FunctionExpression>("str_split", std::move(arg_exprs));
+    arg_exprs.push_back(make_uniq<ConstantExpression>(Value(" ")));
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs;
-    project_exprs.push_back(duckdb::make_uniq<duckdb::StarExpression>());
+    func_expr = make_uniq<FunctionExpression>("str_split", std::move(arg_exprs));
+
+    ParsedExprVec project_exprs;
+    project_exprs.push_back(make_uniq<StarExpression>());
     project_exprs.push_back(std::move(func_expr));
-    rel = rel->Project(std::move(project_exprs), {"", "Tokens"});
 
-    return rel;
+    return rel->Project(std::move(project_exprs), {"", "Tokens"});
 }
 
 void to_table(
-    duckdb::Connection&                   conn,
-    duckdb::shared_ptr<duckdb::Relation>& rel,
-    const std::vector<std::string>&       templates,
-    const std::string&                    structured_table_name,
-    const std::string&                    templates_table_name,
-    bool                                  keep_para
+    Connection&                     conn,
+    shared_ptr<Relation>&           rel,
+    const std::vector<std::string>& templates,
+    const std::string&              structured_table_name,
+    const std::string&              templates_table_name,
+    bool                            keep_para
 )
 {
     // 使用 UDF 将 log_templates 中的模板字符串映射到每一行
     auto udf_name {std::format("_get_template_{}", structured_table_name)};
-    auto udf {[&templates](duckdb::DataChunk& args, duckdb::ExpressionState& state, duckdb::Vector& result)
+    auto udf {[&templates](DataChunk& args, ExpressionState& state, Vector& result)
               {
-                  result.SetVectorType(duckdb::VectorType::FLAT_VECTOR);
-                  auto result_data {duckdb::FlatVector::GetData<duckdb::string_t>(result)};
+                  result.SetVectorType(VectorType::FLAT_VECTOR);
+                  auto result_data {FlatVector::GetData<string_t>(result)};
 
-                  const auto line_id_data {duckdb::FlatVector::GetData<std::int64_t>(args.data[0])};
+                  const auto line_id_data {FlatVector::GetData<std::int64_t>(args.data[0])};
                   for (auto&& i : std::views::iota(0UL, args.size()))
                   {
-                      result_data[i] = duckdb::StringVector::AddString(result, templates[line_id_data[i] - 1]);
+                      result_data[i] = StringVector::AddString(result, templates[line_id_data[i] - 1]);
                   }
               }};
-    conn.CreateVectorizedFunction<duckdb::string_t, std::int64_t>(udf_name, udf);
+    conn.CreateVectorizedFunction<string_t, std::int64_t>(udf_name, udf);
 
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_1;
-    arg_exprs_1.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
-    auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>(udf_name, std::move(arg_exprs_1))};
+    ParsedExprVec arg_exprs_1;
+    arg_exprs_1.push_back(make_uniq<ColumnRefExpression>("LineID"));
+
+    auto func_expr_1 {make_uniq<FunctionExpression>(udf_name, std::move(arg_exprs_1))};
     func_expr_1->SetAlias("Template");
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_1;
-    project_exprs_1.push_back(duckdb::make_uniq<duckdb::StarExpression>());
+
+    ParsedExprVec project_exprs_1;
+    project_exprs_1.push_back(make_uniq<StarExpression>());
     project_exprs_1.push_back(std::move(func_expr_1));
-    rel = rel->Project(std::move(project_exprs_1), {});
-    rel->Create(structured_table_name);
+
+    rel->Project(std::move(project_exprs_1), {})->Create(structured_table_name);
 
     // 统计每个模板的出现次数，并按出现次数降序排序
-    rel = conn.Table(structured_table_name);
-    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>(
-        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
-    )};
+    auto func_expr_2 {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
     func_expr_2->SetAlias("Count");
-    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
-    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Template"));
-    agg_exprs.push_back(std::move(func_expr_2));
-    rel = rel->Aggregate(std::move(agg_exprs), "Template");
 
-    duckdb::vector<duckdb::OrderByNode> order_bys;
-    order_bys.emplace_back(
-        duckdb::OrderType::DESCENDING,
-        duckdb::OrderByNullType::ORDER_DEFAULT,
-        duckdb::make_uniq<duckdb::ColumnRefExpression>("Count")
+    ParsedExprVec project_exprs;
+    project_exprs.push_back(make_uniq<ColumnRefExpression>("Template"));
+    project_exprs.push_back(std::move(func_expr_2));
+
+    vector<OrderByNode> order_exprs;
+    order_exprs.emplace_back(
+        OrderType::DESCENDING, OrderByNullType::ORDER_DEFAULT, make_uniq<ColumnRefExpression>("Count")
     );
-    rel = rel->Order(std::move(order_bys));
 
-    rel->Create(templates_table_name);
+    conn.Table(structured_table_name)
+        ->Aggregate(std::move(project_exprs), "Template")
+        ->Order(std::move(order_exprs))
+        ->Create(templates_table_name);
 }
 
 }    // namespace logtt
