@@ -28,7 +28,9 @@ static std::vector<std::vector<std::string>> _to_df(duckdb::shared_ptr<duckdb::R
     auto star_expr {duckdb::make_uniq<duckdb::StarExpression>()};
     star_expr->columns = true;
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs;
-    project_exprs.push_back(duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::VARCHAR, std::move(star_expr)));
+    project_exprs.push_back(
+        duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::VARCHAR, std::move(star_expr))
+    );
     rel = rel->Project(std::move(project_exprs), {});
 
     auto result {to_m_result(rel->Execute())};
@@ -53,10 +55,7 @@ static std::vector<std::vector<std::string>> _to_df(duckdb::shared_ptr<duckdb::R
             row_data.reserve(col_length);
             for (auto&& col : std::views::iota(0UL, col_length))
             {
-                if (!all_validities[col]->RowIsValid(row))
-                {
-                    row_data.emplace_back();
-                }
+                if (!all_validities[col]->RowIsValid(row)) { row_data.emplace_back(); }
                 else
                 {
                     const auto& value {all_datas[col][row]};
@@ -83,17 +82,19 @@ static duckdb::unique_ptr<duckdb::ParsedExpression> _build_filter_expr(const Fil
         {
             arg_exprs.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value(v)));
         }
-        in_exprs.push_back(duckdb::make_uniq<duckdb::OperatorExpression>(duckdb::ExpressionType::COMPARE_IN, std::move(arg_exprs)));
+        in_exprs.push_back(
+            duckdb::make_uniq<duckdb::OperatorExpression>(duckdb::ExpressionType::COMPARE_IN, std::move(arg_exprs))
+        );
     }
 
     // 多列 → AND 链接
     return duckdb::make_uniq<duckdb::ConjunctionExpression>(
-        duckdb::ExpressionType::CONJUNCTION_AND,
-        std::move(in_exprs)
+        duckdb::ExpressionType::CONJUNCTION_AND, std::move(in_exprs)
     );
 }
 
-static duckdb::unique_ptr<duckdb::ParsedExpression> _build_like_filter_expr(const std::string& column_name, const std::string& keyword)
+static duckdb::unique_ptr<duckdb::ParsedExpression>
+_build_like_filter_expr(const std::string& column_name, const std::string& keyword)
 {
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
     arg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>(column_name));
@@ -154,7 +155,9 @@ std::vector<LogEntry> get_log_table()
         const auto is_extracted_data {duckdb::FlatVector::GetData<bool>(is_extracted_col)};
         const auto extract_method_data {duckdb::FlatVector::GetData<duckdb::string_t>(extract_method_col)};
         const auto line_count_data {duckdb::FlatVector::GetData<std::uint32_t>(line_count_col)};
-        const auto structured_table_name_data {duckdb::FlatVector::GetData<duckdb::string_t>(structured_table_name_col)};
+        const auto structured_table_name_data {
+            duckdb::FlatVector::GetData<duckdb::string_t>(structured_table_name_col)
+        };
         const auto templates_table_name_data {duckdb::FlatVector::GetData<duckdb::string_t>(templates_table_name_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
@@ -220,7 +223,9 @@ std::vector<EXLogEntry> get_extracted_log_table()
 
         const auto id_data {duckdb::FlatVector::GetData<std::uint32_t>(id_col)};
         const auto log_uri_data {duckdb::FlatVector::GetData<duckdb::string_t>(log_uri_col)};
-        const auto structured_table_name_data {duckdb::FlatVector::GetData<duckdb::string_t>(structured_table_name_col)};
+        const auto structured_table_name_data {
+            duckdb::FlatVector::GetData<duckdb::string_t>(structured_table_name_col)
+        };
         const auto templates_table_name_data {duckdb::FlatVector::GetData<duckdb::string_t>(templates_table_name_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
@@ -257,10 +262,7 @@ int insert_log(const std::string& log_type, const std::string& log_uri)
     catch (const duckdb::Exception& e)
     {
         duckdb::ErrorData error {e};
-        if (error.Type() == duckdb::ExceptionType::CONSTRAINT)
-        {
-            return -1;
-        }
+        if (error.Type() == duckdb::ExceptionType::CONSTRAINT) { return -1; }
         else
         {
             return -2;
@@ -284,10 +286,7 @@ int insert_log(const std::string& log_type, const std::string& log_uri, const st
     catch (const duckdb::Exception& e)
     {
         duckdb::ErrorData error {e};
-        if (error.Type() == duckdb::ExceptionType::CONSTRAINT)
-        {
-            return -1;
-        }
+        if (error.Type() == duckdb::ExceptionType::CONSTRAINT) { return -1; }
         else
         {
             return -2;
@@ -376,19 +375,12 @@ void delete_log(std::uint32_t log_id)
 
 // ==================== CSV表格显示 ====================
 
-std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_csv_table(
-    const std::string& table_name,
-    std::uint32_t      offset,
-    std::uint32_t      limit,
-    const Filters&     filters
-)
+std::pair<std::vector<std::vector<std::string>>, std::uint32_t>
+fetch_csv_table(const std::string& table_name, std::uint32_t offset, std::uint32_t limit, const Filters& filters)
 {
     auto& conn {get_connection()};
     auto  rel {conn.Table(table_name)};
-    if (!filters.empty())
-    {
-        rel = rel->Filter(_build_filter_expr(filters));
-    }
+    if (!filters.empty()) { rel = rel->Filter(_build_filter_expr(filters)); }
 
     rel = get_tmp(conn, rel);
 
@@ -412,16 +404,12 @@ std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_filter_tab
     auto& conn {get_connection()};
     auto  rel {conn.Table(table_name)};
 
-    if (!keyword.empty())
-    {
-        rel = rel->Filter(_build_like_filter_expr(column_name, keyword));
-    }
-    if (!other_filters.empty())
-    {
-        rel = rel->Filter(_build_filter_expr(other_filters));
-    }
+    if (!keyword.empty()) { rel = rel->Filter(_build_like_filter_expr(column_name, keyword)); }
+    if (!other_filters.empty()) { rel = rel->Filter(_build_filter_expr(other_filters)); }
 
-    auto func_expr {duckdb::make_uniq<duckdb::FunctionExpression>("count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {})};
+    auto func_expr {duckdb::make_uniq<duckdb::FunctionExpression>(
+        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
+    )};
     func_expr->SetAlias("Count");
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
     agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>(column_name));
@@ -464,10 +452,7 @@ bool has_column(const std::string& table_name, const std::string& column_name)
     auto  rel {conn.Table(table_name)};
     for (auto&& col : rel->Columns())
     {
-        if (col.Name() == column_name)
-        {
-            return true;
-        }
+        if (col.Name() == column_name) { return true; }
     }
     return false;
 }
@@ -486,10 +471,7 @@ std::vector<std::string> get_table_columns(const std::string& table_name)
 
     std::vector<std::string> columns;
     columns.reserve(rel->Columns().size());
-    for (auto&& col : rel->Columns())
-    {
-        columns.push_back(col.Name());
-    }
+    for (auto&& col : rel->Columns()) { columns.push_back(col.Name()); }
     return columns;
 }
 

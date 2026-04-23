@@ -60,8 +60,9 @@ private:
     LogCluster* _fast_match(const TContent& content, const Node* node, bool include_params = false);
     void        _add_to_prefix_tree(LogCluster* cluster);
 
-    static std::pair<float, std::uint16_t> _get_distance(const TContent& content1, const TContent& content2, bool include_params = false);
-    static TContent                        _create_template(const TContent& content1, const TContent& content2);
+    static std::pair<float, std::uint16_t>
+                    _get_distance(const TContent& content1, const TContent& content2, bool include_params = false);
+    static TContent _create_template(const TContent& content1, const TContent& content2);
 
     std::uint16_t          m_depth {4};
     std::uint16_t          m_children {100};

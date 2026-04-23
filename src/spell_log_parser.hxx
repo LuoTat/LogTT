@@ -60,11 +60,12 @@ private:
     void        _add_seq_to_prefix_tree(LogCluster* cluster);
     void        _remove_seq_from_prefix_tree(const LogCluster* cluster);
 
-    static bool          _is_subsequence(const TContent& source, const TContent& target);
-    static std::uint16_t _lcs_length(const TContent& content1, const TContent& content2, std::uint16_t min_required_lcs);
-    static TContent      _lcs_content(const TContent& content1, const TContent& content2);
-    static TContent      _create_template(const TContent& lcs, const TContent& content);
-    static TContent      _merge_wildcards(const TContent& content);
+    static bool _is_subsequence(const TContent& source, const TContent& target);
+    static std::uint16_t
+                    _lcs_length(const TContent& content1, const TContent& content2, std::uint16_t min_required_lcs);
+    static TContent _lcs_content(const TContent& content1, const TContent& content2);
+    static TContent _create_template(const TContent& lcs, const TContent& content);
+    static TContent _merge_wildcards(const TContent& content);
 
     float                  m_sim_thr {0.5F};
     std::unique_ptr<Node>  m_root;

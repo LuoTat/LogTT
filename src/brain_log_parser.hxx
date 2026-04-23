@@ -86,7 +86,7 @@ private:
     static FCountersGroup _get_fcounters_group(const FContentsGroup& fcontents_group);
     static RootRows       _find_root(std::vector<FCounter>& fcounters, float alpha = 0.5F);
     static void           _up_split(const RootRows& root_rows, std::vector<FContent>& fcontents);
-    static void           _down_split(const RootRows& root_rows, std::vector<FContent>& fcontents, std::uint16_t var_thr);
+    static void _down_split(const RootRows& root_rows, std::vector<FContent>& fcontents, std::uint16_t var_thr);
 
     std::uint16_t m_var_thr {2};
 };

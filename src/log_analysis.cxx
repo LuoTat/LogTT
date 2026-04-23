@@ -5,12 +5,15 @@
 namespace logtt
 {
 
-std::pair<std::vector<std::string>, std::vector<std::uint32_t>> get_level_distribution(const std::string& structured_table_name)
+std::pair<std::vector<std::string>, std::vector<std::uint32_t>>
+get_level_distribution(const std::string& structured_table_name)
 {
     auto& conn {get_connection()};
     auto  rel {conn.Table(structured_table_name)};
 
-    auto                                                         func_expr {duckdb::make_uniq<duckdb::FunctionExpression>("count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {})};
+    auto func_expr {duckdb::make_uniq<duckdb::FunctionExpression>(
+        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
+    )};
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
     agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Level"));
     agg_exprs.push_back(std::move(func_expr));
@@ -31,10 +34,7 @@ std::pair<std::vector<std::string>, std::vector<std::uint32_t>> get_level_distri
 }
 
 std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequency_distribution(
-    const std::string& structured_table_name,
-    std::uint32_t      months,
-    std::uint32_t      days,
-    std::uint64_t      micros
+    const std::string& structured_table_name, std::uint32_t months, std::uint32_t days, std::uint64_t micros
 )
 {
     auto& conn {get_connection()};
@@ -46,7 +46,9 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
     auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>("time_bucket", std::move(arg_expr))};
     func_expr_1->SetAlias("Timestamp_bucket");
 
-    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {})};
+    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>(
+        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
+    )};
 
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
     agg_exprs.push_back(std::move(func_expr_1));
@@ -81,10 +83,7 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
 }
 
 std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_frequency_distribution(
-    const std::string& structured_table_name,
-    std::uint32_t      months,
-    std::uint32_t      days,
-    std::uint64_t      micros
+    const std::string& structured_table_name, std::uint32_t months, std::uint32_t days, std::uint64_t micros
 )
 {
     auto& conn {get_connection()};
@@ -133,11 +132,9 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_fr
     return distribution;
 }
 
-std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>> get_log_level_frequency_distribution(
-    const std::string& structured_table_name,
-    std::uint32_t      months,
-    std::uint32_t      days,
-    std::uint64_t      micros
+std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>>
+get_log_level_frequency_distribution(
+    const std::string& structured_table_name, std::uint32_t months, std::uint32_t days, std::uint64_t micros
 )
 {
     auto& conn {get_connection()};
@@ -149,7 +146,9 @@ std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector
     auto func_expr_1 {duckdb::make_uniq<duckdb::FunctionExpression>("time_bucket", std::move(arg_expr))};
     func_expr_1->SetAlias("Timestamp_bucket");
 
-    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {})};
+    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>(
+        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
+    )};
 
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
     agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Level"));
@@ -158,8 +157,9 @@ std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector
     rel = rel->Aggregate(std::move(agg_exprs), "Timestamp_bucket, Level");
     rel = rel->Order("Timestamp_bucket");
 
-    std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>> level_distribution;
-    auto                                                                                              result {to_m_result(rel->Execute())};
+    std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>>
+         level_distribution;
+    auto result {to_m_result(rel->Execute())};
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& level_col {data_chunk.data[0]};
@@ -184,7 +184,8 @@ std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector
     return level_distribution;
 }
 
-std::pair<std::uint32_t, std::vector<std::vector<int64_t>>> get_template_transition_matrix(const std::string& structured_table_name, const std::string& template_table_name)
+std::pair<std::uint32_t, std::vector<std::vector<int64_t>>>
+get_template_transition_matrix(const std::string& structured_table_name, const std::string& template_table_name)
 {
     auto& conn {get_connection()};
     auto  s_rel = conn.Table(structured_table_name);
@@ -225,7 +226,9 @@ std::pair<std::uint32_t, std::vector<std::vector<int64_t>>> get_template_transit
         )
     );
 
-    auto func_expr {duckdb::make_uniq<duckdb::FunctionExpression>("count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {})};
+    auto func_expr {duckdb::make_uniq<duckdb::FunctionExpression>(
+        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
+    )};
 
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
     agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("curr_id"));

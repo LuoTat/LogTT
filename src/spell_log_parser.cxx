@@ -17,11 +17,23 @@ SpellLogParser::SpellLogParser(
     std::vector<char>        delimiters,
     float                    sim_thr
 ):
-    BaseLogParser {std::move(log_regex), std::move(named_fields), std::move(timestamp_fields), std::move(timestamp_format), std::move(maskings), std::move(delimiters)},
+    BaseLogParser {
+        std::move(log_regex),
+        std::move(named_fields),
+        std::move(timestamp_fields),
+        std::move(timestamp_format),
+        std::move(maskings),
+        std::move(delimiters)
+    },
     m_sim_thr {sim_thr}
 {}
 
-std::uint32_t SpellLogParser::parse(const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name, bool keep_para)
+std::uint32_t SpellLogParser::parse(
+    const std::string& log_file,
+    const std::string& structured_table_name,
+    const std::string& templates_table_name,
+    bool               keep_para
+)
 {
     // 初始化前缀树和日志簇池
     this->m_root = std::make_unique<Node>();
@@ -31,7 +43,9 @@ std::uint32_t SpellLogParser::parse(const std::string& log_file, const std::stri
     // 获取数据库连接
     auto& conn {get_connection()};
 
-    auto rel {load_data(conn, log_file, this->m_log_regex, this->m_named_fields, this->m_timestamp_fields, this->m_timestamp_format)};
+    auto rel {load_data(
+        conn, log_file, this->m_log_regex, this->m_named_fields, this->m_timestamp_fields, this->m_timestamp_format
+    )};
     rel = mask_log_rel(rel, this->m_maskings);
     rel = split_log_rel(rel, this->m_delimiters);
 
@@ -69,10 +83,7 @@ std::uint32_t SpellLogParser::parse(const std::string& log_file, const std::stri
     }
 
     templates.reserve(log_length);
-    for (auto&& cluster : cluster_results)
-    {
-        templates.push_back(cluster->get_template());
-    }
+    for (auto&& cluster : cluster_results) { templates.push_back(cluster->get_template()); }
 
     // 移除多余列
     auto star_expr_2 {duckdb::make_uniq<duckdb::StarExpression>()};
@@ -88,9 +99,7 @@ std::uint32_t SpellLogParser::parse(const std::string& log_file, const std::stri
 SpellLogParser::LogCluster* SpellLogParser::_add_content(const TContent& content)
 {
     auto match_cluster {
-        this->_tree_subseq_match(content)
-            ?: (this->_subseq_match(content)
-                    ?: this->_lcs_match(content))
+        this->_tree_subseq_match(content) ?: (this->_subseq_match(content) ?: this->_lcs_match(content))
     };
 
     if (!match_cluster)
@@ -124,10 +133,7 @@ SpellLogParser::LogCluster* SpellLogParser::_tree_subseq_match(const TContent& c
     for (auto&& token : content)
     {
         // 如果当前节点挂载了一个cluster，且常量token数量超过阈值，就直接返回这个cluster
-        if (cur_node->cluster && matched_const_count >= required_length)
-        {
-            return cur_node->cluster;
-        }
+        if (cur_node->cluster && matched_const_count >= required_length) { return cur_node->cluster; }
 
         if (auto it {cur_node->children_node.find(token)}; it != cur_node->children_node.end())
         {
@@ -145,15 +151,9 @@ SpellLogParser::LogCluster* SpellLogParser::_subseq_match(const TContent& conten
 
     for (auto&& cluster : this->m_cluster_pool)
     {
-        if (cluster.content.size() < required_length)
-        {
-            continue;
-        }
+        if (cluster.content.size() < required_length) { continue; }
 
-        if (SpellLogParser::_is_subsequence(content, cluster.content))
-        {
-            return const_cast<LogCluster*>(&cluster);
-        }
+        if (SpellLogParser::_is_subsequence(content, cluster.content)) { return const_cast<LogCluster*>(&cluster); }
     }
 
     return nullptr;
@@ -168,14 +168,14 @@ SpellLogParser::LogCluster* SpellLogParser::_lcs_match(const TContent& content)
     for (auto&& cluster : this->m_cluster_pool)
     {
         auto required_cluster_lcs {static_cast<std::uint16_t>(std::ceil(this->m_sim_thr * cluster.content.size()))};
-        auto lcs_length {SpellLogParser::_lcs_length(content, cluster.content, std::max(required_content_lcs, required_cluster_lcs))};
+        auto lcs_length {
+            SpellLogParser::_lcs_length(content, cluster.content, std::max(required_content_lcs, required_cluster_lcs))
+        };
 
-        if (lcs_length == 0)
-        {
-            continue;
-        }
+        if (lcs_length == 0) { continue; }
 
-        if (lcs_length > max_lcs_length || (lcs_length == max_lcs_length && cluster.content.size() < max_cluster->content.size()))
+        if (lcs_length > max_lcs_length ||
+            (lcs_length == max_lcs_length && cluster.content.size() < max_cluster->content.size()))
         {
             max_cluster    = const_cast<LogCluster*>(&cluster);
             max_lcs_length = lcs_length;
@@ -191,10 +191,7 @@ void SpellLogParser::_add_seq_to_prefix_tree(LogCluster* cluster)
 
     for (auto&& token : cluster->content)
     {
-        if (token == WILDCARD)
-        {
-            continue;
-        }
+        if (token == WILDCARD) { continue; }
 
         if (auto it {cur_node->children_node.find(token)}; it != cur_node->children_node.end())
         {
@@ -218,16 +215,10 @@ void SpellLogParser::_remove_seq_from_prefix_tree(const LogCluster* cluster)
 
     for (auto&& token : cluster->content)
     {
-        if (token == WILDCARD)
-        {
-            continue;
-        }
+        if (token == WILDCARD) { continue; }
 
         auto it {cur_node->children_node.find(token)};
-        if (it == cur_node->children_node.end())
-        {
-            return;
-        }
+        if (it == cur_node->children_node.end()) { return; }
 
         auto matched_node {it->second.get()};
         if (matched_node->template_no == 1)
@@ -244,34 +235,23 @@ void SpellLogParser::_remove_seq_from_prefix_tree(const LogCluster* cluster)
 bool SpellLogParser::_is_subsequence(const TContent& source, const TContent& target)
 {
     // 判断 target 是不是 source 的子序列
-    if (target.empty())
-    {
-        return true;
-    }
-    if (source.size() < target.size())
-    {
-        return false;
-    }
+    if (target.empty()) { return true; }
+    if (source.size() < target.size()) { return false; }
 
     std::uint16_t target_idx {0};
     for (auto&& token : source)
     {
-        if (token != target[target_idx])
-        {
-            continue;
-        }
+        if (token != target[target_idx]) { continue; }
 
         ++target_idx;
-        if (target_idx == target.size())
-        {
-            return true;
-        }
+        if (target_idx == target.size()) { return true; }
     }
 
     return false;
 }
 
-std::uint16_t SpellLogParser::_lcs_length(const TContent& content1, const TContent& content2, std::uint16_t min_required_lcs)
+std::uint16_t
+SpellLogParser::_lcs_length(const TContent& content1, const TContent& content2, std::uint16_t min_required_lcs)
 {
     auto length1 {content1.size()};
     auto length2 {content2.size()};
@@ -290,10 +270,7 @@ std::uint16_t SpellLogParser::_lcs_length(const TContent& content1, const TConte
         short_length  = length1;
     }
 
-    if (short_length == 0 || min_required_lcs > short_length)
-    {
-        return 0;
-    }
+    if (short_length == 0 || min_required_lcs > short_length) { return 0; }
 
     // 单行滚动数组
     std::vector<std::uint16_t> dp(short_length + 1);
@@ -304,24 +281,15 @@ std::uint16_t SpellLogParser::_lcs_length(const TContent& content1, const TConte
         for (auto&& j : std::views::iota(0UL, short_length))
         {
             auto prev_up {dp[j + 1]};
-            if (long_content.get()[i] == short_content.get()[j])
-            {
-                dp[j + 1] = prev_diag + 1;
-            }
-            else if (dp[j] >= dp[j + 1])
-            {
-                dp[j + 1] = dp[j];
-            }
+            if (long_content.get()[i] == short_content.get()[j]) { dp[j + 1] = prev_diag + 1; }
+            else if (dp[j] >= dp[j + 1]) { dp[j + 1] = dp[j]; }
             prev_diag = prev_up;
         }
 
         auto cur_lcs {dp[short_length]};
         auto remain_rows {long_length - i - 1};
         // 阈值剪枝
-        if (cur_lcs + remain_rows < min_required_lcs)
-        {
-            return 0;
-        }
+        if (cur_lcs + remain_rows < min_required_lcs) { return 0; }
     }
 
     return dp[short_length];
@@ -338,14 +306,8 @@ TContent SpellLogParser::_lcs_content(const TContent& content1, const TContent& 
     {
         for (auto&& j : std::views::iota(0UL, length2))
         {
-            if (content1[i] == content2[j])
-            {
-                lengths[i + 1][j + 1] = lengths[i][j] + 1;
-            }
-            else if (lengths[i + 1][j] >= lengths[i][j + 1])
-            {
-                lengths[i + 1][j + 1] = lengths[i + 1][j];
-            }
+            if (content1[i] == content2[j]) { lengths[i + 1][j + 1] = lengths[i][j] + 1; }
+            else if (lengths[i + 1][j] >= lengths[i][j + 1]) { lengths[i + 1][j + 1] = lengths[i + 1][j]; }
             else
             {
                 lengths[i + 1][j + 1] = lengths[i][j + 1];
@@ -361,14 +323,8 @@ TContent SpellLogParser::_lcs_content(const TContent& content1, const TContent& 
     auto j {length2};
     while (i != 0 && j != 0)
     {
-        if (lengths[i][j] == lengths[i - 1][j])
-        {
-            --i;
-        }
-        else if (lengths[i][j] == lengths[i][j - 1])
-        {
-            --j;
-        }
+        if (lengths[i][j] == lengths[i - 1][j]) { --i; }
+        else if (lengths[i][j] == lengths[i][j - 1]) { --j; }
         else
         {
             if (lcs_idx > 0)
@@ -390,10 +346,7 @@ TContent SpellLogParser::_create_template(const TContent& lcs, const TContent& c
     auto     lcs_length {lcs.size()};
     auto     content_length {content.size()};
 
-    if (lcs_length == 0)
-    {
-        return new_content;
-    }
+    if (lcs_length == 0) { return new_content; }
 
     std::uint32_t lcs_idx {0};
     for (auto&& i : std::views::iota(0UL, content_length))
@@ -411,10 +364,7 @@ TContent SpellLogParser::_create_template(const TContent& lcs, const TContent& c
 
         if (lcs_idx == lcs_length)
         {
-            if (i < content_length - 1)
-            {
-                new_content.push_back(WILDCARD);
-            }
+            if (i < content_length - 1) { new_content.push_back(WILDCARD); }
             break;
         }
     }
@@ -428,10 +378,7 @@ TContent SpellLogParser::_merge_wildcards(const TContent& content)
 
     for (auto&& token : content)
     {
-        if (token == WILDCARD && !merged_content.empty() && merged_content.back() == WILDCARD)
-        {
-            continue;
-        }
+        if (token == WILDCARD && !merged_content.empty() && merged_content.back() == WILDCARD) { continue; }
 
         merged_content.push_back(token);
     }
@@ -440,10 +387,6 @@ TContent SpellLogParser::_merge_wildcards(const TContent& content)
 }
 
 std::string SpellLogParser::LogCluster::get_template() const
-{
-    return this->content |
-           std::views::join_with(' ') |
-           std::ranges::to<std::string>();
-}
+{ return this->content | std::views::join_with(' ') | std::ranges::to<std::string>(); }
 
 }    // namespace logtt

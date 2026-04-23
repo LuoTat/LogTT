@@ -5,14 +5,19 @@
 namespace logtt
 {
 
-static duckdb::unique_ptr<duckdb::ParsedExpression> _build_timestamp_expr(const std::vector<std::string>& timestamp_fields, const std::string& timestamp_format)
+static duckdb::unique_ptr<duckdb::ParsedExpression>
+_build_timestamp_expr(const std::vector<std::string>& timestamp_fields, const std::string& timestamp_format)
 {
     duckdb::unique_ptr<duckdb::ParsedExpression> func_expr;
     if (timestamp_format == "epoch")
     {
         // Unix 时间戳
         duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_1;
-        arg_exprs_1.push_back(duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::BIGINT, duckdb::make_uniq<duckdb::ColumnRefExpression>(timestamp_fields[0])));
+        arg_exprs_1.push_back(
+            duckdb::make_uniq<duckdb::CastExpression>(
+                duckdb::LogicalType::BIGINT, duckdb::make_uniq<duckdb::ColumnRefExpression>(timestamp_fields[0])
+            )
+        );
         arg_exprs_1.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::BIGINT(1000)));
         auto timestamp_ms {duckdb::make_uniq<duckdb::FunctionExpression>("multiply", std::move(arg_exprs_1))};
 
@@ -65,16 +70,28 @@ duckdb::shared_ptr<duckdb::Relation> get_tmp(duckdb::Connection& conn, const duc
 std::int64_t get_row_count(const duckdb::shared_ptr<duckdb::Relation>& rel)
 {
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
-    agg_exprs.push_back(duckdb::make_uniq<duckdb::FunctionExpression>("count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}));
+    agg_exprs.push_back(
+        duckdb::make_uniq<duckdb::FunctionExpression>(
+            "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
+        )
+    );
     return to_m_result(rel->Aggregate(std::move(agg_exprs))->Execute())->GetValue<std::int64_t>(0, 0);
 }
 
-duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const std::string& log_file, const std::string& log_regex, const std::vector<std::string>& named_fields, const std::vector<std::string>& timestamp_fields, const std::string& timestamp_format)
+duckdb::shared_ptr<duckdb::Relation> load_data(
+    duckdb::Connection&             conn,
+    const std::string&              log_file,
+    const std::string&              log_regex,
+    const std::vector<std::string>& named_fields,
+    const std::vector<std::string>& timestamp_fields,
+    const std::string&              timestamp_format
+)
 {
     // 将日志文件作为CSV文件读取，使用特殊的分隔符和引号来避免解析错误
     // 使用 WITH ORDINALITY 生成一个从 1 开始的序列，作为日志行号
-    auto rel {conn.RelationFromQuery(std::format(
-        R"(
+    auto rel {conn.RelationFromQuery(
+        std::format(
+            R"(
             SELECT ordinality AS LineID, _raw
             FROM read_csv(
                 '{}',
@@ -85,17 +102,12 @@ duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const s
             )
             WITH ORDINALITY
         )",
-        log_file
-    ))};
+            log_file
+        )
+    )};
 
     auto named_fields_values {
-        named_fields |
-        std::views::transform(
-            [](const std::string& s)
-            {
-                return duckdb::Value(s);
-            }
-        ) |
+        named_fields | std::views::transform([](const std::string& s) { return duckdb::Value(s); }) |
         std::ranges::to<duckdb::vector<duckdb::Value>>()
     };
 
@@ -113,7 +125,7 @@ duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const s
 
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
     arg_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("_cap"));
-    auto                                                         func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("unnest", std::move(arg_exprs_2))};
+    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("unnest", std::move(arg_exprs_2))};
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_2;
     project_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
     project_exprs_2.push_back(std::move(func_expr_2));
@@ -128,16 +140,14 @@ duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const s
     project_exprs_3.push_back(std::move(func_expr_3));
     auto star_expr {duckdb::make_uniq<duckdb::StarExpression>()};
     star_expr->exclude_list.emplace("LineID");
-    for (auto&& field : timestamp_fields)
-    {
-        star_expr->exclude_list.emplace(field);
-    }
+    for (auto&& field : timestamp_fields) { star_expr->exclude_list.emplace(field); }
     project_exprs_3.push_back(std::move(star_expr));
     rel = rel->Project(std::move(project_exprs_3), {});
     return rel;
 }
 
-duckdb::shared_ptr<duckdb::Relation> mask_log_rel(duckdb::shared_ptr<duckdb::Relation>& rel, const std::vector<Mask>& maskings)
+duckdb::shared_ptr<duckdb::Relation>
+mask_log_rel(duckdb::shared_ptr<duckdb::Relation>& rel, const std::vector<Mask>& maskings)
 {
     // 从 ColumnRefExpression("Content") 开始，逐层嵌套 regexp_replace
     duckdb::unique_ptr<duckdb::ParsedExpression> func_expr {duckdb::make_uniq<duckdb::ColumnRefExpression>("Content")};
@@ -159,10 +169,13 @@ duckdb::shared_ptr<duckdb::Relation> mask_log_rel(duckdb::shared_ptr<duckdb::Rel
     return rel;
 }
 
-duckdb::shared_ptr<duckdb::Relation> split_log_rel(duckdb::shared_ptr<duckdb::Relation>& rel, const std::vector<char>& delimiters)
+duckdb::shared_ptr<duckdb::Relation>
+split_log_rel(duckdb::shared_ptr<duckdb::Relation>& rel, const std::vector<char>& delimiters)
 {
     // 从 ColumnRefExpression("MaskedContent") 开始，逐层嵌套 replace
-    duckdb::unique_ptr<duckdb::ParsedExpression> func_expr {duckdb::make_uniq<duckdb::ColumnRefExpression>("MaskedContent")};
+    duckdb::unique_ptr<duckdb::ParsedExpression> func_expr {
+        duckdb::make_uniq<duckdb::ColumnRefExpression>("MaskedContent")
+    };
     for (auto&& delim : delimiters)
     {
         duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs;
@@ -197,19 +210,17 @@ void to_table(
 {
     // 使用 UDF 将 log_templates 中的模板字符串映射到每一行
     auto udf_name {std::format("_get_template_{}", structured_table_name)};
-    auto udf {
-        [&templates](duckdb::DataChunk& args, duckdb::ExpressionState& state, duckdb::Vector& result)
-        {
-            result.SetVectorType(duckdb::VectorType::FLAT_VECTOR);
-            auto result_data {duckdb::FlatVector::GetData<duckdb::string_t>(result)};
+    auto udf {[&templates](duckdb::DataChunk& args, duckdb::ExpressionState& state, duckdb::Vector& result)
+              {
+                  result.SetVectorType(duckdb::VectorType::FLAT_VECTOR);
+                  auto result_data {duckdb::FlatVector::GetData<duckdb::string_t>(result)};
 
-            const auto line_id_data {duckdb::FlatVector::GetData<std::int64_t>(args.data[0])};
-            for (auto&& i : std::views::iota(0UL, args.size()))
-            {
-                result_data[i] = duckdb::StringVector::AddString(result, templates[line_id_data[i] - 1]);
-            }
-        }
-    };
+                  const auto line_id_data {duckdb::FlatVector::GetData<std::int64_t>(args.data[0])};
+                  for (auto&& i : std::views::iota(0UL, args.size()))
+                  {
+                      result_data[i] = duckdb::StringVector::AddString(result, templates[line_id_data[i] - 1]);
+                  }
+              }};
     conn.CreateVectorizedFunction<duckdb::string_t, std::int64_t>(udf_name, udf);
 
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_1;
@@ -224,7 +235,9 @@ void to_table(
 
     // 统计每个模板的出现次数，并按出现次数降序排序
     rel = conn.Table(structured_table_name);
-    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>("count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {})};
+    auto func_expr_2 {duckdb::make_uniq<duckdb::FunctionExpression>(
+        "count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}
+    )};
     func_expr_2->SetAlias("Count");
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
     agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Template"));

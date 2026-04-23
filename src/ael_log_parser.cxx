@@ -16,12 +16,23 @@ AELLogParser::AELLogParser(
     std::uint32_t            cluster_thr,
     float                    merge_thr
 ):
-    BaseLogParser {std::move(log_regex), std::move(named_fields), std::move(timestamp_fields), std::move(timestamp_format), std::move(maskings), std::move(delimiters)},
-    m_cluster_thr {cluster_thr},
-    m_merge_thr {merge_thr}
+    BaseLogParser {
+        std::move(log_regex),
+        std::move(named_fields),
+        std::move(timestamp_fields),
+        std::move(timestamp_format),
+        std::move(maskings),
+        std::move(delimiters)
+    },
+    m_cluster_thr {cluster_thr}, m_merge_thr {merge_thr}
 {}
 
-std::uint32_t AELLogParser::parse(const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name, bool keep_para)
+std::uint32_t AELLogParser::parse(
+    const std::string& log_file,
+    const std::string& structured_table_name,
+    const std::string& templates_table_name,
+    bool               keep_para
+)
 {
     // 初始化日志簇池
     this->m_cluster_pool.clear();
@@ -29,7 +40,9 @@ std::uint32_t AELLogParser::parse(const std::string& log_file, const std::string
     // 获取数据库连接
     auto& conn {get_connection()};
 
-    auto rel {load_data(conn, log_file, this->m_log_regex, this->m_named_fields, this->m_timestamp_fields, this->m_timestamp_format)};
+    auto rel {load_data(
+        conn, log_file, this->m_log_regex, this->m_named_fields, this->m_timestamp_fields, this->m_timestamp_format
+    )};
     rel = mask_log_rel(rel, this->m_maskings);
     rel = split_log_rel(rel, this->m_delimiters);
 
@@ -46,10 +59,7 @@ std::uint32_t AELLogParser::parse(const std::string& log_file, const std::string
     {
         auto log_template {cluster->get_template()};
 
-        for (auto&& row : cluster->rows)
-        {
-            templates[row - 1] = log_template;
-        }
+        for (auto&& row : cluster->rows) { templates[row - 1] = log_template; }
     }
 
     // 移除多余列
@@ -92,7 +102,7 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
     rel = rel->Project(std::move(project_exprs_1), {});
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_4;
     arg_exprs_4.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("LineID"));
-    auto                                                         func_expr_4 {duckdb::make_uniq<duckdb::FunctionExpression>("list", std::move(arg_exprs_4))};
+    auto func_expr_4 {duckdb::make_uniq<duckdb::FunctionExpression>("list", std::move(arg_exprs_4))};
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
     agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("token_count"));
     agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("para_count"));
@@ -144,10 +154,7 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
             auto cluster {&this->m_cluster_pool.back()};
 
             auto [it, inserted] {log_bin.try_emplace(LogBinKey {token_count, para_count}, 1, cluster)};
-            if (!inserted)
-            {
-                it->second.push_back(cluster);
-            }
+            if (!inserted) { it->second.push_back(cluster); }
         }
     }
 
@@ -171,10 +178,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
         for (auto&& i : std::views::iota(0UL, clusters.size()))
         {
             auto cluster1 {clusters[i]};
-            if (cluster1->merged)
-            {
-                continue;
-            }
+            if (cluster1->merged) { continue; }
 
             cluster1->merged = true;
             cluster_groups.emplace_back(1, cluster1);
@@ -182,10 +186,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
             for (auto&& j : std::views::iota(i + 1, clusters.size()))
             {
                 auto cluster2 {clusters[j]};
-                if (cluster2->merged)
-                {
-                    continue;
-                }
+                if (cluster2->merged) { continue; }
 
                 if (this->_has_diff(cluster1, cluster2))
                 {
@@ -197,7 +198,9 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
 
         for (auto&& group : cluster_groups)
         {
-            auto merged_cluster {std::accumulate(group.begin() + 1, group.end(), group.front(), AELLogParser::_merge_log_cluster)};
+            auto merged_cluster {
+                std::accumulate(group.begin() + 1, group.end(), group.front(), AELLogParser::_merge_log_cluster)
+            };
             merged_clusters.push_back(merged_cluster);
         }
     }
@@ -211,10 +214,7 @@ bool AELLogParser::_has_diff(const LogCluster* cluster1, const LogCluster* clust
 
     for (auto&& [token1, token2] : std::views::zip(cluster1->content, cluster2->content))
     {
-        if (token1 != token2)
-        {
-            ++diff;
-        }
+        if (token1 != token2) { ++diff; }
     }
 
     auto ratio {static_cast<float>(diff) / cluster1->content.size()};
@@ -225,10 +225,7 @@ AELLogParser::LogCluster* AELLogParser::_merge_log_cluster(LogCluster* cluster1,
 {
     for (auto&& [token1, token2] : std::views::zip(cluster1->content, cluster2->content))
     {
-        if (token1 != token2)
-        {
-            token1 = WILDCARD;
-        }
+        if (token1 != token2) { token1 = WILDCARD; }
     }
 
     cluster1->rows.insert(cluster1->rows.end(), cluster2->rows.begin(), cluster2->rows.end());
@@ -236,10 +233,6 @@ AELLogParser::LogCluster* AELLogParser::_merge_log_cluster(LogCluster* cluster1,
 }
 
 std::string AELLogParser::LogCluster::get_template() const
-{
-    return this->content |
-           std::views::join_with(' ') |
-           std::ranges::to<std::string>();
-}
+{ return this->content | std::views::join_with(' ') | std::ranges::to<std::string>(); }
 
 }    // namespace logtt

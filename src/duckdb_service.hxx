@@ -41,21 +41,17 @@ void                    create_log_table_if_not_exists();
 std::vector<LogEntry>   get_log_table();
 std::vector<EXLogEntry> get_extracted_log_table();
 int                     insert_log(const std::string& log_type, const std::string& log_uri);
-int                     insert_log(const std::string& log_type, const std::string& log_uri, const std::string& extract_method);
-void                    update_log_format_type(std::uint32_t log_id, const std::string& value);
-void                    update_log_is_extracted(std::uint32_t log_id, bool value);
-void                    update_log_extract_method(std::uint32_t log_id, const std::string& value);
-void                    update_log_line_count(std::uint32_t log_id, std::uint32_t value);
-void                    delete_log(std::uint32_t log_id);
+int  insert_log(const std::string& log_type, const std::string& log_uri, const std::string& extract_method);
+void update_log_format_type(std::uint32_t log_id, const std::string& value);
+void update_log_is_extracted(std::uint32_t log_id, bool value);
+void update_log_extract_method(std::uint32_t log_id, const std::string& value);
+void update_log_line_count(std::uint32_t log_id, std::uint32_t value);
+void delete_log(std::uint32_t log_id);
 
 // ==================== CSV表格显示 ====================
 
-std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_csv_table(
-    const std::string& table_name,
-    std::uint32_t      offset,
-    std::uint32_t      limit,
-    const Filters&     filters
-);
+std::pair<std::vector<std::vector<std::string>>, std::uint32_t>
+fetch_csv_table(const std::string& table_name, std::uint32_t offset, std::uint32_t limit, const Filters& filters);
 
 // ==================== CSV表格过滤器 ====================
 
