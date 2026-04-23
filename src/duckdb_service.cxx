@@ -31,7 +31,7 @@ static std::vector<std::vector<std::string>> _to_df(duckdb::shared_ptr<duckdb::R
     project_exprs.push_back(duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::VARCHAR, std::move(star_expr)));
     rel = rel->Project(std::move(project_exprs), {});
 
-    auto result {to_materialized_query_result(rel->Execute())};
+    auto result {to_m_result(rel->Execute())};
     auto row_length {result->RowCount()};
     auto col_length {result->ColumnCount()};
 
@@ -129,7 +129,7 @@ std::vector<LogEntry> get_log_table()
     auto& conn {get_connection()};
     auto  rel {conn.Table("log")};
 
-    auto result {to_materialized_query_result(rel->Execute())};
+    auto result {to_m_result(rel->Execute())};
 
     std::vector<LogEntry> log_table;
     log_table.reserve(result->RowCount());
@@ -207,7 +207,7 @@ std::vector<EXLogEntry> get_extracted_log_table()
     project_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("templates_table_name"));
     rel = rel->Project(std::move(project_exprs), {});
 
-    auto result {to_materialized_query_result(rel->Execute())};
+    auto result {to_m_result(rel->Execute())};
 
     std::vector<EXLogEntry> log_table;
     log_table.reserve(result->RowCount());
@@ -392,7 +392,7 @@ std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_csv_table(
 
     rel = get_tmp(conn, rel);
 
-    auto log_length {to_materialized_query_result(rel->Execute())->RowCount()};
+    auto log_length {to_m_result(rel->Execute())->RowCount()};
 
     rel = rel->Limit(limit, offset);
     return {_to_df(rel), log_length};
@@ -438,7 +438,7 @@ std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_filter_tab
 
     rel = get_tmp(conn, rel);
 
-    auto log_length {to_materialized_query_result(rel->Execute())->RowCount()};
+    auto log_length {to_m_result(rel->Execute())->RowCount()};
 
     rel = rel->Limit(limit, offset);
     return {_to_df(rel), log_length};
@@ -476,7 +476,7 @@ std::uint32_t get_table_row_count(const std::string& table_name)
 {
     auto& conn {get_connection()};
     auto  rel {conn.Table(table_name)};
-    return to_materialized_query_result(rel->Execute())->RowCount();
+    return to_m_result(rel->Execute())->RowCount();
 }
 
 std::vector<std::string> get_table_columns(const std::string& table_name)

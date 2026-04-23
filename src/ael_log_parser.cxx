@@ -36,7 +36,7 @@ std::uint32_t AELLogParser::parse(const std::string& log_file, const std::string
     // 缓存分词结果，避免重复计算
     rel = get_tmp(conn, rel);
 
-    auto log_length {to_materialized_query_result(rel->Execute())->RowCount()};
+    auto log_length {get_row_count(rel)};
 
     auto log_bin {this->_get_log_bins(rel)};
     auto merged_clusters {this->_reconcile(log_bin)};
@@ -100,7 +100,7 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(duckdb::shared_ptr<duckdb::Rela
     agg_exprs.push_back(std::move(func_expr_4));
     rel = rel->Aggregate(std::move(agg_exprs), "token_count, para_count, Tokens");
 
-    auto   result {to_materialized_query_result(rel->Execute())};
+    auto   result {to_m_result(rel->Execute())};
     LogBin log_bin;
 
     for (auto&& data_chunk : result->Collection().Chunks())

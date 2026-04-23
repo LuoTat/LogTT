@@ -81,7 +81,7 @@ std::uint32_t BrainLogParser::parse(const std::string& log_file, const std::stri
     // 从 DuckDB 读取所有分词结果
     duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs_2;
     project_exprs_2.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("Tokens"));
-    auto                  result {to_materialized_query_result(rel->Project(std::move(project_exprs_2), {})->Execute())};
+    auto                  result {to_m_result(rel->Project(std::move(project_exprs_2), {})->Execute())};
     auto                  log_length {result->RowCount()};
     std::vector<TContent> contents;
     contents.reserve(log_length);

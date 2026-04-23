@@ -11,13 +11,10 @@ static duckdb::unique_ptr<duckdb::ParsedExpression> _build_timestamp_expr(const 
     if (timestamp_format == "epoch")
     {
         // Unix 时间戳
-        auto timestamp_s {duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::BIGINT, duckdb::make_uniq<duckdb::ColumnRefExpression>(timestamp_fields[0]))};
-        auto thousand {duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::BIGINT(1000))};
-
         duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_1;
-        arg_exprs_1.push_back(std::move(timestamp_s));
-        arg_exprs_1.push_back(std::move(thousand));
-        auto timestamp_ms = duckdb::make_uniq<duckdb::FunctionExpression>("multiply", std::move(arg_exprs_1));
+        arg_exprs_1.push_back(duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::BIGINT, duckdb::make_uniq<duckdb::ColumnRefExpression>(timestamp_fields[0])));
+        arg_exprs_1.push_back(duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::BIGINT(1000)));
+        auto timestamp_ms {duckdb::make_uniq<duckdb::FunctionExpression>("multiply", std::move(arg_exprs_1))};
 
         duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> arg_exprs_2;
         arg_exprs_2.push_back(std::move(timestamp_ms));
@@ -50,11 +47,10 @@ static duckdb::unique_ptr<duckdb::ParsedExpression> _build_timestamp_expr(const 
     }
 
     // 转为 TIMESTAMP_S 类型
-    auto cast_expr {duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::TIMESTAMP_S, std::move(func_expr))};
-    return cast_expr;
+    return duckdb::make_uniq<duckdb::CastExpression>(duckdb::LogicalType::TIMESTAMP_S, std::move(func_expr));
 }
 
-duckdb::unique_ptr<duckdb::MaterializedQueryResult> to_materialized_query_result(duckdb::unique_ptr<duckdb::QueryResult> result)
+duckdb::unique_ptr<duckdb::MaterializedQueryResult> to_m_result(duckdb::unique_ptr<duckdb::QueryResult> result)
 {
     D_ASSERT(result->type == duckdb::QueryResultType::MATERIALIZED_RESULT);
     return duckdb::unique_ptr_cast<duckdb::QueryResult, duckdb::MaterializedQueryResult>(std::move(result));
@@ -64,6 +60,13 @@ duckdb::shared_ptr<duckdb::Relation> get_tmp(duckdb::Connection& conn, const duc
 {
     rel->Create("_tmp", true, duckdb::OnCreateConflict::REPLACE_ON_CONFLICT);
     return conn.Table("_tmp");
+}
+
+std::int64_t get_row_count(const duckdb::shared_ptr<duckdb::Relation>& rel)
+{
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
+    agg_exprs.push_back(duckdb::make_uniq<duckdb::FunctionExpression>("count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {}));
+    return to_m_result(rel->Aggregate(std::move(agg_exprs))->Execute())->GetValue<std::int64_t>(0, 0);
 }
 
 duckdb::shared_ptr<duckdb::Relation> load_data(duckdb::Connection& conn, const std::string& log_file, const std::string& log_regex, const std::vector<std::string>& named_fields, const std::vector<std::string>& timestamp_fields, const std::string& timestamp_format)

@@ -30,5 +30,6 @@ std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector
     std::uint32_t      days,
     std::uint64_t      micros
 );
+std::pair<std::uint32_t, std::vector<std::vector<int64_t>>> get_template_transition_matrix(const std::string& structured_table_name, const std::string& template_table_name);
 
 }    // namespace logtt

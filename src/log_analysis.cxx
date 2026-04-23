@@ -18,7 +18,7 @@ std::pair<std::vector<std::string>, std::vector<std::uint32_t>> get_level_distri
     rel = rel->Order("Level");
 
     std::pair<std::vector<std::string>, std::vector<std::uint32_t>> distribution;
-    auto                                                            result {to_materialized_query_result(rel->Execute())};
+    auto                                                            result {to_m_result(rel->Execute())};
     for (auto&& i : std::views::iota(0UL, result->RowCount()))
     {
         auto level {result->GetValue(0, i)};
@@ -54,7 +54,7 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_log_frequen
     rel = rel->Aggregate(std::move(agg_exprs), "Timestamp_bucket");
     rel = rel->Order("Timestamp_bucket");
 
-    auto result {to_materialized_query_result(rel->Execute())};
+    auto result {to_m_result(rel->Execute())};
 
     std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> distribution;
     distribution.first.reserve(result->RowCount());
@@ -107,7 +107,7 @@ std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> get_template_fr
     rel = rel->Aggregate(std::move(agg_exprs), "Timestamp_bucket");
     rel = rel->Order("Timestamp_bucket");
 
-    auto result {to_materialized_query_result(rel->Execute())};
+    auto result {to_m_result(rel->Execute())};
 
     std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>> distribution;
     distribution.first.reserve(result->RowCount());
@@ -158,9 +158,8 @@ std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector
     rel = rel->Aggregate(std::move(agg_exprs), "Timestamp_bucket, Level");
     rel = rel->Order("Timestamp_bucket");
 
-    auto result {to_materialized_query_result(rel->Execute())};
-
     std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector<std::uint32_t>>> level_distribution;
+    auto                                                                                              result {to_m_result(rel->Execute())};
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& level_col {data_chunk.data[0]};
@@ -185,6 +184,79 @@ std::unordered_map<std::string, std::pair<std::vector<std::int64_t>, std::vector
     return level_distribution;
 }
 
+std::pair<std::uint32_t, std::vector<std::vector<int64_t>>> get_template_transition_matrix(const std::string& structured_table_name, const std::string& template_table_name)
+{
+    auto& conn {get_connection()};
+    auto  s_rel = conn.Table(structured_table_name);
+    auto  t_rel = conn.Table(template_table_name);
 
+    auto template_count {to_m_result(t_rel->Execute())->RowCount()};
+
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> condition_exprs;
+    condition_exprs.push_back(
+        duckdb::make_uniq<duckdb::ComparisonExpression>(
+            duckdb::ExpressionType::COMPARE_EQUAL,
+            duckdb::make_uniq<duckdb::ColumnRefExpression>("Template", structured_table_name),
+            duckdb::make_uniq<duckdb::ColumnRefExpression>("Template", template_table_name)
+        )
+    );
+    auto rel = s_rel->Join(t_rel, std::move(condition_exprs));
+
+    auto col_expr {duckdb::make_uniq<duckdb::ColumnRefExpression>("rowid", template_table_name)};
+    col_expr->SetAlias("curr_id");
+
+    auto window_expr {duckdb::make_uniq<duckdb::WindowExpression>(duckdb::ExpressionType::WINDOW_LEAD, "", "", "lead")};
+    window_expr->children.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("rowid", template_table_name));
+    window_expr->default_expr = duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::BIGINT(-1));
+    window_expr->start        = duckdb::WindowBoundary::UNBOUNDED_PRECEDING;
+    window_expr->end          = duckdb::WindowBoundary::UNBOUNDED_FOLLOWING;
+    window_expr->SetAlias("next_id");
+
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> project_exprs;
+    project_exprs.push_back(std::move(col_expr));
+    project_exprs.push_back(std::move(window_expr));
+    rel = rel->Project(std::move(project_exprs), {});
+
+    rel = rel->Filter(
+        duckdb::make_uniq<duckdb::ComparisonExpression>(
+            duckdb::ExpressionType::COMPARE_NOTEQUAL,
+            duckdb::make_uniq<duckdb::ColumnRefExpression>("next_id"),
+            duckdb::make_uniq<duckdb::ConstantExpression>(duckdb::Value::BIGINT(-1))
+        )
+    );
+
+    auto func_expr {duckdb::make_uniq<duckdb::FunctionExpression>("count", duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> {})};
+
+    duckdb::vector<duckdb::unique_ptr<duckdb::ParsedExpression>> agg_exprs;
+    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("curr_id"));
+    agg_exprs.push_back(duckdb::make_uniq<duckdb::ColumnRefExpression>("next_id"));
+    agg_exprs.push_back(std::move(func_expr));
+    rel = rel->Aggregate(std::move(agg_exprs), "curr_id, next_id");
+
+    auto result {to_m_result(rel->Execute())};
+
+    std::vector<std::vector<int64_t>> transition_counts;
+    transition_counts.reserve(result->RowCount());
+    for (auto&& data_chunk : result->Collection().Chunks())
+    {
+        const auto& curr_id_col {data_chunk.data[0]};
+        const auto& next_id_col {data_chunk.data[1]};
+        const auto& count_col {data_chunk.data[2]};
+
+        const auto curr_id_data {duckdb::FlatVector::GetData<std::int64_t>(curr_id_col)};
+        const auto next_id_data {duckdb::FlatVector::GetData<std::int64_t>(next_id_col)};
+        const auto count_data {duckdb::FlatVector::GetData<std::int64_t>(count_col)};
+
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
+        {
+            auto curr_id {curr_id_data[row]};
+            auto next_id {next_id_data[row]};
+            auto count {count_data[row]};
+            transition_counts.push_back({curr_id, next_id, count});
+        }
+    }
+
+    return {template_count, transition_counts};
+}
 
 }    // namespace logtt
