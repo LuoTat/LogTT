@@ -12,7 +12,7 @@ from modules.constants import LEVEL_COLOR_MAP
 class LogLevelFrequencyCard(CardWidget):
     """日志级别频数直方图卡片"""
 
-    def __init__(self, structured_table_name: str | None = None, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self._main_layout = QVBoxLayout(self)
@@ -32,9 +32,6 @@ class LogLevelFrequencyCard(CardWidget):
         self._plot_widget.showGrid(x=True, y=True, alpha=0.3)
         self._plot_widget.addLegend()
         self._main_layout.addWidget(self._plot_widget)
-
-        if structured_table_name is not None:
-            self.setTable(structured_table_name)
 
     # ==================== 公共方法 ====================
 

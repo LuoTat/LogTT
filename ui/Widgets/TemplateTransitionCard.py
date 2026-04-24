@@ -11,12 +11,7 @@ from qfluentwidgets import (
 class TemplateTransitionCard(CardWidget):
     """模板转移卡片"""
 
-    def __init__(
-        self,
-        structured_table_name: str | None = None,
-        template_table_name: str | None = None,
-        parent=None,
-    ):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self._main_layout = QVBoxLayout(self)
@@ -38,9 +33,6 @@ class TemplateTransitionCard(CardWidget):
 
         self._color_bar = None
 
-        if structured_table_name is not None and template_table_name is not None:
-            self.setTable(structured_table_name, template_table_name)
-
     # ==================== 公共方法 ====================
 
     def setTable(
@@ -56,7 +48,8 @@ class TemplateTransitionCard(CardWidget):
 
         self._plot_widget.clear()
         if self._color_bar is not None:
-            self._plot_widget.plotItem.layout.removeItem(self._color_bar)
+            layout = getattr(self._plot_widget.plotItem, "layout")
+            layout.removeItem(self._color_bar)
             self._color_bar.scene().removeItem(self._color_bar)
 
         # 计算 99% 分位数
@@ -64,7 +57,7 @@ class TemplateTransitionCard(CardWidget):
         vmax = np.percentile(nonzero, 99)
         # 自动计算 rounding
         order = 10 ** np.floor(np.log10(vmax))
-        rounding = order / 10
+        rounding = order / 100
         # log 变换
         log_matrix = np.log1p(matrix)
         log_vmax = np.log1p(vmax)
@@ -86,6 +79,7 @@ class TemplateTransitionCard(CardWidget):
         """清空图表"""
         self._plot_widget.clear()
         if self._color_bar is not None:
-            self._plot_widget.plotItem.layout.removeItem(self._color_bar)
+            layout = getattr(self._plot_widget.plotItem, "layout")
+            layout.removeItem(self._color_bar)
             self._color_bar.scene().removeItem(self._color_bar)
             self._color_bar = None

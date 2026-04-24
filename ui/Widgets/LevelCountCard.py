@@ -12,7 +12,7 @@ from modules.constants import LEVEL_COLOR_MAP
 class LevelCountCard(CardWidget):
     """日志级别分布柱状图卡片"""
 
-    def __init__(self, structured_table_name: str | None = None, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self._main_layout = QVBoxLayout(self)
@@ -26,9 +26,6 @@ class LevelCountCard(CardWidget):
         self._plot_widget.setStyleSheet("background: transparent;")
         self._plot_widget.setMouseEnabled(x=False, y=False)
         self._main_layout.addWidget(self._plot_widget)
-
-        if structured_table_name is not None:
-            self.setTable(structured_table_name)
 
     # ==================== 公共方法 ====================
 

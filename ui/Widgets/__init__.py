@@ -7,6 +7,7 @@ from .ParserParamCard import ParserParamCard
 from .TemplateFrequencyCard import TemplateFrequencyCard
 from .TemplateCooccurrenceCard import TemplateCooccurrenceCard
 from .TemplateTransitionCard import TemplateTransitionCard
+from .TemplateTransitionProbabilityCard import TemplateTransitionProbabilityCard
 from .TitleCard import TitleCard
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "TemplateFrequencyCard",
     "TemplateCooccurrenceCard",
     "TemplateTransitionCard",
+    "TemplateTransitionProbabilityCard",
     "TitleCard",
 ]

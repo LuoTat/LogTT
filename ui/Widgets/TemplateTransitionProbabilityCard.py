@@ -8,8 +8,8 @@ from qfluentwidgets import (
 )
 
 
-class TemplateCooccurrenceCard(CardWidget):
-    """模板共现卡片"""
+class TemplateTransitionProbabilityCard(CardWidget):
+    """模板转移概率卡片"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -18,13 +18,13 @@ class TemplateCooccurrenceCard(CardWidget):
         self._main_layout.setContentsMargins(24, 24, 24, 24)
         self._main_layout.setSpacing(16)
 
-        self._title_label = BodyLabel(self.tr("模板共现"))
+        self._title_label = BodyLabel(self.tr("模板转移概率"))
         self._main_layout.addWidget(self._title_label)
 
         self._plot_widget = pg.PlotWidget(self, "transparent")
         self._plot_widget.setMinimumHeight(1000)
         self._plot_widget.setStyleSheet("background: transparent;")
-        self._plot_widget.setTitle("Template i -> Template j")
+        self._plot_widget.setTitle("Transition probability P(j|i)")
         self._plot_widget.setLabel("left", "From template")
         self._plot_widget.setLabel("bottom", "To template")
         self._plot_widget.showGrid(x=True, y=True, alpha=0.3)
@@ -39,16 +39,11 @@ class TemplateCooccurrenceCard(CardWidget):
         self,
         structured_table_name: str,
         template_table_name: str,
-        interval: tuple[int, int, int] = (0, 0, 60_000_000),
     ):
-        """设置表名并绘制模板共现图"""
-        months, days, micros = interval
-        matrix = LogAnalysis.get_template_cooccurrence_matrix(
+        """设置表名并绘制模板转移概率图"""
+        matrix = LogAnalysis.get_template_transition_matrix(
             structured_table_name,
             template_table_name,
-            months,
-            days,
-            micros,
         )
 
         self._plot_widget.clear()
@@ -57,25 +52,23 @@ class TemplateCooccurrenceCard(CardWidget):
             layout.removeItem(self._color_bar)
             self._color_bar.scene().removeItem(self._color_bar)
 
-        # 计算 99% 分位数
-        nonzero = matrix[matrix > 0]
-        vmax = np.percentile(nonzero, 99)
-        # 自动计算 rounding
-        order = 10 ** np.floor(np.log10(vmax))
-        rounding = order / 10
-        # log 变换
-        log_matrix = np.log1p(matrix)
-        log_vmax = np.log1p(vmax)
-        log_max = np.log1p(np.max(matrix))
+        # 计算条件概率 P(j|i)
+        row_sum = matrix.sum(axis=1, keepdims=True)
+        prob_matrix = np.divide(
+            matrix,
+            row_sum,
+            out=np.zeros_like(matrix, dtype=np.float64),
+            where=row_sum > 0,
+        )
 
-        img = pg.ImageItem(log_matrix, axisOrder="row-major")
+        img = pg.ImageItem(prob_matrix, axisOrder="row-major")
         self._plot_widget.addItem(img)
         self._color_bar = self._plot_widget.addColorBar(
             img,
-            values=(0, log_vmax),
+            values=(0.0, 1.0),
             colorMap="CET-L8",
-            limits=(0, log_max),
-            rounding=rounding,
+            limits=(0.0, 1.0),
+            rounding=0.01,
         )
 
         self._plot_widget.enableAutoRange()

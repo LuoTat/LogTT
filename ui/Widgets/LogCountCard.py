@@ -13,12 +13,7 @@ from qfluentwidgets import (
 class LogCountCard(CardWidget):
     """统计指标卡片，左侧显示日志总数，右侧显示模板数量"""
 
-    def __init__(
-        self,
-        structured_table_name: str | None = None,
-        templates_table_name: str | None = None,
-        parent=None,
-    ):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self._main_layout = QHBoxLayout(self)
@@ -36,9 +31,6 @@ class LogCountCard(CardWidget):
 
         # 右侧：模板数量
         self._init_template_value()
-
-        if structured_table_name is not None and templates_table_name is not None:
-            self.setTable(structured_table_name, templates_table_name)
 
     # ==================== 私有方法 ====================
     def _init_log_value(self):
