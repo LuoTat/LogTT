@@ -26,7 +26,7 @@ class SettingPage(SmoothScrollArea):
         super().__init__(parent=parent)
         self.setObjectName("SettingPage")
 
-        self._scroll_widget = QWidget(self)
+        self._scroll_widget = QWidget()
         self._main_layout = ExpandLayout(self._scroll_widget)
 
         self.setWidget(self._scroll_widget)

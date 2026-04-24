@@ -27,6 +27,7 @@ class LogLevelFrequencyCard(CardWidget):
             "transparent",
             axisItems={"bottom": pg.DateAxisItem()},
         )
+        self._plot_widget.setMinimumHeight(500)
         self._plot_widget.setStyleSheet("background: transparent;")
         self._plot_widget.showGrid(x=True, y=True, alpha=0.3)
         self._plot_widget.addLegend()

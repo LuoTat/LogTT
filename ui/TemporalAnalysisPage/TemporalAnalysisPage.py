@@ -5,13 +5,12 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
-    QGridLayout,
     QHBoxLayout,
     QVBoxLayout,
     QWidget,
 )
 from qfluentwidgets import BodyLabel, InfoBar, InfoBarPosition
-from qfluentwidgets.components import ModelComboBox
+from qfluentwidgets.components import ModelComboBox, SmoothScrollArea
 
 from modules.models import ExtractedLogListModel, GranularityListModel
 from ui.Widgets import LogFrequencyCard, LogLevelFrequencyCard, TemplateFrequencyCard
@@ -86,19 +85,26 @@ class TemporalAnalysisPage(QWidget):
 
     def _init_chart(self):
         """初始化图表"""
-        self._card_layout = QGridLayout()
-        self._card_layout.setSpacing(16)
+
+        self._scroll_area = SmoothScrollArea(self)
+        self._scroll_area.setWidgetResizable(True)
+
+        self._scroll_widget = QWidget()
+        self._card_layout = QVBoxLayout(self._scroll_widget)
 
         self._frequency_card = LogFrequencyCard(parent=self)
-        self._card_layout.addWidget(self._frequency_card, 0, 0)
+        self._card_layout.addWidget(self._frequency_card)
 
         self._template_frequency_card = TemplateFrequencyCard(parent=self)
-        self._card_layout.addWidget(self._template_frequency_card, 1, 0)
+        self._card_layout.addWidget(self._template_frequency_card)
 
         self._level_frequency_card = LogLevelFrequencyCard(parent=self)
-        self._card_layout.addWidget(self._level_frequency_card, 2, 0)
+        self._card_layout.addWidget(self._level_frequency_card)
 
-        self._main_layout.addLayout(self._card_layout)
+        self._scroll_area.setWidget(self._scroll_widget)
+        self._scroll_area.enableTransparentBackground()
+
+        self._main_layout.addWidget(self._scroll_area)
 
     # ==================== 槽函数 ====================
 
@@ -130,7 +136,6 @@ class TemporalAnalysisPage(QWidget):
         ).data(GranularityListModel.INTERVAL_ROLE)
 
         self._frequency_card.setTable(structured_table_name, interval)
-
         self._template_frequency_card.setTable(structured_table_name)
 
         # 检查是否有 Level 列，有则绘制日志级别分布

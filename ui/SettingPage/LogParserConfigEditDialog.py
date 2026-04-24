@@ -37,11 +37,11 @@ class LogParserConfigEditDialog(MessageBoxBase):
         self._scroll_area = SmoothScrollArea(self)
         self._scroll_area.setWidgetResizable(True)
 
-        self._scroll_widget = QWidget(self._scroll_area)
+        self._scroll_widget = QWidget()
         self._main_layout = QVBoxLayout(self._scroll_widget)
         # 将背景设为透明以同一卡片背景
-        self._scroll_widget.setStyleSheet("background: transparent;")
         self._scroll_area.setWidget(self._scroll_widget)
+        self._scroll_area.enableTransparentBackground()
 
         self.viewLayout.addWidget(self._scroll_area)
 
