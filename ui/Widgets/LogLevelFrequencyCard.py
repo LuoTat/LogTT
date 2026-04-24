@@ -44,7 +44,6 @@ class LogLevelFrequencyCard(CardWidget):
         interval: tuple[int, int, int] = (0, 0, 60_000_000),
     ):
         """设置表名并绘制日志级别频数直方图"""
-
         months, days, micros = interval
         level_distribution = LogAnalysis.get_log_level_frequency_distribution(
             structured_table_name,

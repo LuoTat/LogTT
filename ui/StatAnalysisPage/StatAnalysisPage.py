@@ -33,7 +33,7 @@ class StatAnalysisPage(QWidget):
         self._extracted_log_list_model = ExtractedLogListModel(self)
         self._select_log_id = -1
         self._init_toolbar()
-        self._init_stat_card()
+        self._init_card()
 
     # ==================== 重写方法 ====================
 
@@ -71,7 +71,7 @@ class StatAnalysisPage(QWidget):
         tool_bar_layout.addStretch()
         self._main_layout.addLayout(tool_bar_layout)
 
-    def _init_stat_card(self):
+    def _init_card(self):
         """初始化统计卡片"""
         self._card_layout = QGridLayout()
         self._card_layout.setSpacing(16)

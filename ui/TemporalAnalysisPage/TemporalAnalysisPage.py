@@ -33,7 +33,7 @@ class TemporalAnalysisPage(QWidget):
         self._granularity_list_model = GranularityListModel(self)
         self._select_log_id = -1
         self._init_toolbar()
-        self._init_chart()
+        self._init_card()
 
     # ==================== 重写方法 ====================
 
@@ -49,6 +49,8 @@ class TemporalAnalysisPage(QWidget):
             self._select_log_id = -1
             self._log_combo_box.setCurrentIndex(-1)
             self._frequency_card.clear()
+            self._template_frequency_card.clear()
+            self._level_frequency_card.clear()
 
     # ==================== 私有方法 ====================
 
@@ -83,9 +85,8 @@ class TemporalAnalysisPage(QWidget):
 
         self._main_layout.addLayout(tool_bar_layout)
 
-    def _init_chart(self):
+    def _init_card(self):
         """初始化图表"""
-
         self._scroll_area = SmoothScrollArea(self)
         self._scroll_area.setWidgetResizable(True)
 

@@ -90,32 +90,28 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(const shared_ptr<Relation>& rel
     arg_exprs_2.push_back(make_uniq<ColumnRefExpression>("MaskedContent"));
     arg_exprs_2.push_back(make_uniq<ConstantExpression>("<#.*#>"));
 
-    auto func_expr_2 {make_uniq<FunctionExpression>("regexp_extract_all", std::move(arg_exprs_2))};
-
     ParsedExprVec arg_exprs_3;
-    arg_exprs_3.push_back(std::move(func_expr_2));
+    arg_exprs_3.push_back(make_uniq<FunctionExpression>("regexp_extract_all", std::move(arg_exprs_2)));
 
-    auto func_expr_3 {make_uniq<FunctionExpression>("length", std::move(arg_exprs_3))};
-    func_expr_3->SetAlias("para_count");
+    auto func_expr_2 {make_uniq<FunctionExpression>("length", std::move(arg_exprs_3))};
+    func_expr_2->SetAlias("para_count");
 
     ParsedExprVec project_exprs_1;
     project_exprs_1.push_back(make_uniq<ColumnRefExpression>("LineID"));
     project_exprs_1.push_back(make_uniq<ColumnRefExpression>("Tokens"));
     project_exprs_1.push_back(std::move(func_expr_1));
-    project_exprs_1.push_back(std::move(func_expr_3));
+    project_exprs_1.push_back(std::move(func_expr_2));
 
     auto tmp_rel {rel->Project(std::move(project_exprs_1), {})};
 
     ParsedExprVec arg_exprs_4;
     arg_exprs_4.push_back(make_uniq<ColumnRefExpression>("LineID"));
 
-    auto func_expr_4 {make_uniq<FunctionExpression>("list", std::move(arg_exprs_4))};
-
     ParsedExprVec project_exprs_2;
     project_exprs_2.push_back(make_uniq<ColumnRefExpression>("token_count"));
     project_exprs_2.push_back(make_uniq<ColumnRefExpression>("para_count"));
     project_exprs_2.push_back(make_uniq<ColumnRefExpression>("Tokens"));
-    project_exprs_2.push_back(std::move(func_expr_4));
+    project_exprs_2.push_back(make_uniq<FunctionExpression>("list", std::move(arg_exprs_4)));
 
     tmp_rel = tmp_rel->Aggregate(std::move(project_exprs_2), "token_count, para_count, Tokens");
 

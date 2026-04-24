@@ -132,16 +132,14 @@ shared_ptr<Relation> load_data(
     ParsedExprVec arg_exprs_2;
     arg_exprs_2.push_back(make_uniq<ColumnRefExpression>("_cap"));
 
-    auto func_expr_2 {make_uniq<FunctionExpression>("unnest", std::move(arg_exprs_2))};
-
     ParsedExprVec project_exprs_2;
     project_exprs_2.push_back(make_uniq<ColumnRefExpression>("LineID"));
-    project_exprs_2.push_back(std::move(func_expr_2));
+    project_exprs_2.push_back(make_uniq<FunctionExpression>("unnest", std::move(arg_exprs_2)));
 
     // 提取时间戳字段，并将其转换为 TIMESTAMP 类型
     // 同时过滤掉原始的时间戳字段，简化日志表的结构
-    auto func_expr_3 {_build_timestamp_expr(timestamp_fields, timestamp_format)};
-    func_expr_3->SetAlias("Timestamp");
+    auto func_expr_2 {_build_timestamp_expr(timestamp_fields, timestamp_format)};
+    func_expr_2->SetAlias("Timestamp");
 
     auto star_expr {make_uniq<StarExpression>()};
     star_expr->exclude_list.emplace("LineID");
@@ -152,7 +150,7 @@ shared_ptr<Relation> load_data(
 
     ParsedExprVec project_exprs_3;
     project_exprs_3.push_back(make_uniq<ColumnRefExpression>("LineID"));
-    project_exprs_3.push_back(std::move(func_expr_3));
+    project_exprs_3.push_back(std::move(func_expr_2));
     project_exprs_3.push_back(std::move(star_expr));
 
     return rel->Project(std::move(project_exprs_1), {})

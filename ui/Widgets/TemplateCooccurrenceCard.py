@@ -8,8 +8,8 @@ from qfluentwidgets import (
 )
 
 
-class TemplateTransitionCard(CardWidget):
-    """模板转移卡片"""
+class TemplateCooccurrenceCard(CardWidget):
+    """模板共现卡片"""
 
     def __init__(
         self,
@@ -23,7 +23,7 @@ class TemplateTransitionCard(CardWidget):
         self._main_layout.setContentsMargins(24, 24, 24, 24)
         self._main_layout.setSpacing(16)
 
-        self._title_label = BodyLabel(self.tr("模板转移"))
+        self._title_label = BodyLabel(self.tr("模板共现"))
         self._main_layout.addWidget(self._title_label)
 
         self._plot_widget = pg.PlotWidget(self, "transparent")
@@ -47,11 +47,16 @@ class TemplateTransitionCard(CardWidget):
         self,
         structured_table_name: str,
         template_table_name: str,
+        interval: tuple[int, int, int] = (0, 0, 60_000_000),
     ):
-        """设置表名并绘制模板转移图"""
-        matrix = LogAnalysis.get_template_transition_matrix(
+        """设置表名并绘制模板共现图"""
+        months, days, micros = interval
+        matrix = LogAnalysis.get_template_cooccurrence_matrix(
             structured_table_name,
             template_table_name,
+            months,
+            days,
+            micros,
         )
 
         self._plot_widget.clear()

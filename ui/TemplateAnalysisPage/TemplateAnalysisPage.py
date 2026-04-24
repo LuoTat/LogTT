@@ -5,16 +5,15 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
-    QGridLayout,
     QHBoxLayout,
     QVBoxLayout,
     QWidget,
 )
 from qfluentwidgets import BodyLabel, InfoBar, InfoBarPosition
-from qfluentwidgets.components import ModelComboBox
+from qfluentwidgets.components import ModelComboBox, SmoothScrollArea
 
-from modules.models import ExtractedLogListModel
-from ui.Widgets import TemplateTransitionCard
+from modules.models import ExtractedLogListModel, GranularityListModel
+from ui.Widgets import TemplateCooccurrenceCard, TemplateTransitionCard
 
 
 class TemplateAnalysisPage(QWidget):
@@ -31,9 +30,10 @@ class TemplateAnalysisPage(QWidget):
 
         # 初始化日志列表模型
         self._extracted_log_list_model = ExtractedLogListModel(self)
+        self._granularity_list_model = GranularityListModel(self)
         self._select_log_id = -1
         self._init_toolbar()
-        self._init_stat_card()
+        self._init_card()
 
     # ==================== 重写方法 ====================
 
@@ -49,7 +49,7 @@ class TemplateAnalysisPage(QWidget):
             self._select_log_id = -1
             self._log_combo_box.setCurrentIndex(-1)
             self._template_transition_card.clear()
-            # self._level_card.clear()
+            self._template_cooccurrence_card.clear()
 
     # ==================== 私有方法 ====================
 
@@ -69,20 +69,39 @@ class TemplateAnalysisPage(QWidget):
         tool_bar_layout.addWidget(self._log_combo_box)
 
         tool_bar_layout.addStretch()
+
+        granularity_label = BodyLabel(self.tr("时间粒度："), self)
+        tool_bar_layout.addWidget(granularity_label)
+
+        self._granularity_combo_box = ModelComboBox(self)
+        self._granularity_combo_box.setMinimumWidth(120)
+        self._granularity_combo_box.setModel(self._granularity_list_model)
+        self._granularity_combo_box.setCurrentIndex(2)  # 默认1分钟
+        self._granularity_combo_box.currentIndexChanged.connect(
+            self._on_granularity_changed
+        )
+        tool_bar_layout.addWidget(self._granularity_combo_box)
+
         self._main_layout.addLayout(tool_bar_layout)
 
-    def _init_stat_card(self):
+    def _init_card(self):
         """初始化统计卡片"""
-        self._card_layout = QGridLayout()
-        self._card_layout.setSpacing(16)
+        self._scroll_area = SmoothScrollArea(self)
+        self._scroll_area.setWidgetResizable(True)
+
+        self._scroll_widget = QWidget()
+        self._card_layout = QVBoxLayout(self._scroll_widget)
 
         self._template_transition_card = TemplateTransitionCard(parent=self)
-        self._card_layout.addWidget(self._template_transition_card, 0, 0)
+        self._card_layout.addWidget(self._template_transition_card)
 
-        # self._level_card = LevelCountCard(parent=self)
-        # self._card_layout.addWidget(self._level_card, 1, 0)
+        self._template_cooccurrence_card = TemplateCooccurrenceCard(parent=self)
+        self._card_layout.addWidget(self._template_cooccurrence_card)
 
-        self._main_layout.addLayout(self._card_layout)
+        self._scroll_area.setWidget(self._scroll_widget)
+        self._scroll_area.enableTransparentBackground()
+
+        self._main_layout.addWidget(self._scroll_area)
 
     # ==================== 槽函数 ====================
 
@@ -112,7 +131,38 @@ class TemplateAnalysisPage(QWidget):
             return
 
         self._select_log_id = log_id
+        interval = self._granularity_list_model.index(
+            self._granularity_combo_box.currentIndex()
+        ).data(GranularityListModel.INTERVAL_ROLE)
+
         self._template_transition_card.setTable(
             structured_table_name,
             templates_table_name,
+        )
+        self._template_cooccurrence_card.setTable(
+            structured_table_name,
+            templates_table_name,
+            interval,
+        )
+
+    @Slot(int)
+    def _on_granularity_changed(self, index: int):
+        log_index = self._log_combo_box.currentIndex()
+        if log_index < 0:
+            return
+
+        structured_table_name = self._extracted_log_list_model.index(log_index).data(
+            ExtractedLogListModel.STRUCTURED_TABLE_NAME_ROLE
+        )
+        templates_table_name = self._extracted_log_list_model.index(log_index).data(
+            ExtractedLogListModel.TEMPLATES_TABLE_NAME_ROLE
+        )
+        interval = self._granularity_list_model.index(index).data(
+            GranularityListModel.INTERVAL_ROLE
+        )
+
+        self._template_cooccurrence_card.setTable(
+            structured_table_name,
+            templates_table_name,
+            interval,
         )

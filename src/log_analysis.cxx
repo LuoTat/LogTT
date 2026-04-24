@@ -10,11 +10,9 @@ get_level_distribution(const std::string& structured_table_name)
 {
     auto& conn {get_connection()};
 
-    auto func_expr {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
-
     ParsedExprVec project_exprs;
     project_exprs.push_back(make_uniq<ColumnRefExpression>("Level"));
-    project_exprs.push_back(std::move(func_expr));
+    project_exprs.push_back(make_uniq<FunctionExpression>("count", ParsedExprVec {}));
 
     auto rel {conn.Table(structured_table_name)->Aggregate(std::move(project_exprs), "Level")->Order("Level")};
 
@@ -41,14 +39,12 @@ std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> get_log_frequenc
     arg_expr.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
     arg_expr.push_back(make_uniq<ColumnRefExpression>("Timestamp"));
 
-    auto func_expr_1 {make_uniq<FunctionExpression>("time_bucket", std::move(arg_expr))};
-    func_expr_1->SetAlias("Timestamp_bucket");
-
-    auto func_expr_2 {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
+    auto func_expr {make_uniq<FunctionExpression>("time_bucket", std::move(arg_expr))};
+    func_expr->SetAlias("Timestamp_bucket");
 
     ParsedExprVec project_exprs;
-    project_exprs.push_back(std::move(func_expr_1));
-    project_exprs.push_back(std::move(func_expr_2));
+    project_exprs.push_back(std::move(func_expr));
+    project_exprs.push_back(make_uniq<FunctionExpression>("count", ParsedExprVec {}));
 
     auto rel {conn.Table(structured_table_name)->Aggregate(std::move(project_exprs), "Timestamp_bucket")};
 
@@ -83,17 +79,17 @@ std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> get_template_fre
 {
     auto& conn {get_connection()};
 
-    ParsedExprVec arg_expr_1;
-    arg_expr_1.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
-    arg_expr_1.push_back(make_uniq<ColumnRefExpression>("Timestamp"));
+    ParsedExprVec arg_exprs_1;
+    arg_exprs_1.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
+    arg_exprs_1.push_back(make_uniq<ColumnRefExpression>("Timestamp"));
 
-    auto func_expr_1 {make_uniq<FunctionExpression>("time_bucket", std::move(arg_expr_1))};
+    auto func_expr_1 {make_uniq<FunctionExpression>("time_bucket", std::move(arg_exprs_1))};
     func_expr_1->SetAlias("Timestamp_bucket");
 
-    ParsedExprVec arg_expr_2;
-    arg_expr_2.push_back(make_uniq<ColumnRefExpression>("Template"));
+    ParsedExprVec arg_exprs_2;
+    arg_exprs_2.push_back(make_uniq<ColumnRefExpression>("Template"));
 
-    auto func_expr_2 {make_uniq<FunctionExpression>("count", std::move(arg_expr_2))};
+    auto func_expr_2 {make_uniq<FunctionExpression>("count", std::move(arg_exprs_2))};
     func_expr_2->distinct = true;
 
     ParsedExprVec project_exprs;
@@ -138,15 +134,13 @@ get_log_level_frequency_distribution(
     arg_expr.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
     arg_expr.push_back(make_uniq<ColumnRefExpression>("Timestamp"));
 
-    auto func_expr_1 {make_uniq<FunctionExpression>("time_bucket", std::move(arg_expr))};
-    func_expr_1->SetAlias("Timestamp_bucket");
-
-    auto func_expr_2 {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
+    auto func_expr {make_uniq<FunctionExpression>("time_bucket", std::move(arg_expr))};
+    func_expr->SetAlias("Timestamp_bucket");
 
     ParsedExprVec project_exprs;
     project_exprs.push_back(make_uniq<ColumnRefExpression>("Level"));
-    project_exprs.push_back(std::move(func_expr_1));
-    project_exprs.push_back(std::move(func_expr_2));
+    project_exprs.push_back(std::move(func_expr));
+    project_exprs.push_back(make_uniq<FunctionExpression>("count", ParsedExprVec {}));
 
     auto rel {conn.Table(structured_table_name)->Aggregate(std::move(project_exprs), "Timestamp_bucket, Level")};
 
@@ -208,12 +202,10 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
     project_exprs_1.push_back(std::move(col_expr));
     project_exprs_1.push_back(std::move(window_expr));
 
-    auto func_expr {make_uniq<FunctionExpression>("count", ParsedExprVec {})};
-
     ParsedExprVec project_exprs_2;
     project_exprs_2.push_back(make_uniq<ColumnRefExpression>("curr_id"));
     project_exprs_2.push_back(make_uniq<ColumnRefExpression>("next_id"));
-    project_exprs_2.push_back(std::move(func_expr));
+    project_exprs_2.push_back(make_uniq<FunctionExpression>("count", ParsedExprVec {}));
 
     auto rel {s_rel->Join(t_rel, std::move(arg_exprs))
                   ->Project(std::move(project_exprs_1), {})
@@ -249,6 +241,94 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
     }
 
     return {template_count, transition_counts};
+}
+
+std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>> get_template_cooccurrence_matrix(
+    const std::string& structured_table_name,
+    const std::string& template_table_name,
+    std::int32_t       months,
+    std::int32_t       days,
+    std::int64_t       micros
+)
+{
+    auto& conn {get_connection()};
+    auto  s_rel {conn.Table(structured_table_name)};
+    auto  t_rel {conn.Table(template_table_name)};
+
+    auto template_count {get_row_count(t_rel)};
+
+    ParsedExprVec arg_exprs_1;
+    arg_exprs_1.push_back(
+        make_uniq<ComparisonExpression>(
+            ExpressionType::COMPARE_EQUAL,
+            make_uniq<ColumnRefExpression>("Template", structured_table_name),
+            make_uniq<ColumnRefExpression>("Template", template_table_name)
+        )
+    );
+
+    ParsedExprVec arg_exprs_2;
+    arg_exprs_2.push_back(make_uniq<ConstantExpression>(Value::INTERVAL(months, days, micros)));
+    arg_exprs_2.push_back(make_uniq<ColumnRefExpression>("Timestamp"));
+
+    auto func_expr {make_uniq<FunctionExpression>("time_bucket", std::move(arg_exprs_2))};
+    func_expr->SetAlias("Timestamp_bucket");
+
+    ParsedExprVec project_exprs_1;
+    project_exprs_1.push_back(std::move(func_expr));
+    project_exprs_1.push_back(make_uniq<ColumnRefExpression>("rowid", template_table_name));
+
+    ParsedExprVec arg_exprs_3;
+    arg_exprs_3.push_back(
+        make_uniq<ConjunctionExpression>(
+            ExpressionType::CONJUNCTION_AND,
+            make_uniq<ComparisonExpression>(
+                ExpressionType::COMPARE_EQUAL,
+                make_uniq<ColumnRefExpression>("Timestamp_bucket", "a"),
+                make_uniq<ColumnRefExpression>("Timestamp_bucket", "b")
+            ),
+            make_uniq<ComparisonExpression>(
+                ExpressionType::COMPARE_LESSTHAN,
+                make_uniq<ColumnRefExpression>("rowid", "a"),
+                make_uniq<ColumnRefExpression>("rowid", "b")
+            )
+        )
+    );
+
+    ParsedExprVec project_exprs_2;
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("rowid", "a"));
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("rowid", "b"));
+    project_exprs_2.push_back(make_uniq<FunctionExpression>("count", ParsedExprVec {}));
+
+    auto dedup {s_rel->Join(t_rel, std::move(arg_exprs_1))->Project(std::move(project_exprs_1), {})->Distinct()};
+
+    auto a_rel {dedup->Alias("a")};
+    auto b_rel {dedup->Alias("b")};
+
+    auto rel {a_rel->Join(b_rel, std::move(arg_exprs_3))->Aggregate(std::move(project_exprs_2), "a.rowid, b.rowid")};
+
+    auto                              result {to_m_result(rel->Execute())};
+    std::vector<std::vector<int64_t>> cooccurrence_counts;
+    cooccurrence_counts.reserve(result->RowCount());
+    for (auto&& data_chunk : result->Collection().Chunks())
+    {
+        const auto& a_rowid_col {data_chunk.data[0]};
+        const auto& b_rowid_col {data_chunk.data[1]};
+        const auto& count_col {data_chunk.data[2]};
+
+        const auto a_rowid_data {FlatVector::GetData<std::int64_t>(a_rowid_col)};
+        const auto next_id_data {FlatVector::GetData<std::int64_t>(b_rowid_col)};
+        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
+
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
+        {
+            auto curr_id {a_rowid_data[row]};
+            auto next_id {next_id_data[row]};
+            auto count {count_data[row]};
+            cooccurrence_counts.push_back({curr_id, next_id, count});
+        }
+    }
+
+    return {template_count, cooccurrence_counts};
 }
 
 }    // namespace logtt
