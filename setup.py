@@ -13,6 +13,7 @@ class BuildExtWithCompilerFlags(build_ext):
             "-DCYTHON_CLINE_IN_TRACEBACK=0",
             "-Wall",
             "-O3",
+            "-march=native",
             "-std=c++26",
         ]
 

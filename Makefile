@@ -16,7 +16,7 @@ SRC := $(wildcard $(SRC_DIR)/*.cxx)
 OBJ := $(SRC:$(SRC_DIR)/%.cxx=$(BUILD_DIR)/%.o)
 
 CXX := g++
-CXXFLAGS := -fPIC -std=c++26 -O3 -flto -Wall -Wextra -Wno-unused-parameter
+CXXFLAGS := -fPIC -std=c++26 -O3 -march=native -flto -Wall -Wextra -Wno-unused-parameter
 LDFLAGS  := -shared -flto=auto -Wl,-rpath,'$$ORIGIN'
 LDLIBS   := -L$(LIB_DIR) -lduckdb
 
