@@ -4,7 +4,7 @@ from .log_parser_config import LogParserConfig
 BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     LogParserConfig(
         name="Android",
-        log_format="{Date} {Time}  {Pid}  {Tid} {Level} {Component}: {Content}",
+        log_format="{Date} {Time} {Pid:^} {Tid:>} {Level} {Component}: {Content}",
         timestamp_fields=["Date", "Time"],
         timestamp_format="%m-%d %H:%M:%S.%g",
         user_maskings=[
@@ -189,7 +189,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         name="HealthApp",
         log_format="{DateTime}|{Component}|{Pid}|{Content}",
         timestamp_fields=["DateTime"],
-        timestamp_format="%Y%m%d-%H:%M:%S:%g",
+        timestamp_format="%Y%m%d-%-H:%-M:%-S:%g",
         user_maskings=[
             (
                 r"\d+##\d+##\d+##\d+##\d+##\d+",
@@ -421,7 +421,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
     ),
     LogParserConfig(
         name="Windows",
-        log_format="{Date} {Time}, {Level}                  {Component}    {Content}",
+        log_format="{Date} {Time}, {Level:<} {Component}    {Content}",
         timestamp_fields=["Date", "Time"],
         timestamp_format="%c",
         delimiters="=:[]",
@@ -470,32 +470,6 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
             },
             "SpellLogParser": {
                 "sim_thr": 0.7,
-            },
-        },
-    ),
-    LogParserConfig(
-        name="Test",
-        log_format="{Content}",
-        timestamp_fields=[],
-        timestamp_format="",
-        ex_args={
-            "AELLogParser": {
-                "cluster_thr": 2,
-                "merge_thr": 0.6,
-            },
-            "BrainLogParser": {
-                "var_thr": 5,
-            },
-            "DrainLogParser": {
-                "depth": 3,
-                "sim_thr": 0.7,
-            },
-            "JaccardDrainLogParser": {
-                "depth": 3,
-                "sim_thr": 0.7,
-            },
-            "SpellLogParser": {
-                "sim_thr": 0.6,
             },
         },
     ),
