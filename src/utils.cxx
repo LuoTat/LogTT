@@ -93,10 +93,11 @@ shared_ptr<Relation> load_data(
             SELECT ordinality AS LineID, _raw
             FROM read_csv(
                 '{}',
-                auto_detect=false,
                 columns={{'_raw':'VARCHAR'}},
-                delim=chr(0),
-                quote=''
+                delim=chr(1),
+                quote='',
+                escape='',
+                new_line='\n'
             )
             WITH ORDINALITY
         )",
