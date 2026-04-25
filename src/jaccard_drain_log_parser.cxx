@@ -63,9 +63,7 @@ std::uint32_t JaccardDrainLogParser::parse(
     ParsedExprVec project_exprs_2;
     project_exprs_2.push_back(make_uniq<ColumnRefExpression>("Tokens"));
 
-    rel = rel->Project(std::move(project_exprs_2), {});
-
-    auto result {to_m_result(rel->Execute())};
+    auto result {to_m_result(rel->Project(std::move(project_exprs_2), {})->Execute())};
     auto log_length {result->RowCount()};
     for (auto&& data_chunk : result->Collection().Chunks())
     {
