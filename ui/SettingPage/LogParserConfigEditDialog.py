@@ -1,7 +1,7 @@
 import json
 import re
 
-import formatparse
+import parse
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import (
@@ -84,7 +84,7 @@ class LogParserConfigEditDialog(MessageBoxBase):
             return False
 
         # log_format 里面有没有 Content 字段
-        if "Content" not in formatparse.compile(log_format).named_fields:
+        if "Content" not in parse.compile(log_format).named_fields:
             self._show_warning(
                 self.tr("日志格式错误"),
                 self.tr("日志格式必须包含 {Content} 字段"),

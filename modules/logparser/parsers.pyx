@@ -1,4 +1,4 @@
-cdef object formatparse
+cdef object parse
 cdef object parser_register
 cdef object ParamDescriptor
 cdef object ParamWidgetType
@@ -9,7 +9,7 @@ from libc.stdint cimport uint16_t, uint32_t
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-import formatparse
+import parse
 from modules.logparser.parser cimport (
     AELLogParser as CXX_AELLogParser,
     BrainLogParser as CXX_BrainLogParser,
@@ -47,7 +47,7 @@ cdef class AELLogParser:
             merge_thr: Maximum percentage of difference to merge two log clusters.
         """
 
-        cdef object parser = formatparse.compile(log_format)
+        cdef object parser = parse.compile(log_format)
 
         self.log_parser = CXX_AELLogParser(
             "^" + parser._expression + "$",
@@ -136,7 +136,7 @@ cdef class BrainLogParser:
             var_thr: Threshold for determining variable columns.
         """
 
-        cdef object parser = formatparse.compile(log_format)
+        cdef object parser = parse.compile(log_format)
 
         self.log_parser = CXX_BrainLogParser(
             "^" + parser._expression + "$",
@@ -222,7 +222,7 @@ cdef class DrainLogParser:
         if depth < 3:
             raise ValueError("depth argument must be at least 3")
 
-        cdef object parser = formatparse.compile(log_format)
+        cdef object parser = parse.compile(log_format)
 
         self.log_parser = CXX_DrainLogParser(
             "^" + parser._expression + "$",
@@ -328,7 +328,7 @@ cdef class JaccardDrainLogParser:
         if depth < 2:
             raise ValueError("depth argument must be at least 2")
 
-        cdef object parser = formatparse.compile(log_format)
+        cdef object parser = parse.compile(log_format)
 
         self.log_parser = CXX_JaccardDrainLogParser(
             "^" + parser._expression + "$",
@@ -427,7 +427,7 @@ cdef class SpellLogParser:
             sim_thr: Similarity threshold (0-1).
         """
 
-        cdef object parser = formatparse.compile(log_format)
+        cdef object parser = parse.compile(log_format)
 
         self.log_parser = CXX_SpellLogParser(
             "^" + parser._expression + "$",

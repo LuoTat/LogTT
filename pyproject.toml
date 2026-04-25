@@ -6,8 +6,8 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "cython>=3.2.4",
-    "formatparse>=0.6.1",
     "humanize>=4.15.0",
+    "parse>=1.21.1",
     "pyqtgraph>=0.14.0",
     "pyside6-fluent-widgets[full]>=1.11.1",
     "setuptools>=82.0.1",

@@ -55,19 +55,6 @@ wheels = [
 ]
 
 [[package]]
-name = "formatparse"
-version = "0.6.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c4/33/293cc3cc76e7ad289306944a97d9183a8e5d14b7552fe5ef7c831722b724/formatparse-0.6.1.tar.gz", hash = "sha256:acb6d6a8d56375398526d860e6c6d496c17c8474dc6b9dfe0e7c28324be940d4", size = 68726, upload-time = "2026-01-16T20:34:26.529Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/79/9564b1abdaf42f8ef592d6ddb644bb6e0dff898a49d71cda7966911c4adb/formatparse-0.6.1-cp314-cp314-macosx_10_12_x86_64.whl", hash = "sha256:ed4d7caca837d247b34c5f654328851cb31340e1c0db8f0eeb0c9ac5feb755c2", size = 1035253, upload-time = "2026-01-16T20:34:12.987Z" },
-    { url = "https://files.pythonhosted.org/packages/87/d2/42394ee81925902d881607458bee59e0c42b318582ab528af0d35d06c109/formatparse-0.6.1-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:3d48c47d9bf4eead7bb3cd73b024aadaeba6baccbda17d2709246eab9277bc7c", size = 960127, upload-time = "2026-01-16T20:34:14.378Z" },
-    { url = "https://files.pythonhosted.org/packages/ad/a5/711b1921395d8be96f1be466b2d8e0a66d6f0c878c83df4d9804c6aa0ce9/formatparse-0.6.1-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:0bacb2673412d5bcdc43ae31af8780af43547f19cb678c01613a09cbb30a04a8", size = 1107349, upload-time = "2026-01-16T20:34:15.403Z" },
-    { url = "https://files.pythonhosted.org/packages/c2/6b/7c99e5c5f4f0012bf9d4f7b85ebe2adcd8149801b6a767389c7ad6bd00c5/formatparse-0.6.1-cp314-cp314-win_amd64.whl", hash = "sha256:9610768d21bf34457186e5390b19d5f7f8b3023f6a5d326cb33f6ea7f214b0a6", size = 1000246, upload-time = "2026-01-16T20:34:16.352Z" },
-    { url = "https://files.pythonhosted.org/packages/00/7a/df8e978a5270e3050322d91dcd5a23c932b03f56e2e44598b117c5e4bd64/formatparse-0.6.1-cp314-cp314-win_arm64.whl", hash = "sha256:6db18ffa331d617e7d9aa55b0cadf8caa597bac057d9f113a85292f1167d99b0", size = 912919, upload-time = "2026-01-16T20:34:17.36Z" },
-]
-
-[[package]]
 name = "humanize"
 version = "4.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -82,8 +69,8 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "cython" },
-    { name = "formatparse" },
     { name = "humanize" },
+    { name = "parse" },
     { name = "pyqtgraph" },
     { name = "pyside6-fluent-widgets", extra = ["full"] },
     { name = "setuptools" },
@@ -92,8 +79,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "cython", specifier = ">=3.2.4" },
-    { name = "formatparse", specifier = ">=0.6.1" },
     { name = "humanize", specifier = ">=4.15.0" },
+    { name = "parse", specifier = ">=1.21.1" },
     { name = "pyqtgraph", specifier = ">=0.14.0" },
     { name = "pyside6-fluent-widgets", extras = ["full"], specifier = ">=1.11.1" },
     { name = "setuptools", specifier = ">=82.0.1" },
@@ -126,6 +113,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/07/12/8160bea39da3335737b10308df4f484235fd297f556745f13092aa039d3b/numpy-2.4.3-cp314-cp314t-win32.whl", hash = "sha256:5e10da9e93247e554bb1d22f8edc51847ddd7dde52d85ce31024c1b4312bfba0", size = 6154547, upload-time = "2026-03-09T07:58:28.289Z" },
     { url = "https://files.pythonhosted.org/packages/42/f3/76534f61f80d74cc9cdf2e570d3d4eeb92c2280a27c39b0aaf471eda7b48/numpy-2.4.3-cp314-cp314t-win_amd64.whl", hash = "sha256:45f003dbdffb997a03da2d1d0cb41fbd24a87507fb41605c0420a3db5bd4667b", size = 12633645, upload-time = "2026-03-09T07:58:30.384Z" },
     { url = "https://files.pythonhosted.org/packages/1f/b6/7c0d4334c15983cec7f92a69e8ce9b1e6f31857e5ee3a413ac424e6bd63d/numpy-2.4.3-cp314-cp314t-win_arm64.whl", hash = "sha256:4d382735cecd7bcf090172489a525cd7d4087bc331f7df9f60ddc9a296cf208e", size = 10565454, upload-time = "2026-03-09T07:58:33.031Z" },
+]
+
+[[package]]
+name = "parse"
+version = "1.21.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/18/0bea374e5ec3c8ba15365570002187f3fef9d7265ffbc2f649529878cc80/parse-1.21.1.tar.gz", hash = "sha256:825e1a88e9d9fb481b8d2ca709c6195558b6eaa97c559ad3a9a20aa2d12815a3", size = 29105, upload-time = "2026-02-19T02:20:07.645Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c3/13/114daf766c33aec6c5a3954e7ea653f8a7ade9602c5c5a2228281698c490/parse-1.21.1-py2.py3-none-any.whl", hash = "sha256:55339ca698019815df3b8e8b550e5933933527e623b0cdf1ca2f404da35ffb47", size = 19693, upload-time = "2026-02-19T02:20:06.575Z" },
 ]
 
 [[package]]
