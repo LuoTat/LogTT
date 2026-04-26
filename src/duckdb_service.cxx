@@ -12,7 +12,15 @@ const static char* const DB_PATH {"logtt.duckdb"};
 
 Connection& get_connection()
 {
-    static DuckDB           db {DB_PATH};
+    static DBConfig config {
+        case_insensitive_map_t<Value> {
+            {"access_mode", "READ_WRITE"},
+            {"checkpoint_threshold", "1 GiB"},
+            {"allocator_background_threads", true},
+        },
+        true
+    };
+    static DuckDB           db {DB_PATH, &config};
     thread_local Connection conn {db};
 
 #ifdef LOGTT_ENABLE_PROFILING
