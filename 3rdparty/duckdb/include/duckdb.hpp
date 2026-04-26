@@ -11,11 +11,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #pragma once
 #define DUCKDB_AMALGAMATION 1
 #define DUCKDB_AMALGAMATION_EXTENDED 1
-#define DUCKDB_SOURCE_ID "62e7f0dddf"
-#define DUCKDB_VERSION "v1.5.3-dev115"
+#define DUCKDB_SOURCE_ID "ca12adf671"
+#define DUCKDB_VERSION "v1.5.3-dev137"
 #define DUCKDB_MAJOR_VERSION 1
 #define DUCKDB_MINOR_VERSION 5
-#define DUCKDB_PATCH_VERSION "3-dev115"
+#define DUCKDB_PATCH_VERSION "3-dev137"
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //
@@ -4281,7 +4281,7 @@ public:
 	//! Is the character a valid part of a time zone name?
 	static inline bool CharacterIsTimeZone(char c) {
 		return StringUtil::CharacterIsAlpha(c) || StringUtil::CharacterIsDigit(c) || c == '_' || c == '/' || c == '+' ||
-		       c == '-';
+		       c == '-' || c == ':';
 	}
 
 	//! True, if the timestamp is finite, else false.
@@ -23311,6 +23311,7 @@ public:
 	RowGroupWriteData WriteToDisk(RowGroupWriteInfo &info) const;
 	//! Returns the number of committed rows (count - committed deletes)
 	idx_t GetCommittedRowCount();
+	bool CanReuseMetadata(RowGroupWriter &writer) const;
 	RowGroupWriteData WriteToDisk(RowGroupWriter &writer);
 	RowGroupPointer Checkpoint(RowGroupWriteData write_data, RowGroupWriter &writer, TableStatistics &global_stats,
 	                           idx_t row_group_start);
@@ -36035,7 +36036,7 @@ public:
 
 	explicit ProgressBar(
 	    Executor &executor, idx_t show_progress_after,
-	    progress_bar_display_create_func_t create_display_func = ProgressBar::DefaultProgressBarDisplay);
+	    const progress_bar_display_create_func_t &create_display_func = ProgressBar::DefaultProgressBarDisplay);
 
 	//! Starts the thread
 	void Start();
@@ -62288,6 +62289,8 @@ public:
 	DUCKDB_API void Close() override;
 
 private:
+	void Clear(); // for Initialize re-use to support FS.Reset()
+
 	idx_t current_position = 0;
 	unique_ptr<StreamWrapper> stream_wrapper;
 };
