@@ -3,6 +3,7 @@
 #include "utils.hxx"
 #include <algorithm>
 #include <cmath>
+#include <mdspan>
 #include <ranges>
 
 namespace logtt
@@ -354,7 +355,8 @@ TContent SpellLogParser::_lcs_content(const TContent& content1, const TContent& 
     auto length1 {content1.size()};
     auto length2 {content2.size()};
 
-    std::vector<std::vector<std::uint16_t>> lengths(length1 + 1, std::vector<std::uint16_t>(length2 + 1));
+    auto lengths_data {std::make_unique<std::uint16_t[]>((length1 + 1) * (length2 + 1))};
+    auto lengths {std::mdspan<std::uint16_t, std::dims<2>>(lengths_data.get(), length1 + 1, length2 + 1)};
 
     for (auto&& i : std::views::iota(0UL, length1))
     {
@@ -362,20 +364,20 @@ TContent SpellLogParser::_lcs_content(const TContent& content1, const TContent& 
         {
             if (content1[i] == content2[j])
             {
-                lengths[i + 1][j + 1] = lengths[i][j] + 1;
+                lengths[i + 1, j + 1] = lengths[i, j] + 1;
             }
-            else if (lengths[i + 1][j] >= lengths[i][j + 1])
+            else if (lengths[i + 1, j] >= lengths[i, j + 1])
             {
-                lengths[i + 1][j + 1] = lengths[i + 1][j];
+                lengths[i + 1, j + 1] = lengths[i + 1, j];
             }
             else
             {
-                lengths[i + 1][j + 1] = lengths[i][j + 1];
+                lengths[i + 1, j + 1] = lengths[i, j + 1];
             }
         }
     }
 
-    auto     lcs_length {lengths[length1][length2]};
+    auto     lcs_length {lengths[length1, length2]};
     TContent lcs {lcs_length};
     auto     lcs_idx {lcs_length};
 
@@ -383,11 +385,11 @@ TContent SpellLogParser::_lcs_content(const TContent& content1, const TContent& 
     auto j {length2};
     while (i != 0 && j != 0)
     {
-        if (lengths[i][j] == lengths[i - 1][j])
+        if (lengths[i, j] == lengths[i - 1, j])
         {
             --i;
         }
-        else if (lengths[i][j] == lengths[i][j - 1])
+        else if (lengths[i, j] == lengths[i, j - 1])
         {
             --j;
         }
