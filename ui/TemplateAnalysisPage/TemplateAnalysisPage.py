@@ -14,6 +14,7 @@ from qfluentwidgets.components import ModelComboBox, SmoothScrollArea
 
 from modules.models import ExtractedLogListModel, GranularityListModel
 from ui.Widgets import (
+    TemplateAvgTimeCard,
     TemplateCooccurrenceCard,
     TemplateTransitionCard,
     TemplateTransitionProbabilityCard,
@@ -53,6 +54,7 @@ class TemplateAnalysisPage(QWidget):
             self._select_log_id = -1
             self._log_combo_box.setCurrentIndex(-1)
             self._template_transition_card.clear()
+            self._template_avg_time_card.clear()
             self._template_transition_probability_card.clear()
             self._template_cooccurrence_card.clear()
 
@@ -105,6 +107,9 @@ class TemplateAnalysisPage(QWidget):
         )
         self._card_layout.addWidget(self._template_transition_probability_card)
 
+        self._template_avg_time_card = TemplateAvgTimeCard(parent=self)
+        self._card_layout.addWidget(self._template_avg_time_card)
+
         self._template_cooccurrence_card = TemplateCooccurrenceCard(parent=self)
         self._card_layout.addWidget(self._template_cooccurrence_card)
 
@@ -146,6 +151,10 @@ class TemplateAnalysisPage(QWidget):
         ).data(GranularityListModel.INTERVAL_ROLE)
 
         self._template_transition_card.setTable(
+            structured_table_name,
+            templates_table_name,
+        )
+        self._template_avg_time_card.setTable(
             structured_table_name,
             templates_table_name,
         )

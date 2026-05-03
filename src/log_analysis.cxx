@@ -331,4 +331,98 @@ std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>> get_template_coo
     return {template_count, cooccurrence_counts};
 }
 
+std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>>
+get_template_avg_time_matrix(const std::string& structured_table_name, const std::string& template_table_name)
+{
+    auto& conn {get_connection()};
+    auto  s_rel {conn.Table(structured_table_name)};
+    auto  t_rel {conn.Table(template_table_name)};
+
+    auto template_count {get_row_count(t_rel)};
+
+    ParsedExprVec arg_exprs_1;
+    arg_exprs_1.push_back(
+        make_uniq<ComparisonExpression>(
+            ExpressionType::COMPARE_EQUAL,
+            make_uniq<ColumnRefExpression>("Template", structured_table_name),
+            make_uniq<ColumnRefExpression>("Template", template_table_name)
+        )
+    );
+
+    auto col_expr_1 {make_uniq<ColumnRefExpression>("rowid", template_table_name)};
+    col_expr_1->SetAlias("curr_id");
+
+    auto window_expr_1 {make_uniq<WindowExpression>(ExpressionType::WINDOW_LEAD, "", "", "lead")};
+    window_expr_1->children.push_back(make_uniq<ColumnRefExpression>("rowid", template_table_name));
+    window_expr_1->default_expr = make_uniq<ConstantExpression>(Value::BIGINT(-1));
+    window_expr_1->start        = WindowBoundary::UNBOUNDED_PRECEDING;
+    window_expr_1->end          = WindowBoundary::UNBOUNDED_FOLLOWING;
+    window_expr_1->SetAlias("next_id");
+
+    auto col_expr_2 {make_uniq<ColumnRefExpression>("Timestamp", structured_table_name)};
+    col_expr_2->SetAlias("curr_timestamp");
+
+    auto window_expr_2 {make_uniq<WindowExpression>(ExpressionType::WINDOW_LEAD, "", "", "lead")};
+    window_expr_2->children.push_back(make_uniq<ColumnRefExpression>("Timestamp", structured_table_name));
+    // window_expr_2->default_expr = make_uniq<ConstantExpression>(Value::BIGINT(-1));
+    window_expr_2->start = WindowBoundary::UNBOUNDED_PRECEDING;
+    window_expr_2->end   = WindowBoundary::UNBOUNDED_FOLLOWING;
+    window_expr_2->SetAlias("next_timestamp");
+
+    ParsedExprVec project_exprs_1;
+    project_exprs_1.push_back(std::move(col_expr_1));
+    project_exprs_1.push_back(std::move(window_expr_1));
+    project_exprs_1.push_back(std::move(col_expr_2));
+    project_exprs_1.push_back(std::move(window_expr_2));
+
+    ParsedExprVec arg_exprs_2;
+    arg_exprs_2.push_back(make_uniq<ColumnRefExpression>("next_timestamp"));
+    arg_exprs_2.push_back(make_uniq<ColumnRefExpression>("curr_timestamp"));
+
+    ParsedExprVec arg_exprs_3;
+    arg_exprs_3.push_back(make_uniq<FunctionExpression>("subtract", std::move(arg_exprs_2)));
+
+    ParsedExprVec project_exprs_2;
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("curr_id"));
+    project_exprs_2.push_back(make_uniq<ColumnRefExpression>("next_id"));
+    project_exprs_2.push_back(make_uniq<FunctionExpression>("avg", std::move(arg_exprs_3)));
+
+    auto rel {s_rel->Join(t_rel, std::move(arg_exprs_1))
+                  ->Project(std::move(project_exprs_1), {})
+                  ->Filter(
+                      make_uniq<ComparisonExpression>(
+                          ExpressionType::COMPARE_NOTEQUAL,
+                          make_uniq<ColumnRefExpression>("next_id"),
+                          make_uniq<ConstantExpression>(Value::BIGINT(-1))
+                      )
+                  )
+                  ->Aggregate(std::move(project_exprs_2), "curr_id, next_id")};
+
+    auto                                   result {to_m_result(rel->Execute())};
+    std::vector<std::vector<std::int64_t>> avg_time;
+    avg_time.reserve(result->RowCount());
+    for (auto&& data_chunk : result->Collection().Chunks())
+    {
+        const auto& curr_id_col {data_chunk.data[0]};
+        const auto& next_id_col {data_chunk.data[1]};
+        const auto& avg_col {data_chunk.data[2]};
+
+        const auto curr_id_data {FlatVector::GetData<std::int64_t>(curr_id_col)};
+        const auto next_id_data {FlatVector::GetData<std::int64_t>(next_id_col)};
+        const auto avg_data {FlatVector::GetData<interval_t>(avg_col)};
+
+        for (auto&& row : std::views::iota(0UL, data_chunk.size()))
+        {
+            auto curr_id {curr_id_data[row]};
+            auto next_id {next_id_data[row]};
+            auto avg {avg_data[row]};
+            avg_time.push_back(
+                {curr_id, next_id, avg.months * 30 * 24 * 3600 + avg.days * 24 * 3600 + avg.micros / 1000000}
+            );
+        }
+    }
+
+    return {template_count, avg_time};
+}
+
 }    // namespace logtt

@@ -4,8 +4,9 @@ from .LogCountCard import LogCountCard
 from .LogFrequencyCard import LogFrequencyCard
 from .LogLevelFrequencyCard import LogLevelFrequencyCard
 from .ParserParamCard import ParserParamCard
-from .TemplateFrequencyCard import TemplateFrequencyCard
+from .TemplateAvgTimeCard import TemplateAvgTimeCard
 from .TemplateCooccurrenceCard import TemplateCooccurrenceCard
+from .TemplateFrequencyCard import TemplateFrequencyCard
 from .TemplateTransitionCard import TemplateTransitionCard
 from .TemplateTransitionProbabilityCard import TemplateTransitionProbabilityCard
 from .TitleCard import TitleCard
@@ -17,8 +18,9 @@ __all__ = [
     "LogFrequencyCard",
     "LogLevelFrequencyCard",
     "ParserParamCard",
-    "TemplateFrequencyCard",
+    "TemplateAvgTimeCard",
     "TemplateCooccurrenceCard",
+    "TemplateFrequencyCard",
     "TemplateTransitionCard",
     "TemplateTransitionProbabilityCard",
     "TitleCard",

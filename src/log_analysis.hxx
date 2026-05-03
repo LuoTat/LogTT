@@ -38,4 +38,7 @@ std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>> get_template_coo
     std::int64_t       micros
 );
 
+std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>>
+get_template_avg_time_matrix(const std::string& structured_table_name, const std::string& template_table_name);
+
 }    // namespace logtt
