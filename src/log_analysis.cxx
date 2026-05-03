@@ -193,9 +193,12 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
 
     auto window_expr {make_uniq<WindowExpression>(ExpressionType::WINDOW_LEAD, "", "", "lead")};
     window_expr->children.push_back(make_uniq<ColumnRefExpression>("rowid", template_table_name));
-    window_expr->default_expr = make_uniq<ConstantExpression>(Value::BIGINT(-1));
+    window_expr->orders.emplace_back(
+        OrderType::ASCENDING, OrderByNullType::INVALID, make_uniq<ColumnRefExpression>("LineID")
+    );
     window_expr->start        = WindowBoundary::UNBOUNDED_PRECEDING;
     window_expr->end          = WindowBoundary::UNBOUNDED_FOLLOWING;
+    window_expr->default_expr = make_uniq<ConstantExpression>(Value::BIGINT(-1));
     window_expr->SetAlias("next_id");
 
     ParsedExprVec project_exprs_1;
@@ -354,17 +357,22 @@ get_template_avg_time_matrix(const std::string& structured_table_name, const std
 
     auto window_expr_1 {make_uniq<WindowExpression>(ExpressionType::WINDOW_LEAD, "", "", "lead")};
     window_expr_1->children.push_back(make_uniq<ColumnRefExpression>("rowid", template_table_name));
-    window_expr_1->default_expr = make_uniq<ConstantExpression>(Value::BIGINT(-1));
+    window_expr_1->orders.emplace_back(
+        OrderType::ASCENDING, OrderByNullType::INVALID, make_uniq<ColumnRefExpression>("LineID")
+    );
     window_expr_1->start        = WindowBoundary::UNBOUNDED_PRECEDING;
     window_expr_1->end          = WindowBoundary::UNBOUNDED_FOLLOWING;
+    window_expr_1->default_expr = make_uniq<ConstantExpression>(Value::BIGINT(-1));
     window_expr_1->SetAlias("next_id");
 
-    auto col_expr_2 {make_uniq<ColumnRefExpression>("Timestamp", structured_table_name)};
+    auto col_expr_2 {make_uniq<ColumnRefExpression>("Timestamp")};
     col_expr_2->SetAlias("curr_timestamp");
 
     auto window_expr_2 {make_uniq<WindowExpression>(ExpressionType::WINDOW_LEAD, "", "", "lead")};
-    window_expr_2->children.push_back(make_uniq<ColumnRefExpression>("Timestamp", structured_table_name));
-    // window_expr_2->default_expr = make_uniq<ConstantExpression>(Value::BIGINT(-1));
+    window_expr_2->children.push_back(make_uniq<ColumnRefExpression>("Timestamp"));
+    window_expr_2->orders.emplace_back(
+        OrderType::ASCENDING, OrderByNullType::INVALID, make_uniq<ColumnRefExpression>("LineID")
+    );
     window_expr_2->start = WindowBoundary::UNBOUNDED_PRECEDING;
     window_expr_2->end   = WindowBoundary::UNBOUNDED_FOLLOWING;
     window_expr_2->SetAlias("next_timestamp");
