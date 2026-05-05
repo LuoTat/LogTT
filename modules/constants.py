@@ -3,6 +3,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = PROJECT_ROOT / "logtt.duckdb"
 CONFIG_PATH = PROJECT_ROOT / "config.json"
+ONNX_PATH = PROJECT_ROOT / "onnx"
 LEVEL_COLOR_MAP = {
     "FATAL": "#DC143C",
     "EMERG": "#DC143C",

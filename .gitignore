@@ -12,6 +12,7 @@ wheels/
 /.idea/
 /.serena/
 /log_full/
+/onnx/
 /lib/
 /logtt.duckdb
 /config.json

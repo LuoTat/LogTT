@@ -10,5 +10,7 @@ dependencies = [
     "parse>=1.22.0",
     "pyqtgraph>=0.14.0",
     "pyside6-fluent-widgets[full]>=1.11.2",
+    "sentence-transformers[onnx]>=5.4.1",
     "setuptools>=82.0.1",
+    "umap-learn>=0.5.12",
 ]

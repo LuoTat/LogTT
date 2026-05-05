@@ -39,13 +39,13 @@ class APPMainWindow(FluentWindow):
         # 日志分析页面
         self.log_analysis_page = QWidget(self)
         self.log_analysis_page.setObjectName("LogAnalysisPage")
-        # 统计分析界面（待实现）
+        # 统计分析界面
         self.stat_analysis_page = StatAnalysisPage(self)
-        # 时序分析界面（待实现）
+        # 时序分析界面
         self.temporal_analysis_page = TemporalAnalysisPage(self)
-        # 模板分析界面（待实现）
+        # 模板分析界面
         self.template_analysis_page = TemplateAnalysisPage(self)
-        # 聚类可视化界面（待实现）
+        # 聚类可视化界面
         self.cluster_visualization_page = ClusterVisualizationPage(self)
 
         # 设置界面
