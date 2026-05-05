@@ -1,4 +1,5 @@
 import pyqtgraph as pg
+from hdbscan import HDBSCAN
 from modules.duckdb_service import DuckDBService
 from PySide6.QtWidgets import QVBoxLayout
 from qfluentwidgets import (
@@ -48,23 +49,44 @@ class TemplateEmbeddingScatterCard(CardWidget):
             )
 
         result, _ = DuckDBService.fetch_csv_table(template_table_name, 0, -1)
-
         templates = [v[0] for v in result]
-        counts = [int(v[1]) for v in result]
 
-        # 计算 embedding
-        embeddings = self._model.encode(
-            templates,
-            convert_to_numpy=True,
-            normalize_embeddings=True,
-        )
+        # 计算原始 embedding
+        original_embedding = self._model.encode(templates)
 
-        # UMAP降维到2D
-        mapper = UMAP(metric="cosine").fit_transform(embeddings)
+        # 计算可视化 embedding
+        visual_embedding = UMAP(
+            metric="cosine",
+        ).fit_transform(original_embedding)
+
+        # 计算聚类 embedding
+        clusterable_embedding = UMAP(
+            min_dist=0.0,
+            n_neighbors=30,
+            n_components=15,
+            metric="cosine",
+        ).fit_transform(original_embedding)
+
+        # 使用 HDBSCAN 进行聚类
+        labels = HDBSCAN().fit_predict(clusterable_embedding)
+
+        # 根据聚类标签生成颜色，异常值使用灰色
+        n_clusters = len(set(labels) - {-1})  # 不计算 -1 标签的数量
+        cmap = pg.colormap.get("CET-L8")
+        brushes = []
+        for label in labels:
+            if label == -1:
+                brushes.append(pg.mkBrush(128, 128, 128, 255))
+            else:
+                c = cmap.map(label / (n_clusters - 1))
+                brushes.append(pg.mkBrush(c))
 
         self._plot_widget.clear()
         plot = pg.ScatterPlotItem(
-            pos=mapper,
+            pos=visual_embedding,
+            brush=brushes,
+            pen=pg.mkPen(None),
+            size=8,
         )
         self._plot_widget.addItem(plot)
         self._plot_widget.enableAutoRange()
