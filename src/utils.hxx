@@ -9,7 +9,7 @@ namespace logtt
 
 unique_ptr<MaterializedQueryResult> to_m_result(unique_ptr<QueryResult> result);
 shared_ptr<Relation>                get_tmp(Connection& conn, const shared_ptr<Relation>& rel);
-std::int64_t                        get_row_count(const shared_ptr<Relation>& rel);
+std::int64_t                        get_rel_row_count(const shared_ptr<Relation>& rel);
 
 shared_ptr<Relation> load_data(
     Connection&                     conn,

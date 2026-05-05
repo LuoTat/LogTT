@@ -99,55 +99,55 @@ cdef class LogAnalysis:
 
     @staticmethod
     def get_template_transition_matrix(string structured_table_name, string template_table_name) -> np.ndarray:
-        cdef pair[int64_t, vector[vector[int64_t]]] cxx_result
+        cdef pair[vector[vector[int64_t]], int64_t] cxx_result
 
         with nogil:
             cxx_result = cxx_get_template_transition_matrix(structured_table_name, template_table_name)
 
-        cdef int64_t dim = cxx_result.first
+        cdef int64_t dim = cxx_result.second
         cdef object matrix = np.zeros((dim, dim), dtype=np.int64)
         cdef int64_t [:,::1] matrix_view = matrix
 
         cdef size_t i
         with nogil:
-            for i in prange(cxx_result.second.size()):
-                matrix_view[cxx_result.second[i][0]][cxx_result.second[i][1]] = cxx_result.second[i][2]
+            for i in prange(cxx_result.first.size()):
+                matrix_view[cxx_result.first[i][0]][cxx_result.first[i][1]] = cxx_result.first[i][2]
 
         return matrix
 
     @staticmethod
     def get_template_cooccurrence_matrix(string structured_table_name, string template_table_name, int32_t months, int32_t days, int64_t micros) -> np.ndarray:
-        cdef pair[int64_t, vector[vector[int64_t]]] cxx_result
+        cdef pair[vector[vector[int64_t]], int64_t] cxx_result
 
         with nogil:
             cxx_result = cxx_get_template_cooccurrence_matrix(structured_table_name, template_table_name, months, days, micros)
 
-        cdef int64_t dim = cxx_result.first
+        cdef int64_t dim = cxx_result.second
         cdef object matrix = np.zeros((dim, dim), dtype=np.int64)
         cdef int64_t [:,::1] matrix_view = matrix
 
         cdef size_t i
         with nogil:
-            for i in prange(cxx_result.second.size()):
-                matrix_view[cxx_result.second[i][0]][cxx_result.second[i][1]] = cxx_result.second[i][2]
-                matrix_view[cxx_result.second[i][1]][cxx_result.second[i][0]] = cxx_result.second[i][2]
+            for i in prange(cxx_result.first.size()):
+                matrix_view[cxx_result.first[i][0]][cxx_result.first[i][1]] = cxx_result.first[i][2]
+                matrix_view[cxx_result.first[i][1]][cxx_result.first[i][0]] = cxx_result.first[i][2]
 
         return matrix
 
     @staticmethod
     def get_template_avg_time_matrix(string structured_table_name, string template_table_name) -> np.ndarray:
-        cdef pair[int64_t, vector[vector[int64_t]]] cxx_result
+        cdef pair[vector[vector[int64_t]], int64_t] cxx_result
 
         with nogil:
             cxx_result = cxx_get_template_avg_time_matrix(structured_table_name, template_table_name)
 
-        cdef int64_t dim = cxx_result.first
+        cdef int64_t dim = cxx_result.second
         cdef object matrix = np.zeros((dim, dim), dtype=np.int64)
         cdef int64_t [:,::1] matrix_view = matrix
 
         cdef size_t i
         with nogil:
-            for i in prange(cxx_result.second.size()):
-                matrix_view[cxx_result.second[i][0]][cxx_result.second[i][1]] = cxx_result.second[i][2]
+            for i in prange(cxx_result.first.size()):
+                matrix_view[cxx_result.first[i][0]][cxx_result.first[i][1]] = cxx_result.first[i][2]
 
         return matrix

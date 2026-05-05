@@ -49,16 +49,16 @@ void delete_log(std::uint32_t log_id);
 
 // ==================== CSV表格显示 ====================
 
-std::pair<std::vector<std::vector<std::string>>, std::uint32_t>
-fetch_csv_table(const std::string& table_name, std::uint32_t offset, std::uint32_t limit, const Filters& filters);
+std::pair<std::vector<std::vector<std::string>>, std::int64_t>
+fetch_csv_table(const std::string& table_name, std::int64_t offset, std::int64_t limit, const Filters& filters);
 
 // ==================== CSV表格过滤器 ====================
 
-std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_filter_table(
+std::pair<std::vector<std::vector<std::string>>, std::int64_t> fetch_filter_table(
     const std::string& table_name,
     const std::string& column_name,
-    std::uint32_t      offset,
-    std::uint32_t      limit,
+    std::int64_t       offset,
+    std::int64_t       limit,
     const std::string& keyword,
     const Filters&     other_filters
 );
@@ -68,7 +68,7 @@ std::pair<std::vector<std::vector<std::string>>, std::uint32_t> fetch_filter_tab
 bool                                    table_exists(const std::string& table_name);
 void                                    drop_table(const std::string& table_name);
 bool                                    has_column(const std::string& table_name, const std::string& column_name);
-std::uint32_t                           get_table_row_count(const std::string& table_name);
+std::int64_t                            get_table_row_count(const std::string& table_name);
 std::vector<std::string>                get_table_columns(const std::string& table_name);
 std::pair<std::uint64_t, std::uint64_t> compact_database();
 

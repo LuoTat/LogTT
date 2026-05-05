@@ -1,4 +1,4 @@
-from libc.stdint cimport uint32_t, uint64_t
+from libc.stdint cimport int64_t, uint32_t, uint64_t
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.unordered_map cimport unordered_map
@@ -44,20 +44,20 @@ cdef extern from "duckdb_service.hxx" namespace "logtt" nogil:
 
     # ==================== CSV表格显示 ====================
 
-    pair[vector[vector[string]], uint32_t] fetch_csv_table(
+    pair[vector[vector[string]], int64_t] fetch_csv_table(
         const string&  table_name,
-        uint32_t       offset,
-        uint32_t       limit,
+        int64_t       offset,
+        int64_t       limit,
         const Filters& filters,
     )
 
     # ==================== CSV表格过滤器 ====================
 
-    pair[vector[vector[string]], uint32_t] fetch_filter_table(
+    pair[vector[vector[string]], int64_t] fetch_filter_table(
         const string&  table_name,
         const string&  column_name,
-        uint32_t       offset,
-        uint32_t       limit,
+        int64_t       offset,
+        int64_t       limit,
         const string&  keyword,
         const Filters& other_filters,
     )
@@ -67,6 +67,6 @@ cdef extern from "duckdb_service.hxx" namespace "logtt" nogil:
     bint table_exists(const string& table_name)
     void drop_table(const string& table_name)
     bint has_column(const string& table_name, const string& column_name)
-    uint32_t get_table_row_count(const string& table_name)
+    int64_t get_table_row_count(const string& table_name)
     vector[string] get_table_columns(const string& table_name)
     pair[uint64_t, uint64_t] compact_database()

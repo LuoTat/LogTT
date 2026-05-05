@@ -1,4 +1,4 @@
-from libc.stdint cimport uint32_t, uint64_t
+from libc.stdint cimport int64_t, uint32_t, uint64_t
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
@@ -137,11 +137,11 @@ cdef class DuckDBService:
     @staticmethod
     def fetch_csv_table(
         string table_name,
-        uint32_t offset,
-        uint32_t limit,
+        int64_t offset,
+        int64_t limit,
         object filters=None,
     ) -> tuple[list[list[str]], int]:
-        cdef pair[vector[vector[string]], uint32_t] result
+        cdef pair[vector[vector[string]], int64_t] result
         cdef Filters filters_cxx
 
         if filters is None:
@@ -163,12 +163,12 @@ cdef class DuckDBService:
     def fetch_filter_table(
         string table_name,
         string column_name,
-        uint32_t offset,
-        uint32_t limit,
+        int64_t offset,
+        int64_t limit,
         object keyword=None,
         object other_filters=None,
     ) -> tuple[list[list[str]], int]:
-        cdef pair[vector[vector[string]], uint32_t] result
+        cdef pair[vector[vector[string]], int64_t] result
         cdef string keyword_cxx
         cdef Filters other_filters_cxx
 
@@ -219,7 +219,7 @@ cdef class DuckDBService:
 
     @staticmethod
     def get_table_row_count(string table_name) -> int:
-        cdef uint32_t row_count
+        cdef int64_t row_count
 
         with nogil:
             row_count = cxx_get_table_row_count(table_name)

@@ -49,7 +49,7 @@ std::uint32_t AELLogParser::parse(
     // 缓存分词结果，避免重复计算
     rel = get_tmp(conn, rel);
 
-    auto log_length {get_row_count(rel)};
+    auto log_length {get_rel_row_count(rel)};
     templates.resize(log_length);
 
     auto log_bin {this->_get_log_bins(rel)};

@@ -21,7 +21,7 @@ get_level_distribution(const std::string& structured_table_name)
     for (auto&& i : std::views::iota(0UL, result->RowCount()))
     {
         auto level {result->GetValue(0, i)};
-        auto count {result->GetValue<std::uint32_t>(1, i)};
+        auto count {result->GetValue<std::int64_t>(1, i)};
         distribution.first.push_back(level.ToString());
         distribution.second.push_back(count);
     }
@@ -170,14 +170,14 @@ get_log_level_frequency_distribution(
     return level_distribution;
 }
 
-std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>>
+std::pair<std::vector<std::vector<std::int64_t>>, std::int64_t>
 get_template_transition_matrix(const std::string& structured_table_name, const std::string& template_table_name)
 {
     auto& conn {get_connection()};
     auto  s_rel {conn.Table(structured_table_name)};
     auto  t_rel {conn.Table(template_table_name)};
 
-    auto template_count {get_row_count(t_rel)};
+    auto template_count {get_rel_row_count(t_rel)};
 
     ParsedExprVec arg_exprs;
     arg_exprs.push_back(
@@ -243,10 +243,10 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
         }
     }
 
-    return {template_count, transition_counts};
+    return {transition_counts, template_count};
 }
 
-std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>> get_template_cooccurrence_matrix(
+std::pair<std::vector<std::vector<std::int64_t>>, std::int64_t> get_template_cooccurrence_matrix(
     const std::string& structured_table_name,
     const std::string& template_table_name,
     std::int32_t       months,
@@ -258,7 +258,7 @@ std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>> get_template_coo
     auto  s_rel {conn.Table(structured_table_name)};
     auto  t_rel {conn.Table(template_table_name)};
 
-    auto template_count {get_row_count(t_rel)};
+    auto template_count {get_rel_row_count(t_rel)};
 
     ParsedExprVec arg_exprs_1;
     arg_exprs_1.push_back(
@@ -331,17 +331,17 @@ std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>> get_template_coo
         }
     }
 
-    return {template_count, cooccurrence_counts};
+    return {cooccurrence_counts, template_count};
 }
 
-std::pair<std::int64_t, std::vector<std::vector<std::int64_t>>>
+std::pair<std::vector<std::vector<std::int64_t>>, std::int64_t>
 get_template_avg_time_matrix(const std::string& structured_table_name, const std::string& template_table_name)
 {
     auto& conn {get_connection()};
     auto  s_rel {conn.Table(structured_table_name)};
     auto  t_rel {conn.Table(template_table_name)};
 
-    auto template_count {get_row_count(t_rel)};
+    auto template_count {get_rel_row_count(t_rel)};
 
     ParsedExprVec arg_exprs_1;
     arg_exprs_1.push_back(
@@ -430,7 +430,7 @@ get_template_avg_time_matrix(const std::string& structured_table_name, const std
         }
     }
 
-    return {template_count, avg_time};
+    return {avg_time, template_count};
 }
 
 }    // namespace logtt

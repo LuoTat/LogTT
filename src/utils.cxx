@@ -68,7 +68,7 @@ shared_ptr<Relation> get_tmp(Connection& conn, const shared_ptr<Relation>& rel)
     return conn.Table("_tmp");
 }
 
-std::int64_t get_row_count(const shared_ptr<Relation>& rel)
+std::int64_t get_rel_row_count(const shared_ptr<Relation>& rel)
 {
     ParsedExprVec project_exprs;
     project_exprs.push_back(make_uniq<FunctionExpression>("count", ParsedExprVec {}));
