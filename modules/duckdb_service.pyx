@@ -36,7 +36,7 @@ cdef class DuckDBService:
     @staticmethod
     def get_log_table() -> list[tuple]:
         cdef vector[LogEntry] table
-        cdef vector[(uint32_t, string, string, string, string, bint, string, uint32_t, string, string)] result
+        cdef vector[(uint32_t, string, string, string, bint, string, uint32_t, string, string)] result
 
         with nogil:
             table = cxx_get_log_table()
@@ -47,9 +47,8 @@ cdef class DuckDBService:
             result.push_back(
                 (
                     entry.id,
-                    entry.log_type,
                     entry.format_type,
-                    entry.log_uri,
+                    entry.log_path,
                     entry.create_time,
                     entry.is_extracted,
                     entry.extract_method,
@@ -75,7 +74,7 @@ cdef class DuckDBService:
             result.push_back(
                 (
                     entry.id,
-                    entry.log_uri,
+                    entry.log_path,
                     entry.structured_table_name,
                     entry.templates_table_name,
                 )
@@ -84,22 +83,10 @@ cdef class DuckDBService:
         return result
 
     @staticmethod
-    def insert_log_with_no_extract_method(string log_type, string log_uri) -> int:
+    def insert_log(string log_path) -> int:
         cdef int ret
         with nogil:
-            ret = cxx_insert_log(log_type, log_uri)
-
-        return ret
-
-    @staticmethod
-    def insert_log_with_extract_method(
-        string log_type,
-        string log_uri,
-        string extract_method,
-    ) -> int:
-        cdef int ret
-        with nogil:
-            ret = cxx_insert_log(log_type, log_uri, extract_method)
+            ret = cxx_insert_log(log_path)
 
         return ret
 

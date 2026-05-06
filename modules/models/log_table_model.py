@@ -26,26 +26,24 @@ class LogColumn(IntEnum):
 
     NAME = 0  # 名称
     LINE_COUNT = 1  # 日志行数
-    LOG_TYPE = 2  # 日志类型
-    FORMAT_TYPE = 3  # 日志格式
-    CREATE_TIME = 4  # 创建时间
-    STATUS = 5  # 状态 -> 虚拟列
-    EXTRACT_METHOD = 6  # 提取方法
+    FORMAT_TYPE = 2  # 日志格式
+    CREATE_TIME = 3  # 创建时间
+    STATUS = 4  # 状态 -> 虚拟列
+    EXTRACT_METHOD = 5  # 提取方法
 
 
 class SqlColumn(IntEnum):
     """日志表数据库列枚举"""
 
     ID = 0  # id
-    LOG_TYPE = 1  # log_type
-    FORMAT_TYPE = 2  # format_type
-    LOG_URI = 3  # log_uri
-    CREATE_TIME = 4  # create_time
-    IS_EXTRACTED = 5  # is_extracted
-    EXTRACT_METHOD = 6  # extract_method
-    LINE_COUNT = 7  # line_count
-    STRUCTURED_TABLE_NAME = 8  # structured_table_name
-    TEMPLATES_TABLE_NAME = 9  # templates_table_name
+    FORMAT_TYPE = 1  # format_type
+    LOG_PATH = 2  # log_path
+    CREATE_TIME = 3  # create_time
+    IS_EXTRACTED = 4  # is_extracted
+    EXTRACT_METHOD = 5  # extract_method
+    LINE_COUNT = 6  # line_count
+    STRUCTURED_TABLE_NAME = 7  # structured_table_name
+    TEMPLATES_TABLE_NAME = 8  # templates_table_name
 
 
 class LogStatus(IntEnum):
@@ -119,7 +117,6 @@ class LogTableModel(QAbstractTableModel):
     _TABLE_HEADERS = [
         QT_TRANSLATE_NOOP("LogTableModel", "名称"),
         QT_TRANSLATE_NOOP("LogTableModel", "日志行数"),
-        QT_TRANSLATE_NOOP("LogTableModel", "日志类型"),
         QT_TRANSLATE_NOOP("LogTableModel", "日志格式"),
         QT_TRANSLATE_NOOP("LogTableModel", "创建时间"),
         QT_TRANSLATE_NOOP("LogTableModel", "状态"),
@@ -128,9 +125,8 @@ class LogTableModel(QAbstractTableModel):
     # 数据库表头
     _SQL_HEADERS = [
         "id",
-        "log_type",
         "format_type",
-        "log_uri",
+        "log_path",
         "create_time",
         "is_extracted",
         "extract_method",
@@ -140,9 +136,8 @@ class LogTableModel(QAbstractTableModel):
     ]
     # 模型列到数据库列的映射
     _MODEL_TO_SQL = [
-        SqlColumn.LOG_URI,
+        SqlColumn.LOG_PATH,
         SqlColumn.LINE_COUNT,
-        SqlColumn.LOG_TYPE,
         SqlColumn.FORMAT_TYPE,
         SqlColumn.CREATE_TIME,
         None,  # 状态虚拟列
@@ -299,7 +294,7 @@ class LogTableModel(QAbstractTableModel):
 
         # 名称列
         elif col == LogColumn.NAME:
-            uri = self._data[row][SqlColumn.LOG_URI]
+            uri = self._data[row][SqlColumn.LOG_PATH]
             return Path(uri).name
 
         # 常规列
@@ -368,31 +363,19 @@ class LogTableModel(QAbstractTableModel):
 
     # ==================== 公共方法 ====================
 
-    def request_add(
-        self,
-        log_type: str,
-        log_uri: str,
-        extract_method: str | None = None,
-    ):
+    def request_add(self, log_paths: list[str]):
         """请求添加日志记录"""
         # 更新数据库和ui状态
-        ret: int
-        if extract_method is None:
-            ret = DuckDBService.insert_log_with_no_extract_method(log_type, log_uri)
-        else:
-            ret = DuckDBService.insert_log_with_extract_method(
-                log_type,
-                log_uri,
-                extract_method,
-            )
+        for path in log_paths:
+            ret = DuckDBService.insert_log(path)
 
-        if ret == 0:
-            self.refresh()
-            self.addSuccess.emit()
-        elif ret == -1:
-            self.addDuplicate.emit()
-        else:
-            self.addError.emit(self.tr("未知错误"))
+            if ret == 0:
+                self.refresh()
+                self.addSuccess.emit()
+            elif ret == -1:
+                self.addDuplicate.emit()
+            else:
+                self.addError.emit(self.tr("未知错误"))
 
     def request_delete(self, index: QModelIndex):
         """请求删除日志记录"""
@@ -438,7 +421,7 @@ class LogTableModel(QAbstractTableModel):
         # 创建提取任务
         task = LogExtractTask(
             log_id,
-            Path(self._data[row][SqlColumn.LOG_URI]),
+            Path(self._data[row][SqlColumn.LOG_PATH]),
             log_parser_type,
             log_parser_config,
             self._data[row][SqlColumn.STRUCTURED_TABLE_NAME],
@@ -468,7 +451,9 @@ class LogTableModel(QAbstractTableModel):
         self._data = DuckDBService.get_log_table()
         self.beginResetModel()
         self._data = [
-            row for row in self._data if kw in Path(row[SqlColumn.LOG_URI]).name.lower()
+            row
+            for row in self._data
+            if kw in Path(row[SqlColumn.LOG_PATH]).name.lower()
         ]
         self.endResetModel()
 

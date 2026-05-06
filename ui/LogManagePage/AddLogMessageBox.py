@@ -7,11 +7,8 @@ from qfluentwidgets import (
     FluentIcon,
     InfoBar,
     InfoBarPosition,
-    LineEdit,
     MessageBoxBase,
     PushButton,
-    ToolTipFilter,
-    ToolTipPosition,
 )
 
 from ui.Widgets import TitleCard
@@ -22,20 +19,20 @@ class AddLogMessageBox(MessageBoxBase):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._selected_file_path: str = str()
+        self._selected_file_paths: list[str] = []
 
-        self._init_network_card()
+        # self._init_network_card()
         self._init_local_file_card()
         self.widget.setMinimumWidth(700)
 
     # ==================== 重写方法 ====================
 
     def validate(self) -> bool:
-        """验证用户是否选择了日志源"""
-        if not self._selected_file_path and not self._url_edit.text().strip():
+        """验证用户是否选择了日志文件"""
+        if not self._selected_file_paths:
             InfoBar.warning(
                 title=self.tr("未选择文件"),
-                content=self.tr("请选择UDP/TCP日志源或本地日志文件"),
+                content=self.tr("请选择本地日志文件"),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -47,24 +44,6 @@ class AddLogMessageBox(MessageBoxBase):
         return True
 
     # ==================== 私有方法 ====================
-
-    def _init_network_card(self):
-        card = TitleCard(FluentIcon.GLOBE, self.tr("网络日志源"), self)
-
-        url_label = BodyLabel(self.tr("Syslog 服务器地址："), card)
-        url_label.setStyleSheet("font-weight: 500;")
-        card.viewLayout.addWidget(url_label)
-
-        self._url_edit = LineEdit(card)
-        self._url_edit.setPlaceholderText(self.tr("例如：syslog://192.168.1.100:514"))
-        self._url_edit.setClearButtonEnabled(True)
-        card.viewLayout.addWidget(self._url_edit)
-
-        hint_label = BodyLabel(self.tr("支持 UDP/TCP，默认端口 514"), card)
-        hint_label.setStyleSheet("color: #888; font-size: 12px;")
-        card.viewLayout.addWidget(hint_label)
-
-        self.viewLayout.addWidget(card)
 
     def _init_local_file_card(self):
         card = TitleCard(FluentIcon.FOLDER, self.tr("本地文件源"), self)
@@ -99,35 +78,24 @@ class AddLogMessageBox(MessageBoxBase):
 
     @Slot()
     def _on_select_file(self):
-        self._selected_file_path, _ = QFileDialog.getOpenFileName(
+        self._selected_file_paths, _ = QFileDialog.getOpenFileNames(
             self,
             self.tr("选择日志文件"),
             "",
             self.tr("日志文件 (*.log *.txt);;所有文件 (*.*)"),
         )
 
-        if self._selected_file_path:
-            self._file_path_label.setText(Path(self._selected_file_path).name)
+        if self._selected_file_paths:
+            self._file_path_label.setText(
+                ", ".join(Path(p).name for p in self._selected_file_paths)
+            )
             self._file_path_label.setStyleSheet(
                 "color: #0078d4; padding-left: 8px; font-weight: 500;"
-            )
-            self._file_path_label.setToolTip(self._selected_file_path)
-            self._file_path_label.installEventFilter(
-                ToolTipFilter(
-                    self._file_path_label,
-                    showDelay=300,
-                    position=ToolTipPosition.RIGHT,
-                )
             )
 
     # ==================== 公共方法 ====================
 
     @property
-    def log_uri(self) -> str:
-        """获取用户输入的日志源 URI"""
-        return self._selected_file_path or self._url_edit.text().strip()
-
-    @property
-    def is_local_file(self) -> bool:
-        """判断日志源是否为本地文件"""
-        return bool(self._selected_file_path)
+    def file_paths(self) -> list[str]:
+        """获取用户输入的日志文件路径"""
+        return self._selected_file_paths

@@ -118,9 +118,8 @@ void create_log_table_if_not_exists()
         CREATE TABLE IF NOT EXISTS log
         (
             id                    UINT32      PRIMARY KEY DEFAULT nextval('log_id_seq'),
-            log_type              STRING      NOT NULL,
             format_type           STRING      NOT NULL DEFAULT '',
-            log_uri               STRING      NOT NULL UNIQUE,
+            log_path              STRING      NOT NULL UNIQUE,
             create_time           TIMESTAMP_S NOT NULL DEFAULT current_localtimestamp(),
             is_extracted          BOOL        NOT NULL DEFAULT FALSE,
             extract_method        STRING      NOT NULL DEFAULT '',
@@ -142,20 +141,18 @@ std::vector<LogEntry> get_log_table()
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& id_col {data_chunk.data[0]};
-        const auto& log_type_col {data_chunk.data[1]};
-        const auto& format_type_col {data_chunk.data[2]};
-        const auto& log_uri_col {data_chunk.data[3]};
-        const auto& create_time_col {data_chunk.data[4]};
-        const auto& is_extracted_col {data_chunk.data[5]};
-        const auto& extract_method_col {data_chunk.data[6]};
-        const auto& line_count_col {data_chunk.data[7]};
-        const auto& structured_table_name_col {data_chunk.data[8]};
-        const auto& templates_table_name_col {data_chunk.data[9]};
+        const auto& format_type_col {data_chunk.data[1]};
+        const auto& log_path_col {data_chunk.data[2]};
+        const auto& create_time_col {data_chunk.data[3]};
+        const auto& is_extracted_col {data_chunk.data[4]};
+        const auto& extract_method_col {data_chunk.data[5]};
+        const auto& line_count_col {data_chunk.data[6]};
+        const auto& structured_table_name_col {data_chunk.data[7]};
+        const auto& templates_table_name_col {data_chunk.data[8]};
 
         const auto id_data {FlatVector::GetData<std::uint32_t>(id_col)};
-        const auto log_type_data {FlatVector::GetData<string_t>(log_type_col)};
         const auto format_type_data {FlatVector::GetData<string_t>(format_type_col)};
-        const auto log_uri_data {FlatVector::GetData<string_t>(log_uri_col)};
+        const auto log_path_data {FlatVector::GetData<string_t>(log_path_col)};
         const auto create_time_data {FlatVector::GetData<timestamp_sec_t>(create_time_col)};
         const auto is_extracted_data {FlatVector::GetData<bool>(is_extracted_col)};
         const auto extract_method_data {FlatVector::GetData<string_t>(extract_method_col)};
@@ -166,9 +163,8 @@ std::vector<LogEntry> get_log_table()
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
             auto id {id_data[row]};
-            auto log_type {log_type_data[row]};
             auto format_type {format_type_data[row]};
-            auto log_uri {log_uri_data[row]};
+            auto log_path {log_path_data[row]};
             auto create_time {create_time_data[row]};
             auto is_extracted {is_extracted_data[row]};
             auto extract_method {extract_method_data[row]};
@@ -178,9 +174,8 @@ std::vector<LogEntry> get_log_table()
 
             log_table.emplace_back(
                 id,
-                std::string(log_type.GetData(), log_type.GetSize()),
                 std::string(format_type.GetData(), format_type.GetSize()),
-                std::string(log_uri.GetData(), log_uri.GetSize()),
+                std::string(log_path.GetData(), log_path.GetSize()),
                 Timestamp::ToString(Timestamp::FromEpochSeconds(create_time.value)),
                 is_extracted,
                 std::string(extract_method.GetData(), extract_method.GetSize()),
@@ -209,7 +204,7 @@ std::vector<EXLogEntry> get_extracted_log_table()
 
     ParsedExprVec project_exprs;
     project_exprs.push_back(make_uniq<ColumnRefExpression>("id"));
-    project_exprs.push_back(make_uniq<ColumnRefExpression>("log_uri"));
+    project_exprs.push_back(make_uniq<ColumnRefExpression>("log_path"));
     project_exprs.push_back(make_uniq<ColumnRefExpression>("structured_table_name"));
     project_exprs.push_back(make_uniq<ColumnRefExpression>("templates_table_name"));
     rel = rel->Project(std::move(project_exprs), {});
@@ -220,25 +215,25 @@ std::vector<EXLogEntry> get_extracted_log_table()
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         const auto& id_col {data_chunk.data[0]};
-        const auto& log_uri_col {data_chunk.data[1]};
+        const auto& log_path_col {data_chunk.data[1]};
         const auto& structured_table_name_col {data_chunk.data[2]};
         const auto& templates_table_name_col {data_chunk.data[3]};
 
         const auto id_data {FlatVector::GetData<std::uint32_t>(id_col)};
-        const auto log_uri_data {FlatVector::GetData<string_t>(log_uri_col)};
+        const auto log_path_data {FlatVector::GetData<string_t>(log_path_col)};
         const auto structured_table_name_data {FlatVector::GetData<string_t>(structured_table_name_col)};
         const auto templates_table_name_data {FlatVector::GetData<string_t>(templates_table_name_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
             auto id {id_data[row]};
-            auto log_uri {log_uri_data[row]};
+            auto log_path {log_path_data[row]};
             auto structured_table_name {structured_table_name_data[row]};
             auto templates_table_name {templates_table_name_data[row]};
 
             log_table.emplace_back(
                 id,
-                std::string(log_uri.GetData(), log_uri.GetSize()),
+                std::string(log_path.GetData(), log_path.GetSize()),
                 std::string(structured_table_name.GetData(), structured_table_name.GetSize()),
                 std::string(templates_table_name.GetData(), templates_table_name.GetSize())
             );
@@ -248,42 +243,14 @@ std::vector<EXLogEntry> get_extracted_log_table()
     return log_table;
 }
 
-int insert_log(const std::string& log_type, const std::string& log_uri)
+int insert_log(const std::string& log_path)
 {
     auto& conn {get_connection()};
     try
     {
         Appender appender {conn, "log"};
-        appender.AddColumn("log_type");
-        appender.AddColumn("log_uri");
-        appender.AppendRow(log_type.c_str(), log_uri.c_str());
-        appender.Close();
-        return 0;
-    }
-    catch (const Exception& e)
-    {
-        ErrorData error {e};
-        if (error.Type() == ExceptionType::CONSTRAINT)
-        {
-            return -1;
-        }
-        else
-        {
-            return -2;
-        }
-    }
-}
-
-int insert_log(const std::string& log_type, const std::string& log_uri, const std::string& extract_method)
-{
-    auto& conn {get_connection()};
-    try
-    {
-        Appender appender {conn, "log"};
-        appender.AddColumn("log_type");
-        appender.AddColumn("log_uri");
-        appender.AddColumn("extract_method");
-        appender.AppendRow(log_type.c_str(), log_uri.c_str(), extract_method.c_str());
+        appender.AddColumn("log_path");
+        appender.AppendRow(log_path.c_str());
         appender.Close();
         return 0;
     }

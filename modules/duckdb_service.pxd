@@ -11,9 +11,8 @@ cdef extern from "duckdb_service.hxx" namespace "logtt" nogil:
 
     cdef struct LogEntry:
         uint32_t id
-        string   log_type
         string   format_type
-        string   log_uri
+        string   log_path
         string   create_time
         bint     is_extracted
         string   extract_method
@@ -23,19 +22,14 @@ cdef extern from "duckdb_service.hxx" namespace "logtt" nogil:
 
     cdef struct EXLogEntry:
         uint32_t id
-        string   log_uri
+        string   log_path
         string   structured_table_name
         string   templates_table_name
 
     void create_log_table_if_not_exists()
     vector[LogEntry] get_log_table()
     vector[EXLogEntry] get_extracted_log_table()
-    int insert_log(const string& log_type, const string& log_uri)
-    int insert_log(
-        const string& log_type,
-        const string& log_uri,
-        const string& extract_method,
-    )
+    int insert_log(const string& log_path)
     void update_log_format_type(uint32_t log_id, const string& value)
     void update_log_is_extracted(uint32_t log_id, bool value)
     void update_log_extract_method(uint32_t log_id, const string& value)

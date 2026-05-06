@@ -10,7 +10,7 @@ class SqlColumn(IntEnum):
     """日志表数据库列枚举"""
 
     ID = 0  # id
-    LOG_URI = 1  # log_uri
+    LOG_PATH = 1  # log_path
     STRUCTURED_TABLE_NAME = 2  # structured_table_name
     TEMPLATES_TABLE_NAME = 3  # templates_table_name
 
@@ -49,7 +49,7 @@ class ExtractedLogListModel(QAbstractListModel):
 
         # 显示角色
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
-            return self._data[row][SqlColumn.LOG_URI]
+            return self._data[row][SqlColumn.LOG_PATH]
 
         # 自定义角色：返回各种数据
         elif role == self.LOG_ID_ROLE:

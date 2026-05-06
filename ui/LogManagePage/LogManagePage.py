@@ -190,11 +190,7 @@ class LogManagePage(QWidget):
         """新增日志"""
         dialog = AddLogMessageBox(self.window())
         if dialog.exec():
-            log_uri = dialog.log_uri
-            if dialog.is_local_file:
-                self._log_table_model.request_add("本地文件", log_uri)
-            else:
-                self._log_table_model.request_add("网络地址", log_uri, "Drain3")
+            self._log_table_model.request_add(dialog.file_paths)
 
     @Slot(QModelIndex)
     def _on_extract_log(self, index: QModelIndex):
