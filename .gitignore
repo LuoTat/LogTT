@@ -1,18 +1,14 @@
 # Python-generated files
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
 
 # Virtual environments
-.venv
+/.venv/
 
 /.idea/
 /.serena/
+/build/
 /log_full/
-/onnx/
 /lib/
+/onnx/
 /logtt.duckdb
 /config.json
