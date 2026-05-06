@@ -8,7 +8,7 @@ from qfluentwidgets import (
 
 
 class TemplateFrequencyCard(CardWidget):
-    """日志模板频数直方图卡片"""
+    """模板频数直方图卡片"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -17,7 +17,7 @@ class TemplateFrequencyCard(CardWidget):
         self._main_layout.setContentsMargins(24, 24, 24, 24)
         self._main_layout.setSpacing(16)
 
-        self._title_label = BodyLabel(self.tr("日志模板频数"), self)
+        self._title_label = BodyLabel(self.tr("模板频数"), self)
         self._main_layout.addWidget(self._title_label)
 
         self._plot_widget = pg.PlotWidget(
@@ -37,7 +37,7 @@ class TemplateFrequencyCard(CardWidget):
         structured_table_name: str,
         interval: tuple[int, int, int] = (0, 0, 60_000_000),
     ):
-        """设置表名并绘制日志模板频数直方图"""
+        """设置表名并绘制模板频数直方图"""
         months, days, micros = interval
         epochs, count = LogAnalysis.get_template_frequency_distribution(
             structured_table_name,

@@ -1,4 +1,6 @@
+from modules.duckdb_service import DuckDBService
 from PySide6.QtCore import (
+    Qt,
     Slot,
 )
 from PySide6.QtGui import QShowEvent
@@ -7,7 +9,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from qfluentwidgets import BodyLabel, SmoothScrollArea
+from qfluentwidgets import BodyLabel, InfoBar, InfoBarPosition, SmoothScrollArea
 from qfluentwidgets.components import ModelComboBox
 
 from modules.models import ExtractedLogListModel
@@ -95,17 +97,17 @@ class ClusterVisualizationPage(QWidget):
         log_id = model_index.data(ExtractedLogListModel.LOG_ID_ROLE)
 
         # 检查表是否存在
-        # if not DuckDBService.table_exists(structured_table_name):
-        #     InfoBar.error(
-        #         title=self.tr("数据未找到"),
-        #         content=self.tr("未找到结构化表: {0}").format(structured_table_name),
-        #         orient=Qt.Orientation.Horizontal,
-        #         isClosable=True,
-        #         position=InfoBarPosition.TOP,
-        #         duration=5000,
-        #         parent=self,
-        #     )
-        #     return
+        if not DuckDBService.table_exists(templates_table_name):
+            InfoBar.error(
+                title=self.tr("数据未找到"),
+                content=self.tr("未找到结构化表: {0}").format(templates_table_name),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=5000,
+                parent=self,
+            )
+            return
 
         self._select_log_id = log_id
         self._template_cluster_card.setTable(templates_table_name)

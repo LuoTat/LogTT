@@ -110,63 +110,43 @@
 <context>
     <name>AddLogMessageBox</name>
     <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="37"/>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="86"/>
+        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="34"/>
+        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="65"/>
         <source>未选择文件</source>
         <translation>No file selected</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="38"/>
-        <source>请选择UDP/TCP日志源或本地日志文件</source>
-        <translation>Please select UDP/TCP log source or local log file</translation>
+        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="35"/>
+        <source>请选择本地日志文件</source>
+        <translation>Please select a local log file</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="52"/>
-        <source>网络日志源</source>
-        <translation>Network Log Source</translation>
-    </message>
-    <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="54"/>
-        <source>Syslog 服务器地址：</source>
-        <translation>Syslog Server Address:</translation>
-    </message>
-    <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="59"/>
-        <source>例如：syslog://192.168.1.100:514</source>
-        <translation>For example: syslog://192.168.1.100:514</translation>
-    </message>
-    <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="63"/>
-        <source>支持 UDP/TCP，默认端口 514</source>
-        <translation>Supports UDP/TCP, default port 514</translation>
-    </message>
-    <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="70"/>
+        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="49"/>
         <source>本地文件源</source>
         <translation>Local File Source</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="72"/>
+        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="51"/>
         <source>选择日志文件：</source>
         <translation>Select Log File:</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="80"/>
+        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="59"/>
         <source>选择文件</source>
         <translation>Select File</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="92"/>
+        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="71"/>
         <source>支持 .log, .txt 等文本格式</source>
         <translation>Supports .log, .txt and other text formats</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="104"/>
+        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="83"/>
         <source>选择日志文件</source>
         <translation>Select Log File</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="106"/>
+        <location filename="../../ui/LogManagePage/AddLogMessageBox.py" line="85"/>
         <source>日志文件 (*.log *.txt);;所有文件 (*.*)</source>
         <translation>Log Files (*.log *.txt);;All Files (*.*)</translation>
     </message>
@@ -182,6 +162,29 @@
         <location filename="../../modules/logparser/parsers.pyx" line="189"/>
         <source>判定变量列的最小不同词数量</source>
         <translation>Threshold for determining variable columns</translation>
+    </message>
+</context>
+<context>
+    <name>ClusterVisualizationPage</name>
+    <message>
+        <location filename="../../ui/ClusterVisualizationPage/ClusterVisualizationPage.py" line="59"/>
+        <source>选择日志：</source>
+        <translation>Select Log:</translation>
+    </message>
+    <message>
+        <location filename="../../ui/ClusterVisualizationPage/ClusterVisualizationPage.py" line="65"/>
+        <source>请选择已提取的日志文件</source>
+        <translation>Please select an extracted log file</translation>
+    </message>
+    <message>
+        <location filename="../../ui/ClusterVisualizationPage/ClusterVisualizationPage.py" line="102"/>
+        <source>数据未找到</source>
+        <translation>Data Not Found</translation>
+    </message>
+    <message>
+        <location filename="../../ui/ClusterVisualizationPage/ClusterVisualizationPage.py" line="103"/>
+        <source>未找到结构化表: {0}</source>
+        <translation>Structured table not found: {0}</translation>
     </message>
 </context>
 <context>
@@ -312,7 +315,7 @@
 <context>
     <name>LevelCountCard</name>
     <message>
-        <location filename="../../ui/Widgets/LevelCountCard.py" line="20"/>
+        <location filename="../../ui/Widgets/LevelCountCard.py" line="22"/>
         <source>日志级别分布</source>
         <translation>Log Level Distribution</translation>
     </message>
@@ -320,14 +323,30 @@
 <context>
     <name>LogCountCard</name>
     <message>
-        <location filename="../../ui/Widgets/LogCountCard.py" line="58"/>
+        <location filename="../../ui/Widgets/LogCountCard.py" line="50"/>
         <source>日志总数</source>
         <translation>Total Logs</translation>
     </message>
     <message>
-        <location filename="../../ui/Widgets/LogCountCard.py" line="84"/>
+        <location filename="../../ui/Widgets/LogCountCard.py" line="76"/>
         <source>模板数量</source>
         <translation>Template Count</translation>
+    </message>
+</context>
+<context>
+    <name>LogFrequencyCard</name>
+    <message>
+        <location filename="../../ui/Widgets/LogFrequencyCard.py" line="20"/>
+        <source>日志频数</source>
+        <translation>Log Frequency</translation>
+    </message>
+</context>
+<context>
+    <name>LogLevelFrequencyCard</name>
+    <message>
+        <location filename="../../ui/Widgets/LogLevelFrequencyCard.py" line="22"/>
+        <source>日志级别频数</source>
+        <translation>Log Level Frequency</translation>
     </message>
 </context>
 <context>
@@ -368,65 +387,65 @@
         <translation>Delete</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="226"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="222"/>
         <source>确认删除</source>
         <translation>Confirm Delete</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="226"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="222"/>
         <source>确定删除该日志吗？</source>
         <translation>Are you sure you want to delete this log?</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="234"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="230"/>
         <source>提取成功</source>
-        <translation>Extraction Successful</translation>
+        <translation>Extraction successful</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="235"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="231"/>
         <source>日志模板提取完成，共 {0} 行</source>
         <translation>Log template extraction completed, total {0} rows</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="247"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="243"/>
         <source>提取失败</source>
-        <translation>Extraction Failed</translation>
+        <translation>Extraction failed</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="260"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="256"/>
         <source>导入成功</source>
-        <translation>Import Successful</translation>
+        <translation>Import successful</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="261"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="257"/>
         <source>日志已导入</source>
         <translation>Log imported</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="273"/>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="286"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="269"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="282"/>
         <source>导入失败</source>
-        <translation>Import Failed</translation>
+        <translation>Import failed</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="274"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="270"/>
         <source>该日志已存在</source>
         <translation>This log already exists</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="299"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="295"/>
         <source>删除成功</source>
-        <translation>Delete Successful</translation>
+        <translation>Deletion successful</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="300"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="296"/>
         <source>日志已删除</source>
         <translation>Log deleted</translation>
     </message>
     <message>
-        <location filename="../../ui/LogManagePage/LogManagePage.py" line="312"/>
+        <location filename="../../ui/LogManagePage/LogManagePage.py" line="308"/>
         <source>删除失败</source>
-        <translation>Delete Failed</translation>
+        <translation>Deletion failed</translation>
     </message>
 </context>
 <context>
@@ -673,7 +692,7 @@ For example:
     <message>
         <location filename="../../ui/SettingPage/LogParserConfigManageDialog.py" line="129"/>
         <source>添加成功</source>
-        <translation>Added Successfully</translation>
+        <translation>Added successfully</translation>
     </message>
     <message>
         <location filename="../../ui/SettingPage/LogParserConfigManageDialog.py" line="130"/>
@@ -683,7 +702,7 @@ For example:
     <message>
         <location filename="../../ui/SettingPage/LogParserConfigManageDialog.py" line="141"/>
         <source>删除成功</source>
-        <translation>Delete Successful</translation>
+        <translation>Deleted successfully</translation>
     </message>
     <message>
         <location filename="../../ui/SettingPage/LogParserConfigManageDialog.py" line="142"/>
@@ -693,7 +712,7 @@ For example:
     <message>
         <location filename="../../ui/SettingPage/LogParserConfigManageDialog.py" line="153"/>
         <source>编辑成功</source>
-        <translation>Edit Successful</translation>
+        <translation>Edited successfully</translation>
     </message>
     <message>
         <location filename="../../ui/SettingPage/LogParserConfigManageDialog.py" line="154"/>
@@ -704,57 +723,52 @@ For example:
 <context>
     <name>LogTableModel</name>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="120"/>
+        <location filename="../../modules/models/log_table_model.py" line="118"/>
         <source>名称</source>
         <translation>Name</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="121"/>
+        <location filename="../../modules/models/log_table_model.py" line="119"/>
         <source>日志行数</source>
         <translation>Log Lines</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="122"/>
-        <source>日志类型</source>
-        <translation>Log Type</translation>
-    </message>
-    <message>
-        <location filename="../../modules/models/log_table_model.py" line="123"/>
+        <location filename="../../modules/models/log_table_model.py" line="120"/>
         <source>日志格式</source>
         <translation>Log Format</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="124"/>
+        <location filename="../../modules/models/log_table_model.py" line="121"/>
         <source>创建时间</source>
         <translation>Creation Time</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="395"/>
+        <location filename="../../modules/models/log_table_model.py" line="378"/>
         <source>未知错误</source>
         <translation>Unknown error</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="125"/>
+        <location filename="../../modules/models/log_table_model.py" line="122"/>
         <source>状态</source>
         <translation>Status</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="126"/>
+        <location filename="../../modules/models/log_table_model.py" line="123"/>
         <source>提取方法</source>
         <translation>Extraction Method</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="153"/>
+        <location filename="../../modules/models/log_table_model.py" line="148"/>
         <source>已提取</source>
         <translation>Extracted</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="154"/>
+        <location filename="../../modules/models/log_table_model.py" line="149"/>
         <source>未提取</source>
         <translation>Not Extracted</translation>
     </message>
     <message>
-        <location filename="../../modules/models/log_table_model.py" line="155"/>
+        <location filename="../../modules/models/log_table_model.py" line="150"/>
         <source>提取中</source>
         <translation>Extracting</translation>
     </message>
@@ -817,7 +831,7 @@ For example:
     <message>
         <location filename="../../ui/SettingPage/SettingPage.py" line="49"/>
         <source>调整你的应用的主题色</source>
-        <translation>Change the theme color of you application</translation>
+        <translation>Change the theme color of your application</translation>
     </message>
     <message>
         <location filename="../../ui/SettingPage/SettingPage.py" line="59"/>
@@ -827,12 +841,12 @@ For example:
     <message>
         <location filename="../../ui/SettingPage/SettingPage.py" line="60"/>
         <source>选择界面所使用的语言</source>
-        <translation>Set your preferred language for UI</translation>
+        <translation>Set your preferred UI language</translation>
     </message>
     <message>
         <location filename="../../ui/SettingPage/SettingPage.py" line="61"/>
         <source>跟随系统设置</source>
-        <translation>Use system setting</translation>
+        <translation>Use system settings</translation>
     </message>
     <message>
         <location filename="../../ui/SettingPage/SettingPage.py" line="68"/>
@@ -877,7 +891,7 @@ For example:
     <message>
         <location filename="../../ui/SettingPage/SettingPage.py" line="116"/>
         <source>优化完成</source>
-        <translation>Optimization Completed</translation>
+        <translation>Optimization completed</translation>
     </message>
     <message>
         <location filename="../../ui/SettingPage/SettingPage.py" line="117"/>
@@ -887,7 +901,7 @@ For example:
     <message>
         <location filename="../../ui/SettingPage/SettingPage.py" line="130"/>
         <source>优化失败</source>
-        <translation>Optimization Failed</translation>
+        <translation>Optimization failed</translation>
     </message>
 </context>
 <context>
@@ -906,24 +920,100 @@ For example:
 <context>
     <name>StatAnalysisPage</name>
     <message>
-        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="62"/>
+        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="61"/>
         <source>选择日志：</source>
         <translation>Select Log:</translation>
     </message>
     <message>
-        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="68"/>
+        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="67"/>
         <source>请选择已提取的日志文件</source>
         <translation>Please select an extracted log file</translation>
     </message>
     <message>
-        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="105"/>
+        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="104"/>
         <source>数据未找到</source>
         <translation>Data Not Found</translation>
     </message>
     <message>
-        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="106"/>
+        <location filename="../../ui/StatAnalysisPage/StatAnalysisPage.py" line="105"/>
         <source>未找到结构化表: {0}</source>
         <translation>Structured table not found: {0}</translation>
+    </message>
+</context>
+<context>
+    <name>TemplateAnalysisPage</name>
+    <message>
+        <location filename="../../ui/TemplateAnalysisPage/TemplateAnalysisPage.py" line="68"/>
+        <source>选择日志：</source>
+        <translation>Select Log:</translation>
+    </message>
+    <message>
+        <location filename="../../ui/TemplateAnalysisPage/TemplateAnalysisPage.py" line="74"/>
+        <source>请选择已提取的日志文件</source>
+        <translation>Please select an extracted log file</translation>
+    </message>
+    <message>
+        <location filename="../../ui/TemplateAnalysisPage/TemplateAnalysisPage.py" line="80"/>
+        <source>时间粒度：</source>
+        <translation>Time Granularity:</translation>
+    </message>
+    <message>
+        <location filename="../../ui/TemplateAnalysisPage/TemplateAnalysisPage.py" line="138"/>
+        <source>数据未找到</source>
+        <translation>Data Not Found</translation>
+    </message>
+    <message>
+        <location filename="../../ui/TemplateAnalysisPage/TemplateAnalysisPage.py" line="139"/>
+        <source>未找到结构化表: {0}</source>
+        <translation>Structured table not found: {0}</translation>
+    </message>
+</context>
+<context>
+    <name>TemplateAvgTimeCard</name>
+    <message>
+        <location filename="../../ui/Widgets/TemplateAvgTimeCard.py" line="21"/>
+        <source>模板停留</source>
+        <translation>Template Dwell Time</translation>
+    </message>
+</context>
+<context>
+    <name>TemplateCooccurrenceCard</name>
+    <message>
+        <location filename="../../ui/Widgets/TemplateCooccurrenceCard.py" line="21"/>
+        <source>模板共现</source>
+        <translation>Template Co-occurrence</translation>
+    </message>
+</context>
+<context>
+    <name>TemplateEmbeddingScatterCard</name>
+    <message>
+        <location filename="../../ui/Widgets/TemplateEmbeddingScatterCard.py" line="25"/>
+        <source>模板聚类</source>
+        <translation>Template Clustering</translation>
+    </message>
+</context>
+<context>
+    <name>TemplateFrequencyCard</name>
+    <message>
+        <location filename="../../ui/Widgets/TemplateFrequencyCard.py" line="20"/>
+        <source>模板频数</source>
+        <translation>Template Frequency</translation>
+    </message>
+</context>
+<context>
+    <name>TemplateTransitionCard</name>
+    <message>
+        <location filename="../../ui/Widgets/TemplateTransitionCard.py" line="21"/>
+        <source>模板转移</source>
+        <translation>Template Transition</translation>
+    </message>
+</context>
+<context>
+    <name>TemplateTransitionProbabilityCard</name>
+    <message>
+        <location filename="../../ui/Widgets/TemplateTransitionProbabilityCard.py" line="21"/>
+        <source>模板转移概率</source>
+        <translation>Template Transition Probability</translation>
     </message>
 </context>
 <context>
@@ -972,6 +1062,34 @@ For example:
         <location filename="../../ui/TemplateViewPage/TemplateViewPage.py" line="191"/>
         <source>清除所有筛选器</source>
         <translation>Clear all filters</translation>
+    </message>
+</context>
+<context>
+    <name>TemporalAnalysisPage</name>
+    <message>
+        <location filename="../../ui/TemporalAnalysisPage/TemporalAnalysisPage.py" line="62"/>
+        <source>选择日志：</source>
+        <translation>Select Log:</translation>
+    </message>
+    <message>
+        <location filename="../../ui/TemporalAnalysisPage/TemporalAnalysisPage.py" line="68"/>
+        <source>请选择已提取的日志文件</source>
+        <translation>Please select an extracted log file</translation>
+    </message>
+    <message>
+        <location filename="../../ui/TemporalAnalysisPage/TemporalAnalysisPage.py" line="74"/>
+        <source>时间粒度：</source>
+        <translation>Time Granularity:</translation>
+    </message>
+    <message>
+        <location filename="../../ui/TemporalAnalysisPage/TemporalAnalysisPage.py" line="124"/>
+        <source>数据未找到</source>
+        <translation>Data Not Found</translation>
+    </message>
+    <message>
+        <location filename="../../ui/TemporalAnalysisPage/TemporalAnalysisPage.py" line="125"/>
+        <source>未找到结构化表: {0}</source>
+        <translation>Structured table not found: {0}</translation>
     </message>
 </context>
 </TS>
