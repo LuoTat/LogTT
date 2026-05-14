@@ -1,4 +1,3 @@
-from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
 from typing import Any
@@ -83,13 +82,11 @@ class LogExtractTask(QRunnable):
 
     @Slot()
     def run(self):
+        ex_args = self._log_parser_config.ex_args.get(
+            self._log_parser_type.name(),
+            {},
+        )
         try:
-            print(f"Parsing file: {self._log_file}")
-            start_time = datetime.now()
-            ex_args = self._log_parser_config.ex_args.get(
-                self._log_parser_type.name(),
-                {},
-            )
             result = self._log_parser_type(
                 self._log_parser_config.log_format,
                 self._log_parser_config.timestamp_fields,
@@ -103,8 +100,6 @@ class LogExtractTask(QRunnable):
                 self._templates_table_name,
                 False,
             )
-            # 提取完成
-            print(f"Parsing done. [Time taken: {datetime.now() - start_time}]")
             self.signals.finished.emit(self._log_id, result.line_count)
         except Exception as e:
             self.signals.error.emit(self._log_id, str(e))
