@@ -151,6 +151,9 @@ class LogManagePage(QWidget):
 
         # 获取日志项状态
         status = index.data(LogTableModel.LOG_STATUS_ROLE)
+        # 如果正在提取，禁用删除
+        if status == LogStatus.EXTRACTING:
+            return
 
         # 创建菜单
         menu = RoundMenu(parent=self._table_view)
@@ -177,9 +180,6 @@ class LogManagePage(QWidget):
         # 删除操作
         delete_action = Action(FluentIcon.DELETE, self.tr("删除"))
         delete_action.triggered.connect(lambda: self._on_delete_log(index))
-        # 如果正在提取，禁用删除
-        if status == LogStatus.EXTRACTING:
-            delete_action.setEnabled(False)
         menu.addAction(delete_action)
 
         # 显示菜单
