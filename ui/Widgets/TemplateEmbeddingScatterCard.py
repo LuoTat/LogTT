@@ -56,14 +56,15 @@ class TemplateEmbeddingScatterCard(CardWidget):
 
         # 计算可视化 embedding
         visual_embedding = UMAP(
+            n_neighbors=min(15, original_embedding.shape[0] - 1),
             metric="cosine",
         ).fit_transform(original_embedding)
 
         # 计算聚类 embedding
         clusterable_embedding = UMAP(
             min_dist=0.0,
-            n_neighbors=30,
-            n_components=15,
+            n_neighbors=min(30, original_embedding.shape[0] - 1),
+            n_components=min(15, original_embedding.shape[0] - 2),
             metric="cosine",
         ).fit_transform(original_embedding)
 
