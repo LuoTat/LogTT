@@ -1,4 +1,4 @@
-from libc.stdint cimport uint16_t, uint32_t
+from libc.stdint cimport int32_t, uint16_t, uint32_t
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
@@ -19,7 +19,7 @@ cdef extern from "ael_log_parser.hxx" namespace "logtt" nogil:
             uint32_t       cluster_thr,
             float          merge_thr,
         )
-        uint32_t parse(
+        int32_t parse(
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,
@@ -38,7 +38,7 @@ cdef extern from "brain_log_parser.hxx" namespace "logtt" nogil:
             vector[char]   delimiters,
             uint16_t       var_thr,
         )
-        uint32_t parse(
+        int32_t parse(
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,
@@ -59,7 +59,7 @@ cdef extern from "drain_log_parser.hxx" namespace "logtt" nogil:
             uint16_t       children,
             float          sim_thr,
         )
-        uint32_t parse(
+        int32_t parse(
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,
@@ -80,7 +80,7 @@ cdef extern from "jaccard_drain_log_parser.hxx" namespace "logtt" nogil:
             uint16_t       children,
             float          sim_thr,
         )
-        uint32_t parse(
+        int32_t parse(
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,
@@ -99,7 +99,7 @@ cdef extern from "spell_log_parser.hxx" namespace "logtt" nogil:
             vector[char]   delimiters,
             float          sim_thr,
         )
-        uint32_t parse(
+        int32_t parse(
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,

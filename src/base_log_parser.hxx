@@ -20,7 +20,7 @@ public:
     );
 
     // 返回解析的日志条数
-    virtual std::uint32_t parse(
+    virtual std::int32_t parse(
         const std::string& log_file,
         const std::string& structured_table_name,
         const std::string& templates_table_name,

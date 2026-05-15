@@ -31,7 +31,7 @@ public:
     BrainLogParser(BrainLogParser&&) noexcept            = default;
     BrainLogParser& operator=(BrainLogParser&&) noexcept = default;
 
-    std::uint32_t parse(
+    std::int32_t parse(
         const std::string& log_file,
         const std::string& structured_table_name,
         const std::string& templates_table_name,

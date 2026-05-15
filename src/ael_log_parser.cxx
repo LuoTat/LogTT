@@ -27,7 +27,7 @@ AELLogParser::AELLogParser(
     m_cluster_thr {cluster_thr}, m_merge_thr {merge_thr}
 {}
 
-std::uint32_t AELLogParser::parse(
+std::int32_t AELLogParser::parse(
     const std::string& log_file,
     const std::string& structured_table_name,
     const std::string& templates_table_name,
@@ -47,7 +47,12 @@ std::uint32_t AELLogParser::parse(
     rel = split_log_rel(rel, this->m_delimiters);
 
     // 缓存分词结果，避免重复计算
-    rel = get_tmp(conn, rel);
+    auto ret {get_tmp(conn, rel)};
+    if (!ret)
+    {
+        return -1;
+    }
+    rel = ret.value();
 
     auto log_length {get_rel_row_count(rel)};
     templates.resize(log_length);

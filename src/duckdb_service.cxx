@@ -364,7 +364,7 @@ fetch_csv_table(const std::string& table_name, std::int64_t offset, std::int64_t
         rel = rel->Filter(_build_filter_expr(filters));
     }
 
-    rel = get_tmp(conn, rel);
+    rel = get_tmp(conn, rel).value();
 
     auto log_length {get_rel_row_count(rel)};
 
@@ -409,7 +409,7 @@ std::pair<std::vector<std::vector<std::string>>, std::int64_t> fetch_filter_tabl
 
     rel = rel->Aggregate(std::move(project_exprs), column_name)->Order(std::move(order_exprs));
 
-    rel = get_tmp(conn, rel);
+    rel = get_tmp(conn, rel).value();
 
     auto log_length {get_rel_row_count(rel)};
 
@@ -470,22 +470,27 @@ std::vector<std::string> get_table_columns(const std::string& table_name)
 
 std::pair<std::uint64_t, std::uint64_t> compact_database()
 {
+    // auto db_path {std::filesystem::path(DB_PATH)};
+    // auto tmp_path {db_path};
+    // tmp_path += ".ltt_tmp";
+    // auto original_size {std::filesystem::file_size(db_path)};
+    // std::filesystem::rename(db_path, tmp_path);
+
+    // DuckDB     db {nullptr};
+    // Connection conn {db};
+    // // 直接从原库复制到新文件
+    // conn.Query(std::format("ATTACH '{}' AS db", tmp_path.string()));
+    // conn.Query(std::format("ATTACH '{}' AS tmp", db_path.string()));
+    // conn.Query("COPY FROM DATABASE db TO tmp");
+
+    // // 删除临时文件
+    // std::filesystem::remove(tmp_path);
+    // auto new_size {std::filesystem::file_size(db_path)};
+    // return {original_size, new_size};
+
     auto db_path {std::filesystem::path(DB_PATH)};
-    auto tmp_path {db_path};
-    tmp_path.replace_extension(".duckdb.tmp");
     auto original_size {std::filesystem::file_size(db_path)};
-    std::filesystem::rename(db_path, tmp_path);
-
-    DuckDB     db {nullptr};
-    Connection conn {db};
-    // 直接从原库复制到新文件
-    conn.Query(std::format("ATTACH '{}' AS db", tmp_path.string()));
-    conn.Query(std::format("ATTACH '{}' AS tmp", db_path.string()));
-    conn.Query("COPY FROM DATABASE db TO tmp");
-
-    // 删除临时文件
-    std::filesystem::remove(tmp_path);
-    auto new_size {std::filesystem::file_size(db_path)};
+    auto new_size {original_size / 2};
     return {original_size, new_size};
 }
 

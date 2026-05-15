@@ -62,9 +62,17 @@ unique_ptr<MaterializedQueryResult> to_m_result(unique_ptr<QueryResult> result)
     return unique_ptr_cast<QueryResult, MaterializedQueryResult>(std::move(result));
 }
 
-shared_ptr<Relation> get_tmp(Connection& conn, const shared_ptr<Relation>& rel)
+std::expected<shared_ptr<Relation>, std::int8_t> get_tmp(Connection& conn, const shared_ptr<Relation>& rel)
 {
-    rel->Create("_tmp", true, OnCreateConflict::REPLACE_ON_CONFLICT);
+    try
+    {
+        rel->Create("_tmp", true, OnCreateConflict::REPLACE_ON_CONFLICT);
+    }
+    catch (const Exception& e)
+    {
+        return std::unexpected(-1);
+    }
+
     return conn.Table("_tmp");
 }
 

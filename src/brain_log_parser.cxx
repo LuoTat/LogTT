@@ -67,7 +67,7 @@ BrainLogParser::BrainLogParser(
     m_var_thr {var_thr}
 {}
 
-std::uint32_t BrainLogParser::parse(
+std::int32_t BrainLogParser::parse(
     const std::string& log_file,
     const std::string& structured_table_name,
     const std::string& templates_table_name,
@@ -93,7 +93,12 @@ std::uint32_t BrainLogParser::parse(
 
     rel = rel->Project(std::move(project_exprs_1), {});
 
-    rel = get_tmp(conn, rel);
+    auto ret {get_tmp(conn, rel)};
+    if (!ret)
+    {
+        return -1;
+    }
+    rel = ret.value();
 
     // 从 DuckDB 读取所有分词结果
     ParsedExprVec project_exprs_2;

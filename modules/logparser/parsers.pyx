@@ -5,7 +5,7 @@ cdef object ParamWidgetType
 cdef object ParseResult
 cdef object QCoreApplication
 
-from libc.stdint cimport uint16_t, uint32_t
+from libc.stdint cimport int32_t, uint16_t, uint32_t
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
@@ -67,7 +67,7 @@ cdef class AELLogParser:
         string templates_table_name,
         bint keep_para=False,
     ) -> ParseResult:
-        cdef uint32_t log_length
+        cdef int32_t log_length
 
         with nogil:
             log_length = self.log_parser.parse(
@@ -76,6 +76,9 @@ cdef class AELLogParser:
                 templates_table_name,
                 keep_para,
             )
+
+        if log_length < 0:
+            raise ValueError("The log_format or timestamp_format is invalid")
 
         return ParseResult(
             log_file,
@@ -155,7 +158,7 @@ cdef class BrainLogParser:
         string templates_table_name,
         bint keep_para=False,
     ) -> ParseResult:
-        cdef uint32_t log_length
+        cdef int32_t log_length
 
         with nogil:
             log_length = self.log_parser.parse(
@@ -164,6 +167,9 @@ cdef class BrainLogParser:
                 templates_table_name,
                 keep_para,
             )
+
+        if log_length < 0:
+            raise ValueError("The log_format or timestamp_format is invalid")
 
         return ParseResult(
             log_file,
@@ -243,7 +249,7 @@ cdef class DrainLogParser:
         string templates_table_name,
         bint keep_para = False,
     ) -> ParseResult:
-        cdef uint32_t log_length
+        cdef int32_t log_length
 
         with nogil:
             log_length = self.log_parser.parse(
@@ -252,6 +258,9 @@ cdef class DrainLogParser:
                 templates_table_name,
                 keep_para,
             )
+
+        if log_length < 0:
+            raise ValueError("The log_format or timestamp_format is invalid")
 
         return ParseResult(
             log_file,
@@ -349,7 +358,7 @@ cdef class JaccardDrainLogParser:
         string templates_table_name,
         bint keep_para = False,
     ) -> ParseResult:
-        cdef uint32_t log_length
+        cdef int32_t log_length
 
         with nogil:
             log_length = self.log_parser.parse(
@@ -358,6 +367,9 @@ cdef class JaccardDrainLogParser:
                 templates_table_name,
                 keep_para,
             )
+
+        if log_length < 0:
+            raise ValueError("The log_format or timestamp_format is invalid")
 
         return ParseResult(
             log_file,
@@ -446,7 +458,7 @@ cdef class SpellLogParser:
         string templates_table_name,
         bint keep_para=False,
     ) -> ParseResult:
-        cdef uint32_t log_length
+        cdef int32_t log_length
 
         with nogil:
             log_length = self.log_parser.parse(
@@ -455,6 +467,9 @@ cdef class SpellLogParser:
                 templates_table_name,
                 keep_para,
             )
+
+        if log_length < 0:
+            raise ValueError("The log_format or timestamp_format is invalid")
 
         return ParseResult(
             log_file,
