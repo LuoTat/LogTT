@@ -11,11 +11,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #pragma once
 #define DUCKDB_AMALGAMATION 1
 #define DUCKDB_AMALGAMATION_EXTENDED 1
-#define DUCKDB_SOURCE_ID "6221d3e3f5"
-#define DUCKDB_VERSION "v1.5.3-dev353"
+#define DUCKDB_SOURCE_ID "ec85ef763e"
+#define DUCKDB_VERSION "v1.5.3-dev373"
 #define DUCKDB_MAJOR_VERSION 1
 #define DUCKDB_MINOR_VERSION 5
-#define DUCKDB_PATCH_VERSION "3-dev353"
+#define DUCKDB_PATCH_VERSION "3-dev373"
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //
@@ -40113,6 +40113,9 @@ struct DBConfigOptions {
 	LogConfig log_config = LogConfig();
 	//! Physical memory that the block allocator is allowed to use (this memory is never freed and cannot be reduced)
 	idx_t block_allocator_size = 0;
+	//! The maximum data to buffer in row groups (in bytes) to buffer prior to flushing.
+	//! When inserting large chunks of data we
+	optional_idx write_buffer_row_group_memory_limit;
 
 	bool operator==(const DBConfigOptions &other) const;
 };
@@ -50790,6 +50793,8 @@ struct OptimisticWriteCollection {
 
 	shared_ptr<RowGroupCollection> collection;
 	set<idx_t> unflushed_row_groups;
+	idx_t unflushed_data_size = 0;
+	idx_t prev_allocated_size = 0;
 	idx_t complete_row_groups = 0;
 	vector<unique_ptr<PartialBlockManager>> partial_block_managers;
 
