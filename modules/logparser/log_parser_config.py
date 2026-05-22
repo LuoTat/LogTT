@@ -1,4 +1,4 @@
-from .builtin_masking import BUILTIN_MASKINGS
+from .builtin_masking import BUILTIN_MASKS
 
 
 class LogParserConfig:
@@ -8,23 +8,23 @@ class LogParserConfig:
         log_format: str,
         timestamp_fields: list[str],
         timestamp_format: str,
-        user_maskings: list[tuple[str, str]] | None = None,
+        user_masks: list[tuple[str, str]] | None = None,
         delimiters: str = "",
-        use_builtin_maskings: bool = True,
+        use_builtin_masks: bool = True,
         ex_args: dict[str, dict[str, int | float]] | None = None,
     ):
         self.name = name
         self.log_format = log_format
         self.timestamp_fields = timestamp_fields
         self.timestamp_format = timestamp_format
-        self.user_maskings = user_maskings or []
+        self.user_masks = user_masks or []
         self.delimiters = delimiters
-        self.use_builtin_maskings = use_builtin_maskings
+        self.use_builtin_masks = use_builtin_masks
         self.ex_args = ex_args or {}
 
     @property
-    def maskings(self) -> list[tuple[str, str]]:
-        if self.use_builtin_maskings:
-            return self.user_maskings + BUILTIN_MASKINGS
+    def masks(self) -> list[tuple[str, str]]:
+        if self.use_builtin_masks:
+            return self.user_masks + BUILTIN_MASKS
         else:
-            return self.user_maskings
+            return self.user_masks

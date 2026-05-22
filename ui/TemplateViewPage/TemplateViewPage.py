@@ -90,7 +90,6 @@ class TemplateViewPage(QWidget):
         self._table_view = TableView(self)
         self._table_view.setBorderVisible(True)
         self._table_view.setBorderRadius(8)
-
         # 禁用单元格换行
         self._table_view.setWordWrap(False)
         # 隐藏垂直表头
@@ -112,7 +111,6 @@ class TemplateViewPage(QWidget):
         header.customContextMenuRequested.connect(
             self._on_header_context_menu_requested
         )
-
         self._main_layout.addWidget(self._table_view)
 
     def _update_info_label(self):

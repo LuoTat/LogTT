@@ -11,7 +11,7 @@ AELLogParser::AELLogParser(
     std::vector<std::string> named_fields,
     std::vector<std::string> timestamp_fields,
     std::string              timestamp_format,
-    std::vector<Mask>        maskings,
+    std::vector<Mask>        masks,
     std::vector<char>        delimiters,
     std::uint32_t            cluster_thr,
     float                    merge_thr
@@ -21,7 +21,7 @@ AELLogParser::AELLogParser(
         std::move(named_fields),
         std::move(timestamp_fields),
         std::move(timestamp_format),
-        std::move(maskings),
+        std::move(masks),
         std::move(delimiters)
     },
     m_cluster_thr {cluster_thr}, m_merge_thr {merge_thr}
@@ -43,7 +43,7 @@ std::int32_t AELLogParser::parse(
     auto rel {load_data(
         conn, log_file, this->m_log_regex, this->m_named_fields, this->m_timestamp_fields, this->m_timestamp_format
     )};
-    rel = mask_log_rel(rel, this->m_maskings);
+    rel = mask_log_rel(rel, this->m_masks);
     rel = split_log_rel(rel, this->m_delimiters);
 
     // 缓存分词结果，避免重复计算

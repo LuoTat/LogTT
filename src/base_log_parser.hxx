@@ -15,7 +15,7 @@ public:
         std::vector<std::string> named_fields,
         std::vector<std::string> timestamp_fields,
         std::string              timestamp_format,
-        std::vector<Mask>        maskings,
+        std::vector<Mask>        masks,
         std::vector<char>        delimiters
     );
 
@@ -31,7 +31,7 @@ public:
     std::vector<std::string> m_named_fields;
     std::vector<std::string> m_timestamp_fields;
     std::string              m_timestamp_format;
-    std::vector<Mask>        m_maskings;
+    std::vector<Mask>        m_masks;
     std::vector<char>        m_delimiters;
 };
 

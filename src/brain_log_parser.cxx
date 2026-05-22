@@ -52,7 +52,7 @@ BrainLogParser::BrainLogParser(
     std::vector<std::string> named_fields,
     std::vector<std::string> timestamp_fields,
     std::string              timestamp_format,
-    std::vector<Mask>        maskings,
+    std::vector<Mask>        masks,
     std::vector<char>        delimiters,
     std::uint16_t            var_thr
 ):
@@ -61,7 +61,7 @@ BrainLogParser::BrainLogParser(
         std::move(named_fields),
         std::move(timestamp_fields),
         std::move(timestamp_format),
-        std::move(maskings),
+        std::move(masks),
         std::move(delimiters)
     },
     m_var_thr {var_thr}
@@ -81,7 +81,7 @@ std::int32_t BrainLogParser::parse(
     auto rel {load_data(
         conn, log_file, this->m_log_regex, this->m_named_fields, this->m_timestamp_fields, this->m_timestamp_format
     )};
-    rel = mask_log_rel(rel, this->m_maskings);
+    rel = mask_log_rel(rel, this->m_masks);
     rel = split_log_rel(rel, this->m_delimiters);
 
     // 缓存分词结果，避免重复计算

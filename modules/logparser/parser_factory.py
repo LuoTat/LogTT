@@ -10,7 +10,7 @@ class LogParserProtocol(Protocol):
         log_format: str,
         timestamp_fields: list[str],
         timestamp_format: str,
-        maskings: list[tuple[str, str]],
+        masks: list[tuple[str, str]],
         delimiters: str,
         **kwargs: Any,
     ): ...

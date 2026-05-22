@@ -169,11 +169,11 @@ shared_ptr<Relation> load_data(
         ->Project(std::move(project_exprs_3), {});
 }
 
-shared_ptr<Relation> mask_log_rel(shared_ptr<Relation>& rel, const std::vector<Mask>& maskings)
+shared_ptr<Relation> mask_log_rel(shared_ptr<Relation>& rel, const std::vector<Mask>& masks)
 {
     // 从 ColumnRefExpression("Content") 开始，逐层嵌套 regexp_replace
     unique_ptr<ParsedExpression> func_expr {make_uniq<ColumnRefExpression>("Content")};
-    for (auto&& [regex, replacement] : maskings)
+    for (auto&& [regex, replacement] : masks)
     {
         ParsedExprVec arg_exprs;
         arg_exprs.push_back(std::move(func_expr));

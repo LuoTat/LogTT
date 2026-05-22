@@ -39,7 +39,7 @@ class TemplateFrequencyCard(CardWidget):
     ):
         """设置表名并绘制模板频数直方图"""
         months, days, micros = interval
-        epochs, count = LogAnalysis.get_template_frequency_distribution(
+        epochs, counts = LogAnalysis.get_template_frequency_distribution(
             structured_table_name,
             months,
             days,
@@ -51,7 +51,7 @@ class TemplateFrequencyCard(CardWidget):
         self._plot_widget.clear()
         bar = pg.BarGraphItem(
             x=epochs,
-            height=count,
+            height=counts,
             width=bar_width,
             pen=pg.mkPen("#4FC2F7"),
             brush=pg.mkBrush("#4FC2F788"),

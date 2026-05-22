@@ -10,7 +10,7 @@ class LogParserListModel(QAbstractListModel):
 
     # 用户自定义角色
     LOG_PARSER_TYPE_ROLE = Qt.ItemDataRole.UserRole + 1  # 解析器类型角色
-    LOG_PARSER_DISCRIPTION_ROLE = Qt.ItemDataRole.UserRole + 2  # 解析器描述角色
+    LOG_PARSER_DESCRIPTION_ROLE = Qt.ItemDataRole.UserRole + 2  # 解析器描述角色
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -43,7 +43,7 @@ class LogParserListModel(QAbstractListModel):
         elif role == self.LOG_PARSER_TYPE_ROLE:
             return self._data[row]
 
-        elif role == self.LOG_PARSER_DISCRIPTION_ROLE:
+        elif role == self.LOG_PARSER_DESCRIPTION_ROLE:
             return self._data[row].description()
 
         return None

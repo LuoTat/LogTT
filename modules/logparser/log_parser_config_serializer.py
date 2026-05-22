@@ -15,9 +15,9 @@ class LogParserConfigSerializer(ConfigSerializer):
                 "log_format": config.log_format,
                 "timestamp_fields": config.timestamp_fields,
                 "timestamp_format": config.timestamp_format,
-                "user_maskings": config.user_maskings,
+                "user_masks": config.user_masks,
                 "delimiters": config.delimiters,
-                "use_builtin_maskings": config.use_builtin_maskings,
+                "use_builtin_masks": config.use_builtin_masks,
                 "ex_args": config.ex_args,
             }
             for config in value

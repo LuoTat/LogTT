@@ -20,7 +20,7 @@ shared_ptr<Relation> load_data(
     const std::vector<std::string>& timestamp_fields,
     const std::string&              timestamp_format
 );
-shared_ptr<Relation> mask_log_rel(shared_ptr<Relation>& rel, const std::vector<Mask>& maskings);
+shared_ptr<Relation> mask_log_rel(shared_ptr<Relation>& rel, const std::vector<Mask>& masks);
 shared_ptr<Relation> split_log_rel(shared_ptr<Relation>& rel, const std::vector<char>& delimiters);
 
 void to_table(

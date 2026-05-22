@@ -3,7 +3,7 @@ from typing import Any
 from PySide6.QtCore import QAbstractListModel, QModelIndex, QPersistentModelIndex, Qt
 
 # (显示名, months, days, micros)
-_GRANULARITIES = [
+_GRANULARITY = [
     ("1 秒", 0, 0, 1_000_000),
     ("10 秒", 0, 0, 10_000_000),
     ("1 分钟", 0, 0, 60_000_000),
@@ -32,7 +32,7 @@ class GranularityListModel(QAbstractListModel):
         self,
         parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
     ) -> int:
-        return len(_GRANULARITIES)
+        return len(_GRANULARITY)
 
     def data(
         self,
@@ -45,13 +45,13 @@ class GranularityListModel(QAbstractListModel):
         row = index.row()
 
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
-            return _GRANULARITIES[row][0]
+            return _GRANULARITY[row][0]
 
         elif role == self.INTERVAL_ROLE:
             return (
-                _GRANULARITIES[row][1],
-                _GRANULARITIES[row][2],
-                _GRANULARITIES[row][3],
+                _GRANULARITY[row][1],
+                _GRANULARITY[row][2],
+                _GRANULARITY[row][3],
             )
 
         return None

@@ -48,11 +48,11 @@ static std::vector<std::vector<std::string>> _to_df(const shared_ptr<Relation>& 
     for (auto&& data_chunk : result->Collection().Chunks())
     {
         std::vector<const string_t*>     all_datas(col_length);
-        std::vector<const ValidityMask*> all_validities(col_length);
+        std::vector<const ValidityMask*> all_validitymasks(col_length);
         for (auto&& col : std::views::iota(0UL, col_length))
         {
             all_datas[col]      = FlatVector::GetData<string_t>(data_chunk.data[col]);
-            all_validities[col] = &FlatVector::Validity(data_chunk.data[col]);
+            all_validitymasks[col] = &FlatVector::Validity(data_chunk.data[col]);
         }
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
@@ -61,7 +61,7 @@ static std::vector<std::vector<std::string>> _to_df(const shared_ptr<Relation>& 
             row_data.reserve(col_length);
             for (auto&& col : std::views::iota(0UL, col_length))
             {
-                if (!all_validities[col]->RowIsValid(row))
+                if (!all_validitymasks[col]->RowIsValid(row))
                 {
                     row_data.emplace_back();
                 }

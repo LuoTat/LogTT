@@ -20,7 +20,7 @@ public:
         std::vector<std::string> named_fields,
         std::vector<std::string> timestamp_fields,
         std::string              timestamp_format,
-        std::vector<Mask>        maskings,
+        std::vector<Mask>        masks,
         std::vector<char>        delimiters,
         std::uint32_t            cluster_thr,
         float                    merge_thr

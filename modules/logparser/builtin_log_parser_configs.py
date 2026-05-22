@@ -7,7 +7,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Date} {Time} {Pid:^} {Tid:>} {Level} {Component}: {Content}",
         timestamp_fields=["Date", "Time"],
         timestamp_format="%m-%d %H:%M:%S.%g",
-        user_maskings=[
+        user_masks=[
             (
                 r"(/[\w-]+)+",
                 "<#PATH#>",
@@ -66,7 +66,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Label} {Timestamp} {Date} {Node} {DateTime} {NodeRepeat} {Type} {Component} {Level} {Content}",
         timestamp_fields=["Timestamp", "Date", "DateTime"],
         timestamp_format="epoch",
-        user_maskings=[
+        user_masks=[
             (
                 r"core\.\d+",
                 "<#CORE#>",
@@ -103,7 +103,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Date} {Time} {Pid} {Level} {Component}: {Content}",
         timestamp_fields=["Date", "Time"],
         timestamp_format="%y%m%d %H%M%S",
-        user_maskings=[
+        user_masks=[
             (
                 r"blk_-?\d+",
                 "<#BLK#>",
@@ -190,7 +190,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{DateTime}|{Component}|{Pid}|{Content}",
         timestamp_fields=["DateTime"],
         timestamp_format="%Y%m%d-%-H:%-M:%-S:%g",
-        user_maskings=[
+        user_masks=[
             (
                 r"\d+##\d+##\d+##\d+##\d+##\d+",
                 "<#SEQ#>",
@@ -302,7 +302,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="{Logrecord} {Date} {Time} {Pid} {Level} {Component} [{ADDR}] {Content}",
         timestamp_fields=["Date", "Time"],
         timestamp_format="%Y-%m-%d %H:%M:%S.%g",
-        user_maskings=[
+        user_masks=[
             (
                 r"\[instance:(.*?)\]",
                 "<#INST#>",
@@ -338,7 +338,7 @@ BUILTIN_LOG_PARSER_CONFIGS: list[LogParserConfig] = [
         log_format="[{DateTime}] {Program} - {Content}",
         timestamp_fields=["DateTime"],
         timestamp_format="%m.%d %H:%M:%S",
-        user_maskings=[
+        user_masks=[
             (
                 r"<\d+\ssec",
                 "<#DURATION#>",

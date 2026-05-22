@@ -308,8 +308,8 @@ class LogParserConfigEditDialog(MessageBoxBase):
         self._timestamp_fields_edit.setText(",".join(config.timestamp_fields))
         self._timestamp_format_edit.setText(config.timestamp_format)
         self._delimiters_edit.setText(config.delimiters)
-        self._use_builtin_masking_switch.setChecked(config.use_builtin_maskings)
-        self._masking_edit.setPlainText(json.dumps(config.user_maskings, indent=4))
+        self._use_builtin_masking_switch.setChecked(config.use_builtin_masks)
+        self._masking_edit.setPlainText(json.dumps(config.user_masks, indent=4))
 
         # 填充 ex_args
         if config.ex_args:
