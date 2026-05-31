@@ -1,6 +1,7 @@
 #pragma once
 
-#include "precomp.hxx"
+#include "duckdb.hpp"
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -8,7 +9,7 @@
 namespace logtt
 {
 
-Connection& get_connection();
+duckdb::Connection& get_connection();
 
 using Filters = std::unordered_map<std::string, std::vector<std::string>>;
 
@@ -63,11 +64,10 @@ std::pair<std::vector<std::vector<std::string>>, std::int64_t> fetch_filter_tabl
 
 // ==================== 通用方法 ====================
 
-bool                                    table_exists(const std::string& table_name);
-void                                    drop_table(const std::string& table_name);
-bool                                    has_column(const std::string& table_name, const std::string& column_name);
-std::int64_t                            get_table_row_count(const std::string& table_name);
-std::vector<std::string>                get_table_columns(const std::string& table_name);
-std::pair<std::uint64_t, std::uint64_t> compact_database();
+bool                     table_exists(const std::string& table_name);
+void                     drop_table(const std::string& table_name);
+bool                     has_column(const std::string& table_name, const std::string& column_name);
+std::int64_t             get_table_row_count(const std::string& table_name);
+std::vector<std::string> get_table_columns(const std::string& table_name);
 
 }    // namespace logtt

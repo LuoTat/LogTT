@@ -35,16 +35,15 @@ public:
     DrainLogParser& operator=(DrainLogParser&&) noexcept = default;
 
     std::int32_t parse(
-        const std::string& log_file,
-        const std::string& structured_table_name,
-        const std::string& templates_table_name,
-        bool               keep_para
+        const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
     ) override;
+
+    virtual ~DrainLogParser() = default;
 
 private:
     struct LogCluster
     {
-        TContent content;
+        TContent m_content;
 
         std::string get_template() const;
     };
@@ -57,7 +56,7 @@ private:
 
     LogCluster* _add_content(const TContent& content);
     LogCluster* _tree_search(const TContent& content, bool include_params = false);
-    LogCluster* _fast_match(const TContent& content, const Node* node, bool include_params = false);
+    LogCluster* _fast_match(const TContent& content, const Node* node, bool include_params = false) const;
     void        _add_to_prefix_tree(LogCluster* cluster);
 
     static std::pair<float, std::uint16_t>

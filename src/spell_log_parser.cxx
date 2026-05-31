@@ -30,10 +30,7 @@ SpellLogParser::SpellLogParser(
 {}
 
 std::int32_t SpellLogParser::parse(
-    const std::string& log_file,
-    const std::string& structured_table_name,
-    const std::string& templates_table_name,
-    bool               keep_para
+    const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
 )
 {
     // 初始化前缀树和日志簇池
@@ -76,8 +73,8 @@ std::int32_t SpellLogParser::parse(
         const auto& tokens_col {data_chunk.data[0]};
         const auto& tokens_child {ListVector::GetEntry(tokens_col)};
 
-        const auto tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
-        const auto tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
+        const auto* const tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
+        const auto* const tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -107,17 +104,17 @@ std::int32_t SpellLogParser::parse(
 
     rel = rel->Project(std::move(project_exprs_3), {});
 
-    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
-    return log_length;
+    to_table(conn, rel, templates, structured_table_name, templates_table_name);
+    return static_cast<std::int32_t>(log_length);
 }
 
 SpellLogParser::LogCluster* SpellLogParser::_add_content(const TContent& content)
 {
-    auto match_cluster {
+    auto* match_cluster {
         this->_tree_subseq_match(content) ?: (this->_subseq_match(content) ?: this->_lcs_match(content))
     };
 
-    if (!match_cluster)
+    if (match_cluster == nullptr)
     {
         this->m_cluster_pool.emplace_back(content);
         match_cluster = &this->m_cluster_pool.back();
@@ -139,8 +136,8 @@ SpellLogParser::LogCluster* SpellLogParser::_add_content(const TContent& content
 
 SpellLogParser::LogCluster* SpellLogParser::_tree_subseq_match(const TContent& content)
 {
-    auto required_length {this->m_sim_thr * content.size()};
-    auto cur_node {this->m_root.get()};
+    auto  required_length {this->m_sim_thr * static_cast<float>(content.size())};
+    auto* cur_node {this->m_root.get()};
     // 这个用来记录已经匹配的常量token数量，用来快速匹配的cluster
     // 这个值和也就是对应节点的深度-1
     std::uint16_t matched_const_count {0};
@@ -148,7 +145,7 @@ SpellLogParser::LogCluster* SpellLogParser::_tree_subseq_match(const TContent& c
     for (auto&& token : content)
     {
         // 如果当前节点挂载了一个cluster，且常量token数量超过阈值，就直接返回这个cluster
-        if (cur_node->cluster && matched_const_count >= required_length)
+        if ((cur_node->cluster != nullptr) && static_cast<float>(matched_const_count) >= required_length)
         {
             return cur_node->cluster;
         }
@@ -165,11 +162,11 @@ SpellLogParser::LogCluster* SpellLogParser::_tree_subseq_match(const TContent& c
 
 SpellLogParser::LogCluster* SpellLogParser::_subseq_match(const TContent& content)
 {
-    auto required_length {this->m_sim_thr * content.size()};
+    auto required_length {this->m_sim_thr * static_cast<float>(content.size())};
 
     for (auto&& cluster : this->m_cluster_pool)
     {
-        if (cluster.content.size() < required_length)
+        if (static_cast<float>(cluster.content.size()) < required_length)
         {
             continue;
         }
@@ -185,13 +182,17 @@ SpellLogParser::LogCluster* SpellLogParser::_subseq_match(const TContent& conten
 
 SpellLogParser::LogCluster* SpellLogParser::_lcs_match(const TContent& content)
 {
-    auto          required_content_lcs {static_cast<std::uint16_t>(std::ceil(this->m_sim_thr * content.size()))};
+    auto required_content_lcs {
+        static_cast<std::uint16_t>(std::ceil(this->m_sim_thr * static_cast<float>(content.size())))
+    };
     std::uint16_t max_lcs_length {0};
     LogCluster*   max_cluster {nullptr};
 
     for (auto&& cluster : this->m_cluster_pool)
     {
-        auto required_cluster_lcs {static_cast<std::uint16_t>(std::ceil(this->m_sim_thr * cluster.content.size()))};
+        auto required_cluster_lcs {
+            static_cast<std::uint16_t>(std::ceil(this->m_sim_thr * static_cast<float>(cluster.content.size())))
+        };
         auto lcs_length {
             SpellLogParser::_lcs_length(content, cluster.content, std::max(required_content_lcs, required_cluster_lcs))
         };
@@ -214,7 +215,7 @@ SpellLogParser::LogCluster* SpellLogParser::_lcs_match(const TContent& content)
 
 void SpellLogParser::_add_seq_to_prefix_tree(LogCluster* cluster)
 {
-    auto cur_node {this->m_root.get()};
+    auto* cur_node {this->m_root.get()};
 
     for (auto&& token : cluster->content)
     {
@@ -241,7 +242,7 @@ void SpellLogParser::_add_seq_to_prefix_tree(LogCluster* cluster)
 
 void SpellLogParser::_remove_seq_from_prefix_tree(const LogCluster* cluster)
 {
-    auto cur_node {this->m_root.get()};
+    auto* cur_node {this->m_root.get()};
 
     for (auto&& token : cluster->content)
     {
@@ -256,7 +257,7 @@ void SpellLogParser::_remove_seq_from_prefix_tree(const LogCluster* cluster)
             return;
         }
 
-        auto matched_node {it->second.get()};
+        auto* matched_node {it->second.get()};
         if (matched_node->template_no == 1)
         {
             cur_node->children_node.erase(token);

@@ -32,11 +32,10 @@ public:
     BrainLogParser& operator=(BrainLogParser&&) noexcept = default;
 
     std::int32_t parse(
-        const std::string& log_file,
-        const std::string& structured_table_name,
-        const std::string& templates_table_name,
-        bool               keep_para
+        const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
     ) override;
+
+    virtual ~BrainLogParser() = default;
 
 private:
     // 带频率信息的 Token，记录该 token 在同组同列中出现的次数
@@ -57,11 +56,11 @@ private:
         bool operator==(const FTuple&) const = default;
     };
 
-    inline friend std::size_t hash_value(const FTuple& t)
+    friend std::size_t hash_value(const FTuple& tup)
     {
         std::size_t seed {0};
-        boost::hash_combine(seed, t.freq);
-        boost::hash_combine(seed, t.count);
+        boost::hash_combine(seed, tup.freq);
+        boost::hash_combine(seed, tup.count);
         return seed;
     }
 
@@ -74,7 +73,8 @@ private:
 
         explicit FCounter(const FContent& fcontent);
 
-        void          sort_by_count();
+        void sort_by_count();
+        [[nodiscard]]
         std::uint32_t get_max_freq() const;
     };
 

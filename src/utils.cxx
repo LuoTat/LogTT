@@ -5,7 +5,10 @@
 namespace logtt
 {
 
-static unique_ptr<ParsedExpression>
+namespace
+{
+
+unique_ptr<ParsedExpression>
 _build_timestamp_expr(const std::vector<std::string>& timestamp_fields, const std::string& timestamp_format)
 {
     unique_ptr<ParsedExpression> func_expr;
@@ -55,6 +58,8 @@ _build_timestamp_expr(const std::vector<std::string>& timestamp_fields, const st
     // 转为 TIMESTAMP_S 类型
     return make_uniq<CastExpression>(LogicalType::TIMESTAMP_S, std::move(func_expr));
 }
+
+}    // namespace
 
 unique_ptr<MaterializedQueryResult> to_m_result(unique_ptr<QueryResult> result)
 {
@@ -118,9 +123,9 @@ shared_ptr<Relation> load_data(
     auto named_fields_values {
         named_fields |
         std::views::transform(
-            [](const std::string& s)
+            [](const std::string& str) -> Value
             {
-                return Value(s);
+                return {str};
             }
         ) |
         std::ranges::to<vector<Value>>()
@@ -224,23 +229,24 @@ void to_table(
     shared_ptr<Relation>&           rel,
     const std::vector<std::string>& templates,
     const std::string&              structured_table_name,
-    const std::string&              templates_table_name,
-    bool                            keep_para
+    const std::string&              templates_table_name
 )
 {
     // 使用 UDF 将 log_templates 中的模板字符串映射到每一行
     auto udf_name {std::format("_get_template_{}", structured_table_name)};
-    auto udf {[&templates](DataChunk& args, ExpressionState& state, Vector& result)
-              {
-                  result.SetVectorType(VectorType::FLAT_VECTOR);
-                  auto result_data {FlatVector::GetData<string_t>(result)};
+    auto udf {
+        [&templates](DataChunk& args, [[maybe_unused]] ExpressionState& state, Vector& result) -> void
+        {
+            result.SetVectorType(VectorType::FLAT_VECTOR);
+            auto* result_data {FlatVector::GetData<string_t>(result)};
 
-                  const auto line_id_data {FlatVector::GetData<std::int64_t>(args.data[0])};
-                  for (auto&& i : std::views::iota(0UL, args.size()))
-                  {
-                      result_data[i] = StringVector::AddString(result, templates[line_id_data[i] - 1]);
-                  }
-              }};
+            auto* const line_id_data {FlatVector::GetData<std::int64_t>(args.data[0])};
+            for (auto&& i : std::views::iota(0UL, args.size()))
+            {
+                result_data[i] = StringVector::AddString(result, templates[line_id_data[i] - 1]);
+            }
+        }
+    };
     conn.CreateVectorizedFunction<string_t, std::int64_t>(udf_name, udf);
 
     ParsedExprVec arg_exprs_1;

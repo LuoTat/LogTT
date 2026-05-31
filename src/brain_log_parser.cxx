@@ -68,10 +68,7 @@ BrainLogParser::BrainLogParser(
 {}
 
 std::int32_t BrainLogParser::parse(
-    const std::string& log_file,
-    const std::string& structured_table_name,
-    const std::string& templates_table_name,
-    bool               keep_para
+    const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
 )
 {
     std::vector<std::string> templates;
@@ -113,8 +110,8 @@ std::int32_t BrainLogParser::parse(
         const auto& tokens_col {data_chunk.data[0]};
         const auto& tokens_child {ListVector::GetEntry(tokens_col)};
 
-        const auto tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
-        const auto tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
+        const auto* const tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
+        const auto* const tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -163,8 +160,8 @@ std::int32_t BrainLogParser::parse(
 
     rel = rel->Project(std::move(project_exprs_3), {});
 
-    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
-    return log_length;
+    to_table(conn, rel, templates, structured_table_name, templates_table_name);
+    return static_cast<std::int32_t>(log_length);
 }
 
 BrainLogParser::FContentsGroup BrainLogParser::_get_fcontents_group(const std::vector<TContent>& contents)
@@ -236,13 +233,13 @@ BrainLogParser::RootRows BrainLogParser::_find_root(std::vector<FCounter>& fcoun
     for (auto&& [idx, fcounter] : std::views::enumerate(fcounters))
     {
         fcounter.sort_by_count();
-        auto freq_thr {fcounter.get_max_freq() * alpha};
+        auto freq_thr {static_cast<float>(fcounter.get_max_freq()) * alpha};
 
         // 默认选出现次数最多的 FTuple
         auto matched {fcounter.freq_counter[0]};
         for (auto&& ftuple : fcounter.freq_counter)
         {
-            if (ftuple.freq >= freq_thr)
+            if (static_cast<float>(ftuple.freq) >= freq_thr)
             {
                 matched = ftuple;
                 break;
@@ -325,7 +322,7 @@ void BrainLogParser::_down_split(const RootRows& root_rows, std::vector<FContent
         std::ranges::sort(
             child_cols,
             {},
-            [&col_tokens](std::uint16_t col)
+            [&col_tokens](std::uint16_t col) -> std::size_t
             {
                 auto it {col_tokens.find(col)};
                 return it != col_tokens.end() ? it->second.size() : 0U;

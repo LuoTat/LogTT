@@ -1,7 +1,6 @@
 #include "duckdb_service.hxx"
 #include "precomp.hxx"
 #include "utils.hxx"
-#include <filesystem>
 #include <format>
 #include <ranges>
 
@@ -31,8 +30,10 @@ Connection& get_connection()
 }
 
 // ==================== 辅助函数 ====================
+namespace
+{
 
-static std::vector<std::vector<std::string>> _to_df(const shared_ptr<Relation>& rel)
+std::vector<std::vector<std::string>> _to_df(const shared_ptr<Relation>& rel)
 {
     auto star_expr {make_uniq<StarExpression>()};
     star_expr->columns = true;
@@ -51,7 +52,7 @@ static std::vector<std::vector<std::string>> _to_df(const shared_ptr<Relation>& 
         std::vector<const ValidityMask*> all_validitymasks(col_length);
         for (auto&& col : std::views::iota(0UL, col_length))
         {
-            all_datas[col]      = FlatVector::GetData<string_t>(data_chunk.data[col]);
+            all_datas[col]         = FlatVector::GetData<string_t>(data_chunk.data[col]);
             all_validitymasks[col] = &FlatVector::Validity(data_chunk.data[col]);
         }
 
@@ -77,7 +78,7 @@ static std::vector<std::vector<std::string>> _to_df(const shared_ptr<Relation>& 
     return df;
 }
 
-static unique_ptr<ParsedExpression> _build_filter_expr(const Filters& filters)
+unique_ptr<ParsedExpression> _build_filter_expr(const Filters& filters)
 {
     ParsedExprVec in_exprs;
     in_exprs.reserve(filters.size());
@@ -99,7 +100,7 @@ static unique_ptr<ParsedExpression> _build_filter_expr(const Filters& filters)
     return make_uniq<ConjunctionExpression>(ExpressionType::CONJUNCTION_AND, std::move(in_exprs));
 }
 
-static unique_ptr<ParsedExpression> _build_like_filter_expr(const std::string& column_name, const std::string& keyword)
+unique_ptr<ParsedExpression> _build_like_filter_expr(const std::string& column_name, const std::string& keyword)
 {
     ParsedExprVec arg_exprs;
     arg_exprs.push_back(make_uniq<ColumnRefExpression>(column_name));
@@ -107,6 +108,8 @@ static unique_ptr<ParsedExpression> _build_like_filter_expr(const std::string& c
 
     return make_uniq<FunctionExpression>("contains", std::move(arg_exprs));
 }
+
+}    // namespace
 
 // ==================== 日志管理 ====================
 
@@ -150,15 +153,15 @@ std::vector<LogEntry> get_log_table()
         const auto& structured_table_name_col {data_chunk.data[7]};
         const auto& templates_table_name_col {data_chunk.data[8]};
 
-        const auto id_data {FlatVector::GetData<std::uint32_t>(id_col)};
-        const auto format_type_data {FlatVector::GetData<string_t>(format_type_col)};
-        const auto log_path_data {FlatVector::GetData<string_t>(log_path_col)};
-        const auto create_time_data {FlatVector::GetData<timestamp_sec_t>(create_time_col)};
-        const auto is_extracted_data {FlatVector::GetData<bool>(is_extracted_col)};
-        const auto extract_method_data {FlatVector::GetData<string_t>(extract_method_col)};
-        const auto line_count_data {FlatVector::GetData<std::uint32_t>(line_count_col)};
-        const auto structured_table_name_data {FlatVector::GetData<string_t>(structured_table_name_col)};
-        const auto templates_table_name_data {FlatVector::GetData<string_t>(templates_table_name_col)};
+        const auto* const id_data {FlatVector::GetData<std::uint32_t>(id_col)};
+        const auto* const format_type_data {FlatVector::GetData<string_t>(format_type_col)};
+        const auto* const log_path_data {FlatVector::GetData<string_t>(log_path_col)};
+        const auto* const create_time_data {FlatVector::GetData<timestamp_sec_t>(create_time_col)};
+        const auto* const is_extracted_data {FlatVector::GetData<bool>(is_extracted_col)};
+        const auto* const extract_method_data {FlatVector::GetData<string_t>(extract_method_col)};
+        const auto* const line_count_data {FlatVector::GetData<std::uint32_t>(line_count_col)};
+        const auto* const structured_table_name_data {FlatVector::GetData<string_t>(structured_table_name_col)};
+        const auto* const templates_table_name_data {FlatVector::GetData<string_t>(templates_table_name_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -219,10 +222,10 @@ std::vector<EXLogEntry> get_extracted_log_table()
         const auto& structured_table_name_col {data_chunk.data[2]};
         const auto& templates_table_name_col {data_chunk.data[3]};
 
-        const auto id_data {FlatVector::GetData<std::uint32_t>(id_col)};
-        const auto log_path_data {FlatVector::GetData<string_t>(log_path_col)};
-        const auto structured_table_name_data {FlatVector::GetData<string_t>(structured_table_name_col)};
-        const auto templates_table_name_data {FlatVector::GetData<string_t>(templates_table_name_col)};
+        const auto* const id_data {FlatVector::GetData<std::uint32_t>(id_col)};
+        const auto* const log_path_data {FlatVector::GetData<string_t>(log_path_col)};
+        const auto* const structured_table_name_data {FlatVector::GetData<string_t>(structured_table_name_col)};
+        const auto* const templates_table_name_data {FlatVector::GetData<string_t>(templates_table_name_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -261,10 +264,7 @@ int insert_log(const std::string& log_path)
         {
             return -1;
         }
-        else
-        {
-            return -2;
-        }
+        return -2;
     }
 }
 
@@ -436,14 +436,13 @@ bool has_column(const std::string& table_name, const std::string& column_name)
     auto& conn {get_connection()};
     auto  rel {conn.Table(table_name)};
 
-    for (auto&& col : rel->Columns())
-    {
-        if (col.Name() == column_name)
+    return std::ranges::any_of(
+        rel->Columns(),
+        [&column_name](const auto& col) -> bool
         {
-            return true;
+            return col.Name() == column_name;
         }
-    }
-    return false;
+    );
 }
 
 std::int64_t get_table_row_count(const std::string& table_name)
@@ -466,32 +465,6 @@ std::vector<std::string> get_table_columns(const std::string& table_name)
         columns.push_back(col.Name());
     }
     return columns;
-}
-
-std::pair<std::uint64_t, std::uint64_t> compact_database()
-{
-    // auto db_path {std::filesystem::path(DB_PATH)};
-    // auto tmp_path {db_path};
-    // tmp_path += ".ltt_tmp";
-    // auto original_size {std::filesystem::file_size(db_path)};
-    // std::filesystem::rename(db_path, tmp_path);
-
-    // DuckDB     db {nullptr};
-    // Connection conn {db};
-    // // 直接从原库复制到新文件
-    // conn.Query(std::format("ATTACH '{}' AS db", tmp_path.string()));
-    // conn.Query(std::format("ATTACH '{}' AS tmp", db_path.string()));
-    // conn.Query("COPY FROM DATABASE db TO tmp");
-
-    // // 删除临时文件
-    // std::filesystem::remove(tmp_path);
-    // auto new_size {std::filesystem::file_size(db_path)};
-    // return {original_size, new_size};
-
-    auto db_path {std::filesystem::path(DB_PATH)};
-    auto original_size {std::filesystem::file_size(db_path)};
-    auto new_size {original_size / 2};
-    return {original_size, new_size};
 }
 
 }    // namespace logtt

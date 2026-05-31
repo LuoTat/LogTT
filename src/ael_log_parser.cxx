@@ -28,10 +28,7 @@ AELLogParser::AELLogParser(
 {}
 
 std::int32_t AELLogParser::parse(
-    const std::string& log_file,
-    const std::string& structured_table_name,
-    const std::string& templates_table_name,
-    bool               keep_para
+    const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
 )
 {
     // 初始化日志簇池
@@ -79,8 +76,8 @@ std::int32_t AELLogParser::parse(
 
     rel = rel->Project(std::move(project_exprs), {});
 
-    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
-    return log_length;
+    to_table(conn, rel, templates, structured_table_name, templates_table_name);
+    return static_cast<std::int32_t>(log_length);
 }
 
 AELLogParser::LogBin AELLogParser::_get_log_bins(const shared_ptr<Relation>& rel)
@@ -130,12 +127,12 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(const shared_ptr<Relation>& rel
         const auto& line_ids_col {data_chunk.data[3]};
         const auto& line_ids_child {ListVector::GetEntry(line_ids_col)};
 
-        const auto token_count_data {FlatVector::GetData<std::int64_t>(token_count_col)};
-        const auto para_count_data {FlatVector::GetData<std::int64_t>(para_count_col)};
-        const auto tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
-        const auto tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
-        const auto line_ids_data {FlatVector::GetData<list_entry_t>(line_ids_col)};
-        const auto line_ids_child_data {FlatVector::GetData<std::int64_t>(line_ids_child)};
+        const auto* const token_count_data {FlatVector::GetData<std::int64_t>(token_count_col)};
+        const auto* const para_count_data {FlatVector::GetData<std::int64_t>(para_count_col)};
+        const auto* const tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
+        const auto* const tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
+        const auto* const line_ids_data {FlatVector::GetData<list_entry_t>(line_ids_col)};
+        const auto* const line_ids_child_data {FlatVector::GetData<std::int64_t>(line_ids_child)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -159,7 +156,7 @@ AELLogParser::LogBin AELLogParser::_get_log_bins(const shared_ptr<Relation>& rel
             }
 
             this->m_cluster_pool.emplace_back(content, rows);
-            auto cluster {&this->m_cluster_pool.back()};
+            auto* cluster {&this->m_cluster_pool.back()};
 
             auto [it, inserted] {log_bin.try_emplace(LogBinKey {token_count, para_count}, 1, cluster)};
             if (!inserted)
@@ -188,7 +185,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
         std::vector<std::vector<LogCluster*>> cluster_groups;
         for (auto&& i : std::views::iota(0UL, clusters.size()))
         {
-            auto cluster1 {clusters[i]};
+            auto* cluster1 {clusters[i]};
             if (cluster1->merged)
             {
                 continue;
@@ -199,7 +196,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
 
             for (auto&& j : std::views::iota(i + 1, clusters.size()))
             {
-                auto cluster2 {clusters[j]};
+                auto* cluster2 {clusters[j]};
                 if (cluster2->merged)
                 {
                     continue;
@@ -215,7 +212,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
 
         for (auto&& group : cluster_groups)
         {
-            auto merged_cluster {
+            auto* merged_cluster {
                 std::accumulate(group.begin() + 1, group.end(), group.front(), AELLogParser::_merge_log_cluster)
             };
             merged_clusters.push_back(merged_cluster);
@@ -225,7 +222,7 @@ std::vector<AELLogParser::LogCluster*> AELLogParser::_reconcile(LogBin& log_bin)
     return merged_clusters;
 }
 
-bool AELLogParser::_has_diff(const LogCluster* cluster1, const LogCluster* cluster2)
+bool AELLogParser::_has_diff(const LogCluster* cluster1, const LogCluster* cluster2) const
 {
     std::uint16_t diff {0};
 
@@ -237,7 +234,7 @@ bool AELLogParser::_has_diff(const LogCluster* cluster1, const LogCluster* clust
         }
     }
 
-    auto ratio {static_cast<float>(diff) / cluster1->content.size()};
+    auto ratio {static_cast<float>(diff) / static_cast<float>(cluster1->content.size())};
     return diff > 0 && ratio <= this->m_merge_thr;
 }
 

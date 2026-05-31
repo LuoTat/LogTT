@@ -32,11 +32,10 @@ public:
     AELLogParser(AELLogParser&&) noexcept            = default;
     AELLogParser& operator=(AELLogParser&&) noexcept = default;
 
+    virtual ~AELLogParser() = default;
+
     std::int32_t parse(
-        const std::string& log_file,
-        const std::string& structured_table_name,
-        const std::string& templates_table_name,
-        bool               keep_para
+        const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
     ) override;
 
 private:
@@ -46,22 +45,23 @@ private:
         std::vector<std::int64_t> rows;
         bool                      merged {false};
 
+        [[nodiscard]]
         std::string get_template() const;
     };
 
     struct LogBinKey
     {
-        std::int64_t m_token_count {0};
-        std::int64_t m_para_count {0};
+        std::int64_t token_count {0};
+        std::int64_t para_count {0};
 
         bool operator==(const LogBinKey&) const = default;
     };
 
-    inline friend std::size_t hash_value(const LogBinKey& k)
+    friend std::size_t hash_value(const LogBinKey& key)
     {
         std::size_t seed {0};
-        boost::hash_combine(seed, k.m_token_count);
-        boost::hash_combine(seed, k.m_para_count);
+        boost::hash_combine(seed, key.token_count);
+        boost::hash_combine(seed, key.para_count);
         return seed;
     }
 
@@ -69,7 +69,7 @@ private:
 
     LogBin                   _get_log_bins(const shared_ptr<Relation>& rel);
     std::vector<LogCluster*> _reconcile(LogBin& log_bin);
-    bool                     _has_diff(const LogCluster* cluster1, const LogCluster* cluster2);
+    bool                     _has_diff(const LogCluster* cluster1, const LogCluster* cluster2) const;
     static LogCluster*       _merge_log_cluster(LogCluster* cluster1, const LogCluster* cluster2);
 
     std::uint32_t          m_cluster_thr {2};

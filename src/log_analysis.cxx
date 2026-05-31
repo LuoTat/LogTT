@@ -57,8 +57,8 @@ std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> get_log_frequenc
         const auto& timestamp_bucket_col {data_chunk.data[0]};
         const auto& count_col {data_chunk.data[1]};
 
-        const auto timestamp_bucket_data {FlatVector::GetData<timestamp_t>(timestamp_bucket_col)};
-        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
+        const auto* const timestamp_bucket_data {FlatVector::GetData<timestamp_t>(timestamp_bucket_col)};
+        const auto* const count_data {FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -107,8 +107,8 @@ std::pair<std::vector<std::int64_t>, std::vector<std::int64_t>> get_template_fre
         const auto& timestamp_bucket_col {data_chunk.data[0]};
         const auto& count_col {data_chunk.data[1]};
 
-        const auto timestamp_bucket_data {FlatVector::GetData<timestamp_t>(timestamp_bucket_col)};
-        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
+        const auto* const timestamp_bucket_data {FlatVector::GetData<timestamp_t>(timestamp_bucket_col)};
+        const auto* const count_data {FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -152,9 +152,9 @@ get_log_level_frequency_distribution(
         const auto& timestamp_bucket_col {data_chunk.data[1]};
         const auto& count_col {data_chunk.data[2]};
 
-        const auto level_data {FlatVector::GetData<string_t>(level_col)};
-        const auto timestamp_bucket_data {FlatVector::GetData<timestamp_t>(timestamp_bucket_col)};
-        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
+        const auto* const level_data {FlatVector::GetData<string_t>(level_col)};
+        const auto* const timestamp_bucket_data {FlatVector::GetData<timestamp_t>(timestamp_bucket_col)};
+        const auto* const count_data {FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -230,9 +230,9 @@ get_template_transition_matrix(const std::string& structured_table_name, const s
         const auto& next_id_col {data_chunk.data[1]};
         const auto& count_col {data_chunk.data[2]};
 
-        const auto curr_id_data {FlatVector::GetData<std::int64_t>(curr_id_col)};
-        const auto next_id_data {FlatVector::GetData<std::int64_t>(next_id_col)};
-        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
+        const auto* const curr_id_data {FlatVector::GetData<std::int64_t>(curr_id_col)};
+        const auto* const next_id_data {FlatVector::GetData<std::int64_t>(next_id_col)};
+        const auto* const count_data {FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -318,9 +318,9 @@ std::pair<std::vector<std::vector<std::int64_t>>, std::int64_t> get_template_coo
         const auto& b_rowid_col {data_chunk.data[1]};
         const auto& count_col {data_chunk.data[2]};
 
-        const auto a_rowid_data {FlatVector::GetData<std::int64_t>(a_rowid_col)};
-        const auto next_id_data {FlatVector::GetData<std::int64_t>(b_rowid_col)};
-        const auto count_data {FlatVector::GetData<std::int64_t>(count_col)};
+        const auto* const a_rowid_data {FlatVector::GetData<std::int64_t>(a_rowid_col)};
+        const auto* const next_id_data {FlatVector::GetData<std::int64_t>(b_rowid_col)};
+        const auto* const count_data {FlatVector::GetData<std::int64_t>(count_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -415,9 +415,9 @@ get_template_avg_time_matrix(const std::string& structured_table_name, const std
         const auto& next_id_col {data_chunk.data[1]};
         const auto& avg_col {data_chunk.data[2]};
 
-        const auto curr_id_data {FlatVector::GetData<std::int64_t>(curr_id_col)};
-        const auto next_id_data {FlatVector::GetData<std::int64_t>(next_id_col)};
-        const auto avg_data {FlatVector::GetData<interval_t>(avg_col)};
+        const auto* const curr_id_data {FlatVector::GetData<std::int64_t>(curr_id_col)};
+        const auto* const next_id_data {FlatVector::GetData<std::int64_t>(next_id_col)};
+        const auto* const avg_data {FlatVector::GetData<interval_t>(avg_col)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {

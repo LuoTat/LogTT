@@ -21,11 +21,10 @@ public:
 
     // 返回解析的日志条数
     virtual std::int32_t parse(
-        const std::string& log_file,
-        const std::string& structured_table_name,
-        const std::string& templates_table_name,
-        bool               keep_para
+        const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
     ) = 0;
+
+    virtual ~BaseLogParser() = default;
 
     std::string              m_log_regex;
     std::vector<std::string> m_named_fields;

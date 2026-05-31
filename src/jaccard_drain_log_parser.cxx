@@ -29,10 +29,7 @@ JaccardDrainLogParser::JaccardDrainLogParser(
 {}
 
 std::int32_t JaccardDrainLogParser::parse(
-    const std::string& log_file,
-    const std::string& structured_table_name,
-    const std::string& templates_table_name,
-    bool               keep_para
+    const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
 )
 {
     // 初始化前缀树和日志簇池
@@ -75,8 +72,8 @@ std::int32_t JaccardDrainLogParser::parse(
         const auto& tokens_col {data_chunk.data[0]};
         const auto& tokens_child {ListVector::GetEntry(tokens_col)};
 
-        const auto tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
-        const auto tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
+        const auto* const tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
+        const auto* const tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -106,15 +103,15 @@ std::int32_t JaccardDrainLogParser::parse(
 
     rel = rel->Project(std::move(project_exprs_3), {});
 
-    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
-    return log_length;
+    to_table(conn, rel, templates, structured_table_name, templates_table_name);
+    return static_cast<std::int32_t>(log_length);
 }
 
 JaccardDrainLogParser::LogCluster* JaccardDrainLogParser::_add_content(const TContent& content)
 {
-    auto match_cluster {this->_tree_search(content)};
+    auto* match_cluster {this->_tree_search(content)};
 
-    if (!match_cluster)
+    if (match_cluster == nullptr)
     {
         this->m_cluster_pool.emplace_back(content);
         match_cluster = &this->m_cluster_pool.back();
@@ -134,8 +131,8 @@ JaccardDrainLogParser::LogCluster* JaccardDrainLogParser::_add_content(const TCo
 
 JaccardDrainLogParser::LogCluster* JaccardDrainLogParser::_tree_search(const TContent& content, bool include_params)
 {
-    auto length {content.size()};
-    auto cur_node {this->m_root.get()};
+    auto  length {content.size()};
+    auto* cur_node {this->m_root.get()};
 
     for (auto&& [i, token] : std::views::enumerate(content))
     {
@@ -165,7 +162,7 @@ JaccardDrainLogParser::LogCluster* JaccardDrainLogParser::_tree_search(const TCo
 }
 
 JaccardDrainLogParser::LogCluster*
-JaccardDrainLogParser::_fast_match(const TContent& content, const Node* node, bool include_params)
+JaccardDrainLogParser::_fast_match(const TContent& content, const Node* node, bool include_params) const
 {
     float         max_sim {-1.0F};
     std::uint16_t max_param_count {0};
@@ -173,7 +170,9 @@ JaccardDrainLogParser::_fast_match(const TContent& content, const Node* node, bo
 
     for (auto&& cluster : node->clusters)
     {
-        auto [cur_sim, param_count] {this->_get_distance(content, cluster->content, include_params)};
+        auto [cur_sim, param_count] {
+            logtt::JaccardDrainLogParser::_get_distance(content, cluster->content, include_params)
+        };
         if (cur_sim > max_sim || (cur_sim == max_sim && param_count > max_param_count))
         {
             max_sim         = cur_sim;
@@ -192,8 +191,8 @@ JaccardDrainLogParser::_fast_match(const TContent& content, const Node* node, bo
 
 void JaccardDrainLogParser::_add_to_prefix_tree(LogCluster* cluster)
 {
-    auto length {cluster->content.size()};
-    auto cur_node {this->m_root.get()};
+    auto  length {cluster->content.size()};
+    auto* cur_node {this->m_root.get()};
 
     for (auto&& [i, token] : std::views::enumerate(cluster->content))
     {

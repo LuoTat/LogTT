@@ -28,8 +28,7 @@ void to_table(
     shared_ptr<Relation>&           rel,
     const std::vector<std::string>& templates,
     const std::string&              structured_table_name,
-    const std::string&              templates_table_name,
-    bool                            keep_para
+    const std::string&              templates_table_name
 );
 
 }    // namespace logtt

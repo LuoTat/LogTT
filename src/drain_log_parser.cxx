@@ -29,10 +29,7 @@ DrainLogParser::DrainLogParser(
 {}
 
 std::int32_t DrainLogParser::parse(
-    const std::string& log_file,
-    const std::string& structured_table_name,
-    const std::string& templates_table_name,
-    bool               keep_para
+    const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
 )
 {
     // 初始化前缀树和日志簇池
@@ -75,8 +72,8 @@ std::int32_t DrainLogParser::parse(
         const auto& tokens_col {data_chunk.data[0]};
         const auto& tokens_child {ListVector::GetEntry(tokens_col)};
 
-        const auto tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
-        const auto tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
+        const auto* const tokens_data {FlatVector::GetData<list_entry_t>(tokens_col)};
+        const auto* const tokens_child_data {FlatVector::GetData<string_t>(tokens_child)};
 
         for (auto&& row : std::views::iota(0UL, data_chunk.size()))
         {
@@ -106,15 +103,15 @@ std::int32_t DrainLogParser::parse(
 
     rel = rel->Project(std::move(project_exprs_3), {});
 
-    to_table(conn, rel, templates, structured_table_name, templates_table_name, keep_para);
-    return log_length;
+    to_table(conn, rel, templates, structured_table_name, templates_table_name);
+    return static_cast<std::int32_t>(log_length);
 }
 
 DrainLogParser::LogCluster* DrainLogParser::_add_content(const TContent& content)
 {
-    auto match_cluster {this->_tree_search(content)};
+    auto* match_cluster {this->_tree_search(content)};
 
-    if (!match_cluster)
+    if (match_cluster == nullptr)
     {
         this->m_cluster_pool.emplace_back(content);
         match_cluster = &this->m_cluster_pool.back();
@@ -122,10 +119,10 @@ DrainLogParser::LogCluster* DrainLogParser::_add_content(const TContent& content
     }
     else
     {
-        auto new_content {DrainLogParser::_create_template(content, match_cluster->content)};
-        if (new_content != match_cluster->content)
+        auto new_content {DrainLogParser::_create_template(content, match_cluster->m_content)};
+        if (new_content != match_cluster->m_content)
         {
-            match_cluster->content = std::move(new_content);
+            match_cluster->m_content = std::move(new_content);
         }
     }
 
@@ -134,9 +131,9 @@ DrainLogParser::LogCluster* DrainLogParser::_add_content(const TContent& content
 
 DrainLogParser::LogCluster* DrainLogParser::_tree_search(const TContent& content, bool include_params)
 {
-    auto length {content.size()};
-    auto length_token {std::to_string(length)};
-    auto cur_node {this->m_root.get()};
+    auto  length {content.size()};
+    auto  length_token {std::to_string(length)};
+    auto* cur_node {this->m_root.get()};
 
     for (auto&& [i, token] : std::views::enumerate(std::views::concat(std::views::single(length_token), content)))
     {
@@ -165,7 +162,8 @@ DrainLogParser::LogCluster* DrainLogParser::_tree_search(const TContent& content
     return this->_fast_match(content, cur_node, include_params);
 }
 
-DrainLogParser::LogCluster* DrainLogParser::_fast_match(const TContent& content, const Node* node, bool include_params)
+DrainLogParser::LogCluster*
+DrainLogParser::_fast_match(const TContent& content, const Node* node, bool include_params) const
 {
     float         max_sim {-1.0F};
     std::uint16_t max_param_count {0};
@@ -173,7 +171,7 @@ DrainLogParser::LogCluster* DrainLogParser::_fast_match(const TContent& content,
 
     for (auto&& cluster : node->clusters)
     {
-        auto [cur_sim, param_count] {this->_get_distance(content, cluster->content, include_params)};
+        auto [cur_sim, param_count] {logtt::DrainLogParser::_get_distance(content, cluster->m_content, include_params)};
         if (cur_sim > max_sim || (cur_sim == max_sim && param_count > max_param_count))
         {
             max_sim         = cur_sim;
@@ -192,13 +190,13 @@ DrainLogParser::LogCluster* DrainLogParser::_fast_match(const TContent& content,
 
 void DrainLogParser::_add_to_prefix_tree(LogCluster* cluster)
 {
-    auto length {cluster->content.size()};
-    auto length_token {std::to_string(length)};
-    auto cur_node {this->m_root.get()};
+    auto  length {cluster->m_content.size()};
+    auto  length_token {std::to_string(length)};
+    auto* cur_node {this->m_root.get()};
 
     for (
         auto&& [i, token] :
-        std::views::enumerate(std::views::concat(std::views::single(length_token), cluster->content))
+        std::views::enumerate(std::views::concat(std::views::single(length_token), cluster->m_content))
     )
     {
         auto cur_node_depth {i + 1};
@@ -268,7 +266,7 @@ DrainLogParser::_get_distance(const TContent& content1, const TContent& content2
         sim_tokens += param_count;
     }
 
-    return {static_cast<float>(sim_tokens) / content1.size(), param_count};
+    return {static_cast<float>(sim_tokens) / static_cast<float>(content1.size()), param_count};
 }
 
 TContent DrainLogParser::_create_template(const TContent& content1, const TContent& content2)
@@ -287,7 +285,7 @@ TContent DrainLogParser::_create_template(const TContent& content1, const TConte
 
 std::string DrainLogParser::LogCluster::get_template() const
 {
-    return this->content | std::views::join_with(' ') | std::ranges::to<std::string>();
+    return this->m_content | std::views::join_with(' ') | std::ranges::to<std::string>();
 }
 
 }    // namespace logtt

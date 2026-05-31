@@ -32,11 +32,10 @@ public:
     SpellLogParser& operator=(SpellLogParser&&) noexcept = default;
 
     std::int32_t parse(
-        const std::string& log_file,
-        const std::string& structured_table_name,
-        const std::string& templates_table_name,
-        bool               keep_para
+        const std::string& log_file, const std::string& structured_table_name, const std::string& templates_table_name
     ) override;
+
+    virtual ~SpellLogParser() = default;
 
 private:
     struct LogCluster
