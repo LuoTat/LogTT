@@ -11,11 +11,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #pragma once
 #define DUCKDB_AMALGAMATION 1
 #define DUCKDB_AMALGAMATION_EXTENDED 1
-#define DUCKDB_SOURCE_ID "ec85ef763e"
-#define DUCKDB_VERSION "v1.5.3-dev373"
+#define DUCKDB_SOURCE_ID "91e5d92c16"
+#define DUCKDB_VERSION "v1.5.4-dev66"
 #define DUCKDB_MAJOR_VERSION 1
 #define DUCKDB_MINOR_VERSION 5
-#define DUCKDB_PATCH_VERSION "3-dev373"
+#define DUCKDB_PATCH_VERSION "4-dev66"
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //
@@ -22861,6 +22861,61 @@ public:
 
 
 
+//===----------------------------------------------------------------------===//
+//                         DuckDB
+//
+// duckdb/storage/table/per_column_metadata_blocks.hpp
+//
+//
+//===----------------------------------------------------------------------===//
+
+
+
+
+
+
+namespace duckdb {
+
+class Serializer;
+class Deserializer;
+
+struct PerColumnMetadataBlock {
+	bool is_column_index : 1;
+	idx_t index : 63;
+
+	idx_t GetPacked();
+
+	static PerColumnMetadataBlock Unpack(idx_t packed);
+};
+
+class PerColumnMetadataBlocks {
+public:
+	//! Get block IDs for specific columns (linear scan), returns one vector per requested column
+	vector<vector<idx_t>> GetBlocksForColumns(const vector<idx_t> &columns) const;
+
+	//! Add a column entry with its block IDs
+	void AddColumn(idx_t col_idx, const vector<idx_t> &blocks);
+	//! Remove a column entry and all its block IDs (linear scan)
+	void RemoveColumn(idx_t col_idx);
+
+	//! Iterate over all block IDs, passing (column_index, block_id) to the callback
+	template <typename Func>
+	void ForEachBlock(Func func) const {
+		idx_t current_col = 0;
+		for (auto &entry : data) {
+			if (entry.is_column_index) {
+				current_col = entry.index;
+			} else {
+				func(current_col, entry.index);
+			}
+		}
+	}
+
+	vector<PerColumnMetadataBlock> data;
+};
+
+} // namespace duckdb
+
 
 //===----------------------------------------------------------------------===//
 //                         DuckDB
@@ -23226,12 +23281,17 @@ private:
 	optional_ptr<vector<unique_ptr<PartialBlockManager>>> column_partial_block_managers;
 };
 
+enum class RowGroupWriteAction {
+	REUSE_EXISTING_ROW_GROUP_METADATA,
+	PARTIALLY_REUSE_COLUMN_METADATA,
+	FULLY_CHECKPOINT_ROW_GROUP
+};
+
 struct RowGroupWriteData {
 	shared_ptr<RowGroup> result_row_group;
 	vector<unique_ptr<ColumnCheckpointState>> states;
 	vector<BaseStatistics> statistics;
-	bool reuse_existing_metadata_blocks = false;
-	vector<idx_t> existing_extra_metadata_blocks;
+	RowGroupWriteAction write_action = RowGroupWriteAction::FULLY_CHECKPOINT_ROW_GROUP;
 	optional_idx write_count;
 };
 
@@ -23260,10 +23320,12 @@ public:
 	RowGroupCollection &GetCollection() const {
 		return collection.get();
 	}
-	//! Returns the list of meta block pointers used by the columns
-	vector<idx_t> GetOrComputeExtraMetadataBlocks(bool force_compute = false);
+	//! Compute per-column metadata blocks by reading column metadata from disk
+	PerColumnMetadataBlocks ComputePerColumnMetadataBlocks() const;
 
 	const vector<MetaBlockPointer> &GetColumnStartPointers() const;
+
+	vector<MetaBlockPointer> GetExtraMetadataBlockPointers() const;
 
 	BlockManager &GetBlockManager() const;
 	DataTableInfo &GetTableInfo() const;
@@ -23320,6 +23382,8 @@ public:
 	RowGroupWriteData WriteToDisk(RowGroupWriteInfo &info) const;
 	//! Returns the number of committed rows (count - committed deletes)
 	idx_t GetCommittedRowCount();
+	//! Returns the number of rows visible to the given transaction
+	idx_t GetVisibleRowCount(TransactionData transaction);
 	bool CanReuseMetadata(RowGroupWriter &writer) const;
 	RowGroupWriteData WriteToDisk(RowGroupWriter &writer);
 	RowGroupPointer Checkpoint(RowGroupWriteData write_data, RowGroupWriter &writer, TableStatistics &global_stats,
@@ -23358,7 +23422,7 @@ public:
 	RowVersionManager &GetOrCreateVersionInfo();
 
 	// Serialization
-	static void Serialize(RowGroupPointer &pointer, Serializer &serializer);
+	static void Serialize(RowGroupPointer &pointer, Serializer &serializer, bool supports_per_column_writes);
 	static RowGroupPointer Deserialize(Deserializer &deserializer);
 
 	idx_t GetRowGroupSize() const;
@@ -23367,6 +23431,10 @@ public:
 	idx_t GetColumnCount() const;
 
 	vector<MetaBlockPointer> CheckpointDeletes(RowGroupWriter &writer);
+
+	//! Direct accessors, fall outside of general use but can be useful to some extensions
+	ColumnData &GetRawColumnData(const StorageIndex &c) const;
+	ColumnData &GetRawColumnData(storage_t c) const;
 
 private:
 	optional_ptr<RowVersionManager> GetVersionInfo();
@@ -23381,8 +23449,14 @@ private:
 	vector<shared_ptr<ColumnData>> &GetColumns();
 	void LoadRowIdColumnData() const;
 	void SetCount(idx_t count);
+	bool ColumnIsLoaded(storage_t c) const;
+	void UnloadColumn(storage_t c);
+	bool HasUnchangedColumns() const;
+	static shared_ptr<ColumnData> CheckpointColumn(const RowGroup &row_group, idx_t column_idx, RowGroupWriteInfo &info,
+	                                               RowGroupWriteData &write_data);
 
 	bool HasUnloadedDeletes() const;
+	unique_ptr<RowGroup> CreateNewRowGroupCopy(RowGroupCollection &new_collection, idx_t new_column_count);
 
 private:
 	mutable mutex row_group_lock;
@@ -23392,6 +23466,8 @@ private:
 	vector<MetaBlockPointer> deletes_pointers;
 	bool has_metadata_blocks = false;
 	vector<idx_t> extra_metadata_blocks;
+	bool has_per_column_metadata_blocks = false;
+	PerColumnMetadataBlocks per_column_metadata_blocks;
 	atomic<bool> deletes_is_loaded;
 	atomic<idx_t> allocation_size;
 	//! The row id column data (mutable because `const` can lazy load)
@@ -24061,7 +24137,7 @@ struct OffsetPruningResult {
 
 class RowGroupReorderer {
 public:
-	explicit RowGroupReorderer(const RowGroupOrderOptions &options_p);
+	RowGroupReorderer(const RowGroupOrderOptions &options_p, TransactionData transaction_p);
 	optional_ptr<SegmentNode<RowGroup>> GetRootSegment(RowGroupSegmentTree &row_groups);
 	optional_ptr<SegmentNode<RowGroup>> GetNextRowGroup(SegmentNode<RowGroup> &row_group);
 
@@ -24073,6 +24149,7 @@ public:
 
 private:
 	const RowGroupOrderOptions options;
+	const TransactionData transaction;
 
 	idx_t offset;
 	bool initialized;
@@ -32347,8 +32424,11 @@ DUCKDB_C_API duckdb_value duckdb_create_bignum(duckdb_bignum input);
 /*!
 Creates a DECIMAL value from a duckdb_decimal
 
+The width must be between 1 and 38, and the scale must not exceed the width.
+
 * @param input The duckdb_decimal value
-* @return The value. This must be destroyed with `duckdb_destroy_value`.
+* @return The value, or `nullptr` if the width or scale are out of range. This must be destroyed with
+`duckdb_destroy_value`.
 */
 DUCKDB_C_API duckdb_value duckdb_create_decimal(duckdb_decimal input);
 
@@ -32969,9 +33049,9 @@ DUCKDB_C_API duckdb_logical_type duckdb_create_enum_type(const char **member_nam
 Creates a DECIMAL type with the specified width and scale.
 The resulting type should be destroyed with `duckdb_destroy_logical_type`.
 
-* @param width The width of the decimal type
-* @param scale The scale of the decimal type
-* @return The logical type.
+* @param width The width of the decimal type. Must be between 1 and 38.
+* @param scale The scale of the decimal type. Must not exceed the width.
+* @return The logical type, or `nullptr` if the width or scale are out of range.
 */
 DUCKDB_C_API duckdb_logical_type duckdb_create_decimal_type(uint8_t width, uint8_t scale);
 
@@ -38849,6 +38929,7 @@ enum class BitpackingMode : uint8_t { INVALID, AUTO, CONSTANT, CONSTANT_DELTA, D
 
 
 
+
 namespace duckdb {
 
 class Serializer;
@@ -38910,7 +38991,13 @@ struct RowGroupPointer {
 	bool has_metadata_blocks = false;
 	//! Metadata blocks of the columns that are not mentioned in "data_pointers"
 	//! This is often empty - but can be set for wide columns with a lot of metadata
+	//! When targeting 2.0 storage format, per_column_metadata_blocks is used instead
 	vector<idx_t> extra_metadata_blocks;
+	//! Whether or not we have per-column metadata blocks
+	bool has_per_column_metadata_blocks = false;
+	//! Per-column metadata blocks beyond the start block
+	//! Each column entry contains the additional block IDs that the column's metadata spans (excluding the start block)
+	PerColumnMetadataBlocks per_column_metadata_blocks;
 };
 
 } // namespace duckdb
@@ -40433,6 +40520,8 @@ struct AttachOptions {
 	AttachVisibility visibility = AttachVisibility::SHOWN;
 	//! The stored database path (in the path manager)
 	unique_ptr<StoredDatabasePath> stored_database_path;
+	//! Per-database override of vacuum_rebuild_indexes. If not set, the global setting value is used.
+	optional_idx vacuum_rebuild_indexes_threshold;
 };
 
 //! The AttachedDatabase represents an attached database instance.
@@ -40487,6 +40576,9 @@ public:
 	AttachVisibility GetVisibility() const {
 		return visibility;
 	}
+	//! vacuum_rebuild_indexes threshold for this attached database.
+	//! Falls back to the global VacuumRebuildIndexesSetting if not overridden.
+	idx_t GetVacuumRebuildIndexThreshold() const;
 	const unordered_map<string, Value> &GetAttachOptions() const {
 		return attach_options;
 	}
@@ -40512,6 +40604,7 @@ private:
 	bool is_initial_database = false;
 	bool is_closed = false;
 	shared_ptr<mutex> close_lock;
+	optional_idx vacuum_rebuild_threshold;
 	unordered_map<string, Value> attach_options;
 
 private:
@@ -48570,6 +48663,7 @@ public:
 	//! Flush all blocks to disk
 	void Flush();
 
+	bool BlockIsModified(const MetaBlockPointer &ptr);
 	bool BlockHasBeenCleared(const MetaBlockPointer &ptr);
 
 	void MarkBlocksAsModified();
@@ -50651,7 +50745,8 @@ public:
 	void CommitDropTable();
 
 	vector<PartitionStatistics> GetPartitionStats() const;
-	vector<ColumnSegmentInfo> GetColumnSegmentInfo(const QueryContext &context);
+	vector<ColumnSegmentInfo> GetColumnSegmentInfo(const QueryContext &context) const;
+	bool SupportsPerColumnWrites();
 	const vector<LogicalType> &GetTypes() const;
 
 	shared_ptr<RowGroupCollection> AddColumn(ClientContext &context, ColumnDefinition &new_column,
@@ -50687,11 +50782,13 @@ public:
 	//! Returns the total amount of segments - use sparingly, as this forces all segments to be loaded
 	idx_t GetSegmentCount();
 
+	//! Get a ptr to the raw segment tree. This can be useful for some extensions to have directly exposed.
+	shared_ptr<RowGroupSegmentTree> GetRowGroups() const;
+
 private:
 	optional_ptr<SegmentNode<RowGroup>> NextUpdateRowGroup(RowGroupSegmentTree &row_groups, row_t *ids, idx_t &pos,
 	                                                       idx_t count) const;
 
-	shared_ptr<RowGroupSegmentTree> GetRowGroups() const;
 	void SetRowGroups(shared_ptr<RowGroupSegmentTree> row_groups);
 
 private:
@@ -51276,6 +51373,12 @@ public:
 	                             optional_ptr<LocalTableStorage> local_storage, optional_ptr<ConflictManager> manager);
 
 	shared_ptr<DataTableInfo> &GetDataTableInfo();
+
+	//! Direct access to the row group collection. Intended for extensions that need to walk storage internals;
+	//! prefer the higher-level DataTable API for normal use.
+	const shared_ptr<RowGroupCollection> &GetRowGroupCollection() const {
+		return row_groups;
+	}
 
 	void BindIndexes(ClientContext &context);
 	bool HasIndexes() const;
@@ -51983,6 +52086,7 @@ struct CSVReaderOptions {
 } // namespace duckdb
 
 
+
 namespace duckdb {
 
 class Deserializer {
@@ -52493,6 +52597,12 @@ private:
 		return idx == DConstants::INVALID_INDEX ? optional_idx() : optional_idx(idx);
 	}
 
+	// Deserialize a ProjectionIndex
+	template <typename T = void>
+	inline typename std::enable_if<std::is_same<T, PerColumnMetadataBlock>::value, T>::type Read() {
+		return PerColumnMetadataBlock::Unpack(ReadUnsignedInt64());
+	}
+
 protected:
 	// Hooks for subclasses to override to implement custom behavior
 	virtual void OnPropertyBegin(const field_id_t field_id, const char *tag) = 0;
@@ -52828,6 +52938,7 @@ struct ValueOperations {
 	static bool DistinctLessThanEquals(const Value &left, const Value &right);
 };
 } // namespace duckdb
+
 
 
 
@@ -53182,6 +53293,9 @@ protected:
 	}
 	void WriteValue(optional_idx value) {
 		WriteValue(value.IsValid() ? value.GetIndex() : DConstants::INVALID_INDEX);
+	}
+	void WriteValue(PerColumnMetadataBlock value) {
+		WriteValue(value.GetPacked());
 	}
 };
 
@@ -57487,6 +57601,10 @@ public:
 	static constexpr uint8_t MAX_WIDTH_DECIMAL = MAX_WIDTH_INT128;
 
 public:
+	//! Whether width/scale form a valid DECIMAL type: width in [1, MAX_WIDTH_DECIMAL] and scale not exceeding width.
+	static bool IsValidWidthScale(uint8_t width, uint8_t scale) {
+		return width >= 1 && width <= MAX_WIDTH_DECIMAL && scale <= width;
+	}
 	static string ToString(int16_t value, uint8_t width, uint8_t scale);
 	static string ToString(int32_t value, uint8_t width, uint8_t scale);
 	static string ToString(int64_t value, uint8_t width, uint8_t scale);
