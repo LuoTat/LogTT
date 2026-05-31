@@ -65,7 +65,6 @@ cdef class AELLogParser:
         string log_file,
         string structured_table_name,
         string templates_table_name,
-        bint keep_para=False,
     ) -> ParseResult:
         cdef int32_t log_length
 
@@ -74,7 +73,6 @@ cdef class AELLogParser:
                 log_file,
                 structured_table_name,
                 templates_table_name,
-                keep_para,
             )
 
         if log_length < 0:
@@ -156,7 +154,6 @@ cdef class BrainLogParser:
         string log_file,
         string structured_table_name,
         string templates_table_name,
-        bint keep_para=False,
     ) -> ParseResult:
         cdef int32_t log_length
 
@@ -165,7 +162,6 @@ cdef class BrainLogParser:
                 log_file,
                 structured_table_name,
                 templates_table_name,
-                keep_para,
             )
 
         if log_length < 0:
@@ -247,7 +243,6 @@ cdef class DrainLogParser:
         string log_file,
         string structured_table_name,
         string templates_table_name,
-        bint keep_para = False,
     ) -> ParseResult:
         cdef int32_t log_length
 
@@ -256,7 +251,6 @@ cdef class DrainLogParser:
                 log_file,
                 structured_table_name,
                 templates_table_name,
-                keep_para,
             )
 
         if log_length < 0:
@@ -356,7 +350,6 @@ cdef class JaccardDrainLogParser:
         string log_file,
         string structured_table_name,
         string templates_table_name,
-        bint keep_para = False,
     ) -> ParseResult:
         cdef int32_t log_length
 
@@ -365,7 +358,6 @@ cdef class JaccardDrainLogParser:
                 log_file,
                 structured_table_name,
                 templates_table_name,
-                keep_para,
             )
 
         if log_length < 0:
@@ -456,7 +448,6 @@ cdef class SpellLogParser:
         string log_file,
         string structured_table_name,
         string templates_table_name,
-        bint keep_para=False,
     ) -> ParseResult:
         cdef int32_t log_length
 
@@ -465,7 +456,6 @@ cdef class SpellLogParser:
                 log_file,
                 structured_table_name,
                 templates_table_name,
-                keep_para,
             )
 
         if log_length < 0:

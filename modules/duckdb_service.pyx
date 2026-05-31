@@ -7,7 +7,6 @@ from modules.duckdb_service cimport (
     EXLogEntry,
     Filters,
     LogEntry,
-    compact_database as cxx_compact_database,
     create_log_table_if_not_exists as cxx_create_log_table_if_not_exists,
     delete_log as cxx_delete_log,
     drop_table as cxx_drop_table,
@@ -221,12 +220,3 @@ cdef class DuckDBService:
             columns = cxx_get_table_columns(table_name)
 
         return columns
-
-    @staticmethod
-    def compact_database() -> tuple[int, int]:
-        cdef pair[uint64_t, uint64_t] result
-
-        with nogil:
-            result = cxx_compact_database()
-
-        return result

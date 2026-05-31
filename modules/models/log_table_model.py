@@ -98,7 +98,6 @@ class LogExtractTask(QRunnable):
                 self._log_file.as_posix(),
                 self._structured_table_name,
                 self._templates_table_name,
-                False,
             )
             self.signals.finished.emit(self._log_id, result.line_count)
         except Exception as e:

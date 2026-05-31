@@ -23,7 +23,6 @@ cdef extern from "ael_log_parser.hxx" namespace "logtt" nogil:
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,
-            bint          keep_para,
         )
 
 cdef extern from "brain_log_parser.hxx" namespace "logtt" nogil:
@@ -42,7 +41,6 @@ cdef extern from "brain_log_parser.hxx" namespace "logtt" nogil:
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,
-            bint          keep_para,
         )
 
 cdef extern from "drain_log_parser.hxx" namespace "logtt" nogil:
@@ -63,7 +61,6 @@ cdef extern from "drain_log_parser.hxx" namespace "logtt" nogil:
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,
-            bint          keep_para,
         )
 
 cdef extern from "jaccard_drain_log_parser.hxx" namespace "logtt" nogil:
@@ -84,7 +81,6 @@ cdef extern from "jaccard_drain_log_parser.hxx" namespace "logtt" nogil:
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,
-            bint          keep_para,
         )
 
 cdef extern from "spell_log_parser.hxx" namespace "logtt" nogil:
@@ -103,5 +99,4 @@ cdef extern from "spell_log_parser.hxx" namespace "logtt" nogil:
             const string& log_file,
             const string& structured_table_name,
             const string& templates_table_name,
-            bint          keep_para,
         )

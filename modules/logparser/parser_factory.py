@@ -19,7 +19,6 @@ class LogParserProtocol(Protocol):
         log_file: str,
         structured_table_name: str,
         templates_table_name: str,
-        keep_para: bool,
     ) -> ParseResult: ...
     @staticmethod
     def name() -> str: ...

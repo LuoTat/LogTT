@@ -63,4 +63,3 @@ cdef extern from "duckdb_service.hxx" namespace "logtt" nogil:
     bint has_column(const string& table_name, const string& column_name)
     int64_t get_table_row_count(const string& table_name)
     vector[string] get_table_columns(const string& table_name)
-    pair[uint64_t, uint64_t] compact_database()
