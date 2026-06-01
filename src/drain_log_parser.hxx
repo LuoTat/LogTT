@@ -43,8 +43,9 @@ public:
 private:
     struct LogCluster
     {
-        TContent m_content;
+        TContent content;
 
+        [[nodiscard]]
         std::string get_template() const;
     };
 

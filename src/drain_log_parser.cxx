@@ -119,10 +119,10 @@ DrainLogParser::LogCluster* DrainLogParser::_add_content(const TContent& content
     }
     else
     {
-        auto new_content {DrainLogParser::_create_template(content, match_cluster->m_content)};
-        if (new_content != match_cluster->m_content)
+        auto new_content {DrainLogParser::_create_template(content, match_cluster->content)};
+        if (new_content != match_cluster->content)
         {
-            match_cluster->m_content = std::move(new_content);
+            match_cluster->content = std::move(new_content);
         }
     }
 
@@ -171,7 +171,7 @@ DrainLogParser::_fast_match(const TContent& content, const Node* node, bool incl
 
     for (auto&& cluster : node->clusters)
     {
-        auto [cur_sim, param_count] {logtt::DrainLogParser::_get_distance(content, cluster->m_content, include_params)};
+        auto [cur_sim, param_count] {logtt::DrainLogParser::_get_distance(content, cluster->content, include_params)};
         if (cur_sim > max_sim || (cur_sim == max_sim && param_count > max_param_count))
         {
             max_sim         = cur_sim;
@@ -190,13 +190,13 @@ DrainLogParser::_fast_match(const TContent& content, const Node* node, bool incl
 
 void DrainLogParser::_add_to_prefix_tree(LogCluster* cluster)
 {
-    auto  length {cluster->m_content.size()};
+    auto  length {cluster->content.size()};
     auto  length_token {std::to_string(length)};
     auto* cur_node {this->m_root.get()};
 
     for (
         auto&& [i, token] :
-        std::views::enumerate(std::views::concat(std::views::single(length_token), cluster->m_content))
+        std::views::enumerate(std::views::concat(std::views::single(length_token), cluster->content))
     )
     {
         auto cur_node_depth {i + 1};
@@ -285,7 +285,7 @@ TContent DrainLogParser::_create_template(const TContent& content1, const TConte
 
 std::string DrainLogParser::LogCluster::get_template() const
 {
-    return this->m_content | std::views::join_with(' ') | std::ranges::to<std::string>();
+    return this->content | std::views::join_with(' ') | std::ranges::to<std::string>();
 }
 
 }    // namespace logtt
